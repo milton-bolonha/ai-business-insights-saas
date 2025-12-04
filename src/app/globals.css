@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@import "@fontsource-variable/podkova";
+@import "@fontsource-variable/geologica";
+@import "@fontsource/poppins";
+
+:root {
+  --bg-primary: #f7f7f7;
+  --bg-secondary: #e8edff;
+  --bg-tertiary: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --cta-color: #7af42b;
+  --accent-color-1: #2bedf4;
+  --accent-color-2: #a15dff;
+  --accent-color-3: #a15dff;
+  --accent-color-4: #f4e32b;
+  --highlight-yellow: #ffee32;
+}
+
+.dark {
+  --bg-primary: #191919;
+  --bg-secondary: #212121;
+  --bg-tertiary: #333333;
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --border-color: #444444;
+  --cta-color: #7af42b;
+  --accent-color-1: #2bedf4;
+  --accent-color-2: #ff5dc4;
+  --accent-color-3: #a15dff;
+  --highlight-yellow: #ffee32;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+}
+
+.font-geologica {
+  font-family: "Geologica Variable", sans-serif;
+}
+
+.font-podkova {
+  font-family: "Podkova Variable", serif;
+}
+
+.font-poppins {
+  font-family: "Poppins", sans-serif;
+}
+
