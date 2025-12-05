@@ -121,6 +121,11 @@ export interface WorkspaceState {
     dashboardId: string,
     tileId: string
   ) => void;
+  reorderTilesLocal: (
+    workspaceId: string,
+    dashboardId: string,
+    order: string[]
+  ) => void;
 }
 
 // Funções auxiliares para determinar se deve persistir dados
@@ -325,44 +330,54 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             "[DEBUG] workspaceStore.setActiveDashboard called:",
             dashboardId
           );
-          const { currentWorkspace } = get();
-          if (!currentWorkspace) {
+          const { currentWorkspace, workspaces } = get();
+
+          let workspace =
+            currentWorkspace ||
+            workspaces.find((w) =>
+              w.dashboards.some((d) => d.id === dashboardId)
+            );
+
+          if (!workspace) {
+            console.warn(
+              "[DEBUG] workspaceStore.setActiveDashboard - workspace not found for dashboard",
+              dashboardId
+            );
             return;
           }
 
-          const dashboard = currentWorkspace.dashboards.find(
+          const dashboard = workspace.dashboards.find(
             (d) => d.id === dashboardId
           );
           if (!dashboard) {
+            console.warn(
+              "[DEBUG] workspaceStore.setActiveDashboard - dashboard not found",
+              dashboardId
+            );
             return;
           }
 
-          // Atualizar storage
-          setActiveDashboardInStore(currentWorkspace.id, dashboardId);
+          setActiveDashboardInStore(workspace.id, dashboardId);
 
-          // Atualizar estado
           set((state) => {
-            if (state.currentWorkspace) {
-              state.currentWorkspace.dashboards =
-                state.currentWorkspace.dashboards.map((d) =>
-                  d.id === dashboardId
-                    ? { ...d, isActive: true }
-                    : { ...d, isActive: false }
-                );
+            const targetWorkspace =
+              state.workspaces.find((w) => w.id === workspace!.id) || workspace!;
 
-              // Atualizar currentDashboard se for o ativo
-              if (dashboard.isActive) {
-                state.currentDashboard = dashboard;
-              }
-            }
-
-            // Atualizar na lista de workspaces
-            state.workspaces = state.workspaces.map((w) =>
-              w.id === currentWorkspace.id ? state.currentWorkspace! : w
+            targetWorkspace.dashboards = targetWorkspace.dashboards.map((d) =>
+              d.id === dashboardId ? { ...d, isActive: true } : { ...d, isActive: false }
             );
+
+            state.workspaces = state.workspaces.map((w) =>
+              w.id === targetWorkspace.id ? targetWorkspace : w
+            );
+
+            state.currentWorkspace = targetWorkspace;
+            state.currentDashboard =
+              targetWorkspace.dashboards.find((d) => d.id === dashboardId) ??
+              targetWorkspace.dashboards[0] ??
+              null;
           });
 
-          // Salvar no storage
           persistWorkspacesSafely(get().workspaces);
         },
 
@@ -844,6 +859,47 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           persistWorkspacesSafely(get().workspaces);
         },
+
+        reorderTilesLocal: (workspaceId, dashboardId, order) => {
+          set((state) => {
+            const workspace = state.workspaces.find(
+              (w) => w.id === workspaceId
+            );
+            if (!workspace) return;
+
+            const dashboard = workspace.dashboards.find(
+              (d) => d.id === dashboardId
+            );
+            if (!dashboard || !dashboard.tiles) return;
+
+            const tileMap = new Map(dashboard.tiles.map((t) => [t.id, t]));
+            const reorderedTiles = order
+              .map((tileId, index) => {
+                const tile = tileMap.get(tileId);
+                if (!tile) return null;
+                return {
+                  ...tile,
+                  orderIndex: index,
+                  updatedAt: new Date().toISOString(),
+                };
+              })
+              .filter((tile): tile is Tile => tile !== null);
+
+            dashboard.tiles = reorderedTiles;
+            dashboard.updatedAt = new Date().toISOString();
+            workspace.updatedAt = new Date().toISOString();
+
+// ensure current workspace/dash references updated
+            if (state.currentWorkspace?.id === workspaceId) {
+              state.currentWorkspace = workspace;
+              if (state.currentDashboard?.id === dashboardId) {
+                state.currentDashboard = dashboard;
+              }
+            }
+          });
+
+          persistWorkspacesSafely(get().workspaces);
+        },
       }),
       {
         name: "workspace-store",
@@ -898,5 +954,6 @@ export const useWorkspaceActions = () => {
     addTileToDashboard: store.addTileToDashboard,
     updateTileInDashboard: store.updateTileInDashboard,
     removeTileFromDashboard: store.removeTileFromDashboard,
+    reorderTilesLocal: store.reorderTilesLocal,
   };
 };

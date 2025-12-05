@@ -77,8 +77,13 @@ function SortableTileCard({
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, animationDelay: animateEntrance ? `${index * 50}ms` : undefined }}
-      className={`${animateEntrance ? "animate-in fade-in slide-in-from-bottom-4" : ""} h-full`}
+      style={{
+        ...style,
+        animationDelay: animateEntrance ? `${index * 50}ms` : undefined,
+      }}
+      className={`${
+        animateEntrance ? "animate-in fade-in slide-in-from-bottom-4" : ""
+      } h-full`}
     >
       <div
         {...attributes}
@@ -109,7 +114,9 @@ export function TileGridAde({
   onAddPrompt,
   animateEntrance = true,
 }: TileGridAdeProps) {
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "category" | "manual">("manual");
+  const [sortOrder, setSortOrder] = useState<
+    "newest" | "oldest" | "category" | "manual"
+  >("manual");
   const [localTiles, setLocalTiles] = useState<Tile[]>(tiles);
 
   // Update local tiles when prop changes
@@ -121,14 +128,20 @@ export function TileGridAde({
   const sortedTiles = useMemo(() => {
     if (sortOrder === "manual") {
       // Sort by orderIndex for manual ordering
-      return [...localTiles].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      return [...localTiles].sort(
+        (a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)
+      );
     }
     return [...localTiles].sort((a, b) => {
       switch (sortOrder) {
         case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
         case "category":
           return (a.category || "").localeCompare(b.category || "");
         default:
@@ -162,7 +175,7 @@ export function TileGridAde({
 
     if (oldIndex !== -1 && newIndex !== -1) {
       const newTiles = arrayMove(sortedTiles, oldIndex, newIndex);
-      
+
       // Update orderIndex for each tile
       const reorderedTiles = newTiles.map((tile, index) => ({
         ...tile,
@@ -229,6 +242,22 @@ export function TileGridAde({
             strategy={rectSortingStrategy}
           >
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {onAddPrompt && (
+                <button
+                  onClick={() => onAddPrompt()}
+                  type="button"
+                  className="flex h-full min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed transition  hover:bg-white hover:cursor-pointer"
+                  style={{
+                    borderColor: appearance?.cardBorderColor || "#d1d5db",
+                    color: appearance?.mutedTextColor || "#6b7280",
+                  }}
+                >
+                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <Plus className="h-6 w-6" />
+                  </div>
+                  <span className="text-sm font-medium">Add Prompt</span>
+                </button>
+              )}
               {sortedTiles.map((tile, index) => (
                 <SortableTileCard
                   key={tile.id}
@@ -236,11 +265,16 @@ export function TileGridAde({
                   onDelete={onDeleteTile}
                   onRegenerate={onRegenerateTile}
                   onOpen={(t) => {
-                    console.log("[DEBUG] TileGridAde onOpen wrapper called for:", t.id);
+                    console.log(
+                      "[DEBUG] TileGridAde onOpen wrapper called for:",
+                      t.id
+                    );
                     if (onOpenTile) {
                       onOpenTile(t);
                     } else {
-                      console.error("[DEBUG] TileGridAde onOpenTile prop is missing");
+                      console.error(
+                        "[DEBUG] TileGridAde onOpenTile prop is missing"
+                      );
                     }
                   }}
                   isRegenerating={regeneratingTileIds.has(tile.id)}
@@ -282,7 +316,7 @@ export function TileGridAde({
           {onAddPrompt && (
             <button
               onClick={() => {
-                console.log('[DEBUG] TileGridAde Add Prompt button clicked');
+                console.log("[DEBUG] TileGridAde Add Prompt button clicked");
                 onAddPrompt?.();
               }}
               className="inline-flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
@@ -296,4 +330,3 @@ export function TileGridAde({
     </div>
   );
 }
-

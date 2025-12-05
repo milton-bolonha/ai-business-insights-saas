@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Tile } from "@/lib/types";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { useWorkspaceStore } from "@/lib/stores/workspaceStore";
 
 type RequestSize = "small" | "medium" | "large";
 
@@ -218,6 +220,10 @@ export function useDeleteTile() {
 
 export function useReorderTiles() {
   const queryClient = useQueryClient();
+  const isMember = useAuthStore((state) => state.isMember);
+  const reorderTilesLocal = useWorkspaceStore(
+    (state) => state.reorderTilesLocal
+  );
 
   return useMutation({
     mutationFn: async ({
@@ -230,6 +236,18 @@ export function useReorderTiles() {
         workspaceId,
         orderLength: order.length,
       });
+
+      if (!isMember || !workspaceId) {
+        if (!workspaceId) {
+          throw new Error("workspaceId is required for reordering tiles");
+        }
+        reorderTilesLocal(workspaceId, dashboardId, order);
+        return {
+          success: true,
+          order,
+          updated: order.length,
+        };
+      }
 
       const response = await fetch("/api/workspace/reorder", {
         method: "POST",

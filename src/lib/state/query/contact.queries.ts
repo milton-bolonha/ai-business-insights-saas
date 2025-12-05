@@ -1,7 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Contact } from "@/lib/types";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { useWorkspaceStore } from "@/lib/stores/workspaceStore";
 
 export function useCreateContact() {
   const queryClient = useQueryClient();
+  const isMember = useAuthStore((state) => state.isMember);
+  const addContactToDashboard = useWorkspaceStore(
+      (state) => state.addContactToDashboard
+  );
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
   return useMutation({
     mutationFn: async ({
@@ -22,6 +30,38 @@ export function useCreateContact() {
       };
     }) => {
       console.log('[DEBUG] contact.queries.useCreateContact executing:', { dashboardId, workspaceId, contactData });
+
+      if (!isMember) {
+        const targetWorkspaceId = workspaceId || currentWorkspace?.id;
+        if (!targetWorkspaceId) {
+          throw new Error("No workspace available to add contact");
+        }
+
+        const generatedId =
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : Date.now().toString(36);
+
+        const contact: Contact = {
+          id: `contact_${generatedId}`,
+          name: contactData.name,
+          jobTitle: contactData.jobTitle,
+          email: contactData.email,
+          phone: contactData.phone,
+          company: contactData.company,
+          linkedinUrl: contactData.linkedinUrl,
+          notes: contactData.notes,
+          createdAt: new Date().toISOString(),
+        };
+
+        addContactToDashboard(targetWorkspaceId, dashboardId, contact);
+
+        return {
+          success: true,
+          contact,
+        };
+      }
+
       const response = await fetch("/api/workspace/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
