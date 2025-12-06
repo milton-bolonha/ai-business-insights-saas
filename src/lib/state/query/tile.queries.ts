@@ -7,6 +7,7 @@ type RequestSize = "small" | "medium" | "large";
 
 interface CreateTileVariables {
   dashboardId: string;
+  workspaceId: string;
   title: string;
   prompt: string;
   model?: string;
@@ -63,7 +64,7 @@ interface ChatWithTileVariables {
   dashboardId: string;
   payload: {
     message: string;
-    attachments?: Array<Record<string, unknown>>; 
+    attachments?: Array<Record<string, unknown>>;
   };
 }
 
@@ -76,7 +77,9 @@ export function useTiles(dashboardId: string) {
   return useQuery({
     queryKey: ["tiles", dashboardId],
     queryFn: async (): Promise<Tile[]> => {
-      const response = await fetch(`/api/workspace/dashboards/${dashboardId}/tiles`);
+      const response = await fetch(
+        `/api/workspace/dashboards/${dashboardId}/tiles`
+      );
       if (!response.ok) throw new Error("Failed to fetch tiles");
       const payload = (await response.json()) as { tiles?: Tile[] };
       return payload.tiles ?? [];
@@ -91,18 +94,27 @@ export function useCreateTile() {
   return useMutation({
     mutationFn: async ({
       dashboardId,
+      workspaceId,
       title,
       prompt,
       model = "gpt-4",
       useMaxPrompt = false,
       requestSize = "medium",
     }: CreateTileVariables): Promise<CreateTileResponse> => {
-      console.log('[DEBUG] tile.queries.useCreateTile executing:', { dashboardId, prompt, model, useMaxPrompt, requestSize });
+      console.log("[DEBUG] tile.queries.useCreateTile executing:", {
+        dashboardId,
+        workspaceId,
+        prompt,
+        model,
+        useMaxPrompt,
+        requestSize,
+      });
       const response = await fetch("/api/workspace/tiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dashboardId,
+          workspaceId,
           title,
           prompt,
           model,
@@ -111,30 +123,39 @@ export function useCreateTile() {
         }),
       });
       if (!response.ok) {
-        console.error('[DEBUG] tile.queries.useCreateTile failed:', response.status, response.statusText);
+        console.error(
+          "[DEBUG] tile.queries.useCreateTile failed:",
+          response.status,
+          response.statusText
+        );
         throw new Error("Failed to create tile");
       }
       const result = (await response.json()) as CreateTileResponse;
-      console.log('[DEBUG] tile.queries.useCreateTile success:', result);
+      console.log("[DEBUG] tile.queries.useCreateTile success:", result);
       return result;
     },
     onSuccess: (data, { dashboardId }) => {
-      console.log('[DEBUG] tile.queries.useCreateTile onSuccess:', { data, dashboardId });
+      console.log("[DEBUG] tile.queries.useCreateTile onSuccess:", {
+        data,
+        dashboardId,
+      });
       // Invalidate tiles query
       queryClient.invalidateQueries({ queryKey: ["tiles", dashboardId] });
-      
+
       // Sincronizar workspaceStore (para members - atualiza store local após API)
       if (data.tile && data.workspaceId && dashboardId) {
-        import('@/lib/stores/workspaceStore').then(({ useWorkspaceStore }) => {
-          const store = useWorkspaceStore.getState();
-          store.addTileToDashboard(data.workspaceId!, dashboardId, data.tile);
-        }).catch(err => {
-          console.warn('[DEBUG] Failed to sync tile to workspaceStore:', err);
-        });
+        import("@/lib/stores/workspaceStore")
+          .then(({ useWorkspaceStore }) => {
+            const store = useWorkspaceStore.getState();
+            store.addTileToDashboard(data.workspaceId!, dashboardId, data.tile);
+          })
+          .catch((err) => {
+            console.warn("[DEBUG] Failed to sync tile to workspaceStore:", err);
+          });
       }
     },
     onError: (error) => {
-      console.error('[DEBUG] tile.queries.useCreateTile onError:', error);
+      console.error("[DEBUG] tile.queries.useCreateTile onError:", error);
     },
   });
 }
@@ -150,11 +171,14 @@ export function useRegenerateTile() {
       workspaceId,
       dashboardId,
     }: RegenerateTileVariables): Promise<RegenerateTileResponse> => {
-      const response = await fetch(`/api/workspace/tiles/${tileId}/regenerate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, model, workspaceId, dashboardId }),
-      });
+      const response = await fetch(
+        `/api/workspace/tiles/${tileId}/regenerate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, model, workspaceId, dashboardId }),
+        }
+      );
       if (!response.ok) throw new Error("Failed to regenerate tile");
       return response.json();
     },
@@ -168,7 +192,7 @@ export function useRegenerateTile() {
       });
     },
     onError: (error) => {
-      console.error('[DEBUG] tile.queries.useRegenerateTile onError:', error);
+      console.error("[DEBUG] tile.queries.useRegenerateTile onError:", error);
     },
   });
 }
@@ -195,7 +219,9 @@ export function useDeleteTile() {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Failed to delete tile" }));
+        const error = await response
+          .json()
+          .catch(() => ({ error: "Failed to delete tile" }));
         throw new Error(error.error || "Failed to delete tile");
       }
 
@@ -204,12 +230,18 @@ export function useDeleteTile() {
       return result;
     },
     onSuccess: (_, { tileId, dashboardId }) => {
-      console.log("[DEBUG] useDeleteTile invalidating queries for dashboard:", dashboardId);
+      console.log(
+        "[DEBUG] useDeleteTile invalidating queries for dashboard:",
+        dashboardId
+      );
       // Optimistic update: remove tile from cache
-      queryClient.setQueryData<Tile[] | undefined>(["tiles", dashboardId], (oldData) => {
-        if (!oldData) return oldData;
-        return oldData.filter((tile) => tile.id !== tileId);
-      });
+      queryClient.setQueryData<Tile[] | undefined>(
+        ["tiles", dashboardId],
+        (oldData) => {
+          if (!oldData) return oldData;
+          return oldData.filter((tile) => tile.id !== tileId);
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ["tiles", dashboardId] });
     },
     onError: (error) => {
@@ -256,7 +288,9 @@ export function useReorderTiles() {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Failed to reorder tiles" }));
+        const error = await response
+          .json()
+          .catch(() => ({ error: "Failed to reorder tiles" }));
         throw new Error(error.error || "Failed to reorder tiles");
       }
 
@@ -265,7 +299,10 @@ export function useReorderTiles() {
       return result;
     },
     onSuccess: (_, { dashboardId }) => {
-      console.log("[DEBUG] useReorderTiles invalidating queries for dashboard:", dashboardId);
+      console.log(
+        "[DEBUG] useReorderTiles invalidating queries for dashboard:",
+        dashboardId
+      );
       queryClient.invalidateQueries({ queryKey: ["tiles", dashboardId] });
     },
     onError: (error) => {
@@ -295,8 +332,12 @@ export function useChatWithTile() {
         }),
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({} as { error?: string }));
-        throw new Error(errorData.error ?? "Failed to generate follow-up insight");
+        const errorData = await response
+          .json()
+          .catch(() => ({} as { error?: string }));
+        throw new Error(
+          errorData.error ?? "Failed to generate follow-up insight"
+        );
       }
       return response.json();
     },
@@ -310,7 +351,7 @@ export function useChatWithTile() {
       });
     },
     onError: (error) => {
-      console.error('[DEBUG] tile.queries.useChatWithTile onError:', error);
+      console.error("[DEBUG] tile.queries.useChatWithTile onError:", error);
     },
   });
 }

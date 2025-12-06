@@ -84,8 +84,12 @@ export function useContent() {
     tiles,
     async createTile(dashboardId: string, data: CreateTileInput) {
       console.log('[DEBUG] useContent.createTile called:', { dashboardId, data });
+      if (!currentWorkspace?.id) {
+        throw new Error('No workspace selected');
+      }
       const result = await createTileMutation.mutateAsync({
         dashboardId,
+        workspaceId: currentWorkspace.id,
         title: data.title || 'Custom Tile',
         prompt: data.prompt || data.description || '',
         model: data.model,
@@ -98,10 +102,14 @@ export function useContent() {
     async createSinglePrompt(dashboardId: string, data: CreateTileInput) {
       // createSinglePrompt é alias para createTile
       console.log('[DEBUG] useContent.createSinglePrompt called:', { dashboardId, data });
+      if (!currentWorkspace?.id) {
+        throw new Error("No workspace selected");
+      }
 
       // Mapear campos corretamente para a API
       const apiData = {
         dashboardId,
+        workspaceId: currentWorkspace.id,
         title: data.title || data.prompt?.slice(0, 50) || "New Tile",
         prompt: data.prompt || data.description || "",
         model: data.model || "gpt-4",
