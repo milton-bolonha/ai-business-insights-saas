@@ -3,32 +3,49 @@ import { randomUUID } from "crypto";
 
 import type { Contact } from "@/lib/types";
 import { getAuth } from "@/lib/auth/get-auth";
-import { addContactToDashboard, loadWorkspacesWithDashboards } from "@/lib/storage/dashboards-store";
+import {
+  addContactToDashboard,
+  loadWorkspacesWithDashboards,
+} from "@/lib/storage/dashboards-store";
 import { audit } from "@/lib/audit/logger";
+import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 
 // Runtime: Node.js (required for MongoDB)
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  const rate = await checkRateLimitMiddleware(
+    request,
+    "/api/workspace/contacts"
+  );
+  if (!rate.allowed && rate.response) return rate.response;
+
   const body = await request.json().catch(() => null);
   const { userId } = await getAuth();
 
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const jobTitle = typeof body?.jobTitle === "string" ? body.jobTitle.trim() : "";
-  const linkedinUrl = typeof body?.linkedinUrl === "string" ? body.linkedinUrl.trim() : "";
+  const jobTitle =
+    typeof body?.jobTitle === "string" ? body.jobTitle.trim() : "";
+  const linkedinUrl =
+    typeof body?.linkedinUrl === "string" ? body.linkedinUrl.trim() : "";
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
   const company = typeof body?.company === "string" ? body.company.trim() : "";
   const notes = typeof body?.notes === "string" ? body.notes.trim() : "";
-  const dashboardId = typeof body?.dashboardId === "string" ? body.dashboardId.trim() : "";
-  const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId.trim() : "";
+  const dashboardId =
+    typeof body?.dashboardId === "string" ? body.dashboardId.trim() : "";
+  const workspaceId =
+    typeof body?.workspaceId === "string" ? body.workspaceId.trim() : "";
 
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
   if (!dashboardId) {
-    return NextResponse.json({ error: "dashboardId is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "dashboardId is required" },
+      { status: 400 }
+    );
   }
 
   let usageService: typeof import("@/lib/saas/usage-service") | null = null;
@@ -75,9 +92,16 @@ export async function POST(request: NextRequest) {
 
       const { db } = await import("@/lib/db/mongodb");
       const { contactToDocument } = await import("@/lib/db/models/Contact");
-      const { invalidateResourceCache } = await import("@/lib/cache/invalidation");
+      const { invalidateResourceCache } = await import(
+        "@/lib/cache/invalidation"
+      );
 
-      const contactDoc = contactToDocument(contactData, userId, workspaceId, dashboardId);
+      const contactDoc = contactToDocument(
+        contactData,
+        userId,
+        workspaceId,
+        dashboardId
+      );
       const insertedId = await db.insertOne("contacts", {
         ...contactDoc,
         createdAt: new Date(),
@@ -112,17 +136,23 @@ export async function POST(request: NextRequest) {
 
       if (workspace) {
         addContactToDashboard(workspace.id, dashboardId, contactData);
-        
+
         // Audit log
         await audit.createContact(contactId, dashboardId, null, request);
-        
-        console.log("[API] /api/workspace/contacts - Contact saved to localStorage", {
-          contactId,
-          workspaceId: workspace.id,
-          dashboardId,
-        });
+
+        console.log(
+          "[API] /api/workspace/contacts - Contact saved to localStorage",
+          {
+            contactId,
+            workspaceId: workspace.id,
+            dashboardId,
+          }
+        );
       } else {
-        return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Workspace not found" },
+          { status: 404 }
+        );
       }
 
       return NextResponse.json({
@@ -149,7 +179,10 @@ export async function GET(request: NextRequest) {
   const { userId } = await getAuth();
 
   if (!dashboardId) {
-    return NextResponse.json({ error: "dashboardId is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "dashboardId is required" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -177,7 +210,9 @@ export async function GET(request: NextRequest) {
 
       // Fetch from MongoDB
       const { db } = await import("@/lib/db/mongodb");
-      const { contactDocumentToContact } = await import("@/lib/db/models/Contact");
+      const { contactDocumentToContact } = await import(
+        "@/lib/db/models/Contact"
+      );
       // eslint-disable-next-line @typescript-eslint/consistent-type-imports
       type ContactDocument = import("@/lib/db/models/Contact").ContactDocument;
 
@@ -226,4 +261,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

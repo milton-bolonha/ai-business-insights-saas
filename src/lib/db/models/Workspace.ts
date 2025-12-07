@@ -18,6 +18,8 @@ export interface WorkspaceDocument extends Document {
   userId: string; // Clerk user ID (required for security isolation)
   name: string; // Workspace name
   website?: string; // Workspace website
+  salesRepCompany?: string; // Responsible company's name
+  salesRepWebsite?: string; // Responsible company's website
   generatedAt: string | null;
   tilesToGenerate: number;
   promptSettings?: WorkspacePromptSettings;
@@ -43,6 +45,8 @@ export function workspaceSnapshotToDocument(
     sessionId: snapshot.sessionId,
     name: snapshot.name,
     website: snapshot.website,
+    salesRepCompany: snapshot.salesRepCompany,
+    salesRepWebsite: snapshot.salesRepWebsite,
     generatedAt: snapshot.generatedAt,
     tilesToGenerate: snapshot.tilesToGenerate ?? 0,
     promptSettings: snapshot.promptSettings,
@@ -64,6 +68,8 @@ export function workspaceDocumentToSnapshot(
     sessionId: doc.sessionId,
     name: doc.name,
     website: doc.website,
+    salesRepCompany: doc.salesRepCompany,
+    salesRepWebsite: doc.salesRepWebsite,
     generatedAt: doc.generatedAt,
     tilesToGenerate: doc.tilesToGenerate,
     promptSettings: doc.promptSettings,

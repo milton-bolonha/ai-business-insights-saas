@@ -163,6 +163,29 @@ function clearWorkspaceStorage() {
   }
 }
 
+function reconcileGuestWorkspaceUsage(workspaceCount: number) {
+  try {
+    const authState = useAuthStore.getState?.();
+    if (!authState) return;
+    const { user, usage, limits } = authState;
+    // Apenas para guests (ou anônimo)
+    if (user && user.role === "member") return;
+    const current = usage?.createWorkspace ?? 0;
+    const maxAllowed = limits?.createWorkspace ?? workspaceCount;
+    if (workspaceCount > current) {
+      const nextValue = Math.min(workspaceCount, maxAllowed);
+      useAuthStore.setState((state) => ({
+        usage: {
+          ...state.usage,
+          createWorkspace: nextValue,
+        },
+      }));
+    }
+  } catch (err) {
+    console.warn("[workspaceStore] Failed to reconcile guest workspace usage", err);
+  }
+}
+
 export const useWorkspaceStore = create<WorkspaceState>()(
   immer(
     persist(
@@ -252,6 +275,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 state.currentDashboard = null;
               }
             });
+
+            reconcileGuestWorkspaceUsage(workspaces.length);
 
             console.log("[DEBUG] workspaceStore.refreshWorkspaces completed (guest)", {
               workspacesCount: workspaces.length,

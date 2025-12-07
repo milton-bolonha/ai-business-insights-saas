@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, User, UserPlus, Info } from "lucide-react";
+import { Plus, User, UserPlus, Info, ChevronRight } from "lucide-react";
 
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 
@@ -17,100 +17,71 @@ interface WorkspaceOption {
 
 interface AdminSidebarAdeProps {
   appearance: AdeAppearanceTokens;
-  workspaceName: string;
+  companyName: string;
   workspaces: WorkspaceOption[];
   onSelectWorkspace: (sessionId: string) => void;
   onAddWorkspace?: () => void;
   onAddContact?: () => void;
   onOpenWorkspaceDetails?: (sessionId: string) => void;
+  onOpenUpgrade?: () => void;
 }
 
 export function AdminSidebarAde({
   appearance,
-  workspaceName,
+  companyName,
   workspaces = [],
   onSelectWorkspace,
   onAddWorkspace,
   onAddContact,
   onOpenWorkspaceDetails,
+  onOpenUpgrade,
 }: AdminSidebarAdeProps) {
   const activeWorkspace = workspaces.find(w => w.isActive);
   const otherWorkspaces = workspaces.filter(w => !w.isActive);
+  const orderedWorkspaces = activeWorkspace
+    ? [activeWorkspace, ...otherWorkspaces]
+    : otherWorkspaces;
 
   return (
     <div className="flex h-full flex-col">
       {/* Company name */}
-      <div className="mb-6">
-        <h2
-          className="text-lg font-semibold"
-          style={{ color: appearance.textColor }}
-        >
-          {workspaceName}
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-lg font-semibold" style={{ color: appearance.textColor }}>
+          {companyName}
         </h2>
+        {activeWorkspace && onOpenWorkspaceDetails && (
+          <button
+            onClick={() => onOpenWorkspaceDetails(activeWorkspace.sessionId)}
+            className="p-1 rounded-full hover:bg-black/10 transition-colors"
+            title="View Details"
+          >
+            <Info className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
+          </button>
+        )}
       </div>
 
-      {/* Active workspace */}
-      {activeWorkspace && (
+      {/* Workspaces list (active first) */}
+      {orderedWorkspaces.length > 0 && (
         <div className="mb-6">
-          <div className="mb-2 text-sm font-medium" style={{ color: appearance.textColor }}>
-            Current Workspace
-          </div>
-          <div
-            className="rounded-lg border p-3 transition hover:bg-black/5"
-            style={{
-              borderColor: appearance.cardBorderColor,
-              backgroundColor: appearance.overlayColor,
-            }}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-medium" style={{ color: appearance.textColor }}>
-                  {activeWorkspace.name}
-                </div>
-                <div className="mt-1 text-xs" style={{ color: appearance.mutedTextColor }}>
-                  {activeWorkspace.tilesCount} tiles, {activeWorkspace.contactsCount} contacts
-                </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenWorkspaceDetails?.(activeWorkspace.sessionId);
-                }}
-                className="p-1 rounded-full hover:bg-black/10 transition-colors"
-                title="View Details"
-              >
-                <Info className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Other workspaces */}
-      {otherWorkspaces.length > 0 && (
-        <div className="mb-6">
-          <div className="mb-2 text-sm font-medium" style={{ color: appearance.textColor }}>
-            Other Workspaces
-          </div>
-          <div className="space-y-2">
-            {otherWorkspaces.map((workspace) => (
-              <button
-                key={workspace.sessionId}
-                onClick={() => onSelectWorkspace(workspace.sessionId)}
-                className="w-full rounded-lg border p-3 text-left transition hover:bg-black/5"
-                style={{
-                  borderColor: appearance.cardBorderColor,
-                  backgroundColor: appearance.overlayColor,
-                }}
-              >
-                <div className="text-sm font-medium" style={{ color: appearance.textColor }}>
-                  {workspace.name}
-                </div>
-                <div className="mt-1 text-xs" style={{ color: appearance.mutedTextColor }}>
-                  {workspace.tilesCount} tiles, {workspace.contactsCount} contacts
-                </div>
-              </button>
-            ))}
+          <div className="space-y-1">
+            {orderedWorkspaces.map((workspace) => {
+              const isActive = workspace.isActive;
+              return (
+                <button
+                  key={workspace.sessionId}
+                  onClick={() => onSelectWorkspace(workspace.sessionId)}
+                  className="w-full rounded-md px-3 py-2 text-left transition hover:bg-black/5"
+                  style={{ color: appearance.textColor }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{workspace.name}</span>
+                    {isActive && (
+                      <ChevronRight className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -140,7 +111,13 @@ export function AdminSidebarAde({
       </div>
 
       {/* User info placeholder */}
-      <div className="mt-4 border-t pt-4" style={{ borderColor: appearance.cardBorderColor }}>
+      <div
+        className="mt-4 border-t pt-4 cursor-pointer"
+        style={{ borderColor: appearance.cardBorderColor }}
+        onClick={() => onOpenUpgrade?.()}
+        role="button"
+        tabIndex={0}
+      >
         <div className="flex items-center space-x-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
             <User className="h-4 w-4 text-gray-600" />

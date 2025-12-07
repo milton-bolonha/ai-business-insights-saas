@@ -10,6 +10,7 @@
     "test:e2e": "playwright test",
     "db:indexes": "dotenv -e .env.local -- tsx scripts/create-indexes.ts",
     "create-indexes": "npm run db:indexes",
+    "seed:plans": "dotenv -e .env.local -- tsx scripts/seed-plans.ts",
     "audit": "npm audit --audit-level=moderate",
     "audit:fix": "npm audit fix",
     "security:check": "npm audit && npm outdated"

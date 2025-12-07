@@ -1,4 +1,13 @@
 import { db } from "@/lib/db/mongodb";
+import type { PlanDocument } from "@/lib/db/models/Plan";
+
+type PlanId = "guest" | "member" | "business";
+
+interface PlanRecord {
+  planId: PlanId;
+  limits: UsageLimits;
+  updatedAt?: Date;
+}
 
 /**
  * Usage limits and tracking for SaaS features
@@ -9,31 +18,61 @@ export type UsageType =
   | "contactsCount"
   | "notesCount"
   | "tilesCount"
-  | "tokensUsed";
+  | "tokensUsed"
+  | "tileChatsCount"
+  | "contactChatsCount"
+  | "regenerationsCount"
+  | "assetsCount";
 
-interface UsageLimits {
+export interface UsageLimits {
   companiesCount: number; // Max workspaces per user
   contactsCount: number; // Max contacts per user
   notesCount: number; // Max notes per user
   tilesCount: number; // Max tiles per user
+  tileChatsCount: number; // Max tile chats
+  contactChatsCount: number; // Max contact chats
+  regenerationsCount: number; // Max regenerations
+  assetsCount: number; // Max assets/uploads
   tokensUsed: number; // Max tokens per month
 }
 
-const MEMBER_LIMITS: UsageLimits = {
-  companiesCount: 100, // Unlimited workspaces for members
-  contactsCount: 1000, // High limit for contacts
-  notesCount: 2000,
-  tilesCount: 2000,
-  tokensUsed: 1000000, // High token limit (1M tokens/month)
-};
+/**
+ * Plano cacheado em memória (process-local)
+ */
+const planCache: Map<PlanId, { limits: UsageLimits; loadedAt: number }> =
+  new Map();
+const PLAN_CACHE_TTL_MS = 60_000; // 1 minuto
 
-const GUEST_LIMITS: UsageLimits = {
-  companiesCount: 3, // Max 3 workspaces for guests
-  contactsCount: 5, // Max 5 contacts for guests
-  notesCount: 20,
-  tilesCount: 30,
-  tokensUsed: 3000, // 3000 tokens for guests
-};
+/**
+ * Busca limites de plano no DB, com cache e fallback
+ */
+async function fetchPlanLimits(planId: PlanId): Promise<UsageLimits> {
+  const cached = planCache.get(planId);
+  if (cached && Date.now() - cached.loadedAt < PLAN_CACHE_TTL_MS) {
+    return cached.limits;
+  }
+
+  try {
+    const record = await db.findOne<PlanDocument>("plans", { planId });
+    if (record?.limits) {
+      planCache.set(planId, { limits: record.limits, loadedAt: Date.now() });
+      return record.limits;
+    }
+  } catch (err) {
+    console.warn("[usage-service] Failed to load plan from DB", {
+      planId,
+      err,
+    });
+  }
+
+  throw new Error(`Plan ${planId} not found in DB and no fallback allowed`);
+}
+
+function resolvePlanId(userDocPlan?: string, userId?: string | null): PlanId {
+  if (!userId) return "guest";
+  if (userDocPlan === "business") return "business";
+  return "member";
+}
 
 /**
  * Check if user has exceeded usage limits
@@ -41,36 +80,39 @@ const GUEST_LIMITS: UsageLimits = {
 export async function checkLimit(
   userId: string,
   usageType: UsageType
-): Promise<{ allowed: boolean; reason?: string }> {
+): Promise<{
+  allowed: boolean;
+  reason?: string;
+  limit?: number;
+  used?: number;
+}> {
   try {
-    // For members, check against member limits
-    // For guests, check against guest limits
-    const limits = userId ? MEMBER_LIMITS : GUEST_LIMITS;
-
-    // Get current usage from MongoDB (for members) or localStorage (for guests)
     let currentUsage = 0;
+    let planId: PlanId = "member";
 
     if (userId) {
-      // Member: Check MongoDB
       const userDoc = await db.findOne("users", { userId });
       currentUsage = userDoc?.[usageType] || 0;
+      planId = resolvePlanId((userDoc as any)?.plan, userId);
     } else {
-      // Guest: Check localStorage (handled by AuthContext)
-      // For now, return allowed (limits are checked in AuthContext)
+      // Guest: client-side AuthStore controla; server não bloqueia por enquanto
       return { allowed: true };
     }
 
+    const limits = await fetchPlanLimits(planId);
     const limit = limits[usageType];
     const allowed = currentUsage < limit;
 
     return {
       allowed,
+      limit,
+      used: currentUsage,
       reason: !allowed ? `Limit exceeded: ${currentUsage}/${limit}` : undefined,
     };
   } catch (error) {
     console.error("[UsageService] Error checking limit:", error);
-    // On error, allow usage to prevent blocking users
-    return { allowed: true };
+    // Fail closed for security
+    return { allowed: false, reason: "Limit check unavailable" };
   }
 }
 
@@ -85,7 +127,6 @@ export async function incrementUsage(
   if (!userId) return; // Don't track guest usage in database
 
   try {
-    // Update or insert user usage document
     await db.updateOne(
       "users",
       { userId },
@@ -97,7 +138,9 @@ export async function incrementUsage(
       { upsert: true }
     );
 
-    console.log(`[UsageService] ✅ Incremented ${usageType} by ${amount} for user ${userId}`);
+    console.log(
+      `[UsageService] ✅ Incremented ${usageType} by ${amount} for user ${userId}`
+    );
   } catch (error) {
     console.error("[UsageService] Error incrementing usage:", error);
     // Don't throw - usage tracking failure shouldn't break the app
@@ -107,13 +150,19 @@ export async function incrementUsage(
 /**
  * Get current usage for a user
  */
-export async function getUsage(userId: string): Promise<Record<UsageType, number>> {
+export async function getUsage(
+  userId: string
+): Promise<Record<UsageType, number>> {
   if (!userId) {
     return {
       companiesCount: 0,
       contactsCount: 0,
       notesCount: 0,
       tilesCount: 0,
+      tileChatsCount: 0,
+      contactChatsCount: 0,
+      regenerationsCount: 0,
+      assetsCount: 0,
       tokensUsed: 0,
     };
   }
@@ -125,6 +174,10 @@ export async function getUsage(userId: string): Promise<Record<UsageType, number
       contactsCount: userDoc?.contactsCount || 0,
       notesCount: userDoc?.notesCount || 0,
       tilesCount: userDoc?.tilesCount || 0,
+      tileChatsCount: userDoc?.tileChatsCount || 0,
+      contactChatsCount: userDoc?.contactChatsCount || 0,
+      regenerationsCount: userDoc?.regenerationsCount || 0,
+      assetsCount: userDoc?.assetsCount || 0,
       tokensUsed: userDoc?.tokensUsed || 0,
     };
   } catch (error) {
@@ -134,7 +187,64 @@ export async function getUsage(userId: string): Promise<Record<UsageType, number
       contactsCount: 0,
       notesCount: 0,
       tilesCount: 0,
+      tileChatsCount: 0,
+      contactChatsCount: 0,
+      regenerationsCount: 0,
+      assetsCount: 0,
       tokensUsed: 0,
+    };
+  }
+}
+
+/**
+ * Retorna limites aplicáveis para o user (ou guest) e o nome do plano
+ */
+/**
+ * Helper para limitar uploads de assets (usado por members)
+ */
+export async function enforceAssetLimit(
+  userId: string,
+  amount = 1
+): Promise<{ allowed: boolean; reason?: string }> {
+  if (!userId) {
+    // guests não devem fazer upload de assets
+    return { allowed: false, reason: "Guests cannot upload assets" };
+  }
+  const limit = await checkLimit(userId, "assetsCount");
+  if (!limit.allowed) return limit;
+  await incrementUsage(userId, "assetsCount", amount);
+  return { allowed: true };
+}
+
+/**
+ * Retorna plano + limites com leitura do DB e fallback seguro
+ */
+export async function getPlanForUser(
+  userId?: string | null
+): Promise<{ plan: PlanId; limits: UsageLimits }> {
+  if (!userId) {
+    return { plan: "guest", limits: await fetchPlanLimits("guest") };
+  }
+  try {
+    const userDoc = await db.findOne("users", { userId });
+    const planId = resolvePlanId((userDoc as any)?.plan, userId);
+    const limits = await fetchPlanLimits(planId);
+    return { plan: planId, limits };
+  } catch (err) {
+    console.warn("[usage-service] getPlanForUser fallback", err);
+    return {
+      plan: "member",
+      limits: {
+        companiesCount: 0,
+        contactsCount: 0,
+        notesCount: 0,
+        tilesCount: 0,
+        tileChatsCount: 0,
+        contactChatsCount: 0,
+        regenerationsCount: 0,
+        assetsCount: 0,
+        tokensUsed: 0,
+      },
     };
   }
 }

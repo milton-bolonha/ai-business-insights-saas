@@ -31,6 +31,8 @@ export interface WorkspaceWithDashboards {
   id: string; // Mesmo que sessionId
   name: string;
   website?: string;
+  salesRepCompany?: string;
+  salesRepWebsite?: string;
   dashboards: Dashboard[]; // Múltiplos dashboards por workspace
   createdAt: string;
   updatedAt: string;

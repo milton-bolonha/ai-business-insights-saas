@@ -19,6 +19,7 @@ import { DEFAULT_MAX_OUTPUT_TOKENS, resolveModel } from "@/lib/ai/settings";
 import { generateTileContent } from "@/lib/ai/tile-generation";
 import { writeWorkspace } from "@/lib/cookies-store";
 import { getAuth } from "@/lib/auth/get-auth";
+import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 
 const requestSchema = z.object({
   salesRepCompany: z.string().min(2),
@@ -35,6 +36,9 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const rate = await checkRateLimitMiddleware(request, "/api/generate");
+  if (!rate.allowed && rate.response) return rate.response;
+
   const payload = await request.json().catch(() => null);
 
   const parseResult = requestSchema.safeParse(payload);
@@ -188,6 +192,8 @@ export async function POST(request: NextRequest) {
       sessionId: `session_${randomUUID()}`,
       name: targetCompany,
       website: targetWebsite,
+      salesRepCompany,
+      salesRepWebsite,
       generatedAt: new Date().toISOString(),
       tilesToGenerate: tiles.length,
       tiles, // ✅ Tiles serão transferidos para o dashboard padrão pelo getOrCreateWorkspaceFromWorkspaceSnapshot

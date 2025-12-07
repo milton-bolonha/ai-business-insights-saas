@@ -333,6 +333,11 @@ export function AdminContainer() {
   const hasDashboard = !!currentDashboard;
   const hasTiles = content.tiles.length > 0;
 
+  const companyHeading =
+    currentWorkspace?.salesRepCompany ||
+    currentWorkspace?.name ||
+    "Workspace";
+
   // Get data from current dashboard
   const allTiles = currentDashboard?.tiles || [];
   const allContacts = currentDashboard?.contacts || [];
@@ -344,12 +349,13 @@ export function AdminContainer() {
       sidebar={
         <AdminSidebarAde
           appearance={appearance}
-          workspaceName={currentWorkspace?.name || "Workspace"}
+          companyName={companyHeading}
           workspaces={workspacesForSidebar}
           onSelectWorkspace={workspaceActions.switchWorkspace}
           onAddWorkspace={openAddWorkspace}
           onAddContact={openAddContact}
           onOpenWorkspaceDetails={openWorkspaceDetail}
+          onOpenUpgrade={() => payment.setUpgradeModalOpen(true)}
         />
       }
       header={
@@ -769,6 +775,17 @@ export function AdminContainer() {
           workspaceId={modals.viewingWorkspaceId}
         />
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        open={payment.isUpgradeModalOpen}
+        onClose={() => payment.setUpgradeModalOpen(false)}
+        onCheckout={payment.startCheckout}
+        onMarkMember={payment.confirmMembership}
+        usage={payment.usage}
+        limits={payment.limits}
+        stripeCheckoutUrl={payment.stripeCheckoutUrl}
+      />
     </AdminShellAde>
   );
 }

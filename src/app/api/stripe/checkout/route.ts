@@ -39,18 +39,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const priceId = process.env.STRIPE_PRICE_ID;
+    if (!priceId) {
+      return NextResponse.json(
+        { error: "STRIPE_PRICE_ID is not configured" },
+        { status: 500 }
+      );
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "AI SaaS Pro",
-              description: "Unlimited AI insights and advanced features",
-            },
-            unit_amount: 9900, // $99.00 in cents
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -60,6 +61,8 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/admin?canceled=true`,
       metadata: {
         userId,
+        plan: "member",
+        priceId,
       },
     });
 

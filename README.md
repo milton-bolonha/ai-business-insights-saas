@@ -175,6 +175,40 @@ Prompt → OpenAI API → Tile no dashboard
 
 Layout Ade completo com sidebar, header, tiles, contacts, notes
 
+## 🔒 Limites de Uso (SaaS)
+
+**Como funciona**
+
+1. Members
+
+   - Limites/uso calculados no backend (`usage-service`) e servidos em `/api/usage` a partir da coleção `plans`.
+   - Frontend só exibe (`usePaymentFlow`); bloqueio e contagem são server-side.
+
+2. Guests
+   - Limites servidos via `/api/usage` (plano guest no DB); UI apenas exibe.
+   - Reconciliação de workspaces em `workspaceStore.refreshWorkspaces` evita subcontar o que já existe.
+
+**Onde ocorre o bloqueio (members)**  
+`/api/generate` (workspaces) · `/api/workspace/contacts` (contacts) · `/api/workspace/tiles/[tileId]/chat` (tile chat) · `/api/workspace/tiles/[tileId]/regenerate` (regenerate) · `/api/workspace/contacts/[contactId]/chat` (contact chat). Resposta 429 ao exceder.
+
+**Como alterar limites (passo a passo)**
+
+1. Planos no DB
+
+   - Editar/criar documentos em `plans` (guest, member, business). Use `npm run seed:plans` para popular.
+   - O backend lê sempre do DB; sem hardcode em produção.
+
+2. Stripe / plano
+
+   - Checkout usa `STRIPE_PRICE_ID` único → plano `member`.
+   - Business desabilitado (use “entre em contato” se precisar).
+
+3. Frontend
+
+   - UI lê limites via `/api/usage`; não editar limites em código/estado local.
+
+Mais detalhes: `docs/limits-uso-saas.md`.
+
 ## 🚀 Como Testar
 
 1. **Home Page** (`/`): Preencha o formulário para gerar um workspace

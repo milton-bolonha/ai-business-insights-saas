@@ -9,6 +9,8 @@ import type { Tile } from "@/lib/types";
 import { getAuth } from "@/lib/auth/get-auth";
 import { authorizeResourceAccess } from "@/lib/auth/authorize";
 import { invalidateResourceCache } from "@/lib/cache/invalidation";
+import { checkLimit, incrementUsage } from "@/lib/saas/usage-service";
+import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 
 // Runtime: Node.js (required for file system operations)
 export const runtime = "nodejs";
@@ -20,12 +22,16 @@ const regenerateSchema = z.object({
   model: z.string().optional(),
 });
 
-const DEFAULT_PROMPT = "Regenerate the previous insight with updated information.";
+const DEFAULT_PROMPT =
+  "Regenerate the previous insight with updated information.";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ tileId: string }> }
 ) {
+  const rate = await checkRateLimitMiddleware(request);
+  if (!rate.allowed && rate.response) return rate.response;
+
   const { tileId } = await params;
   const rawBody = await request.json().catch(() => ({}));
   const body = regenerateSchema.safeParse(rawBody);
@@ -53,6 +59,20 @@ export async function POST(
       { error: auth.error ?? "Unauthorized" },
       { status: 403 }
     );
+  }
+
+  if (userId) {
+    const limit = await checkLimit(userId, "regenerationsCount");
+    if (!limit.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            limit.reason ??
+            "Regeneration limit reached. Upgrade your plan to continue.",
+        },
+        { status: 429 }
+      );
+    }
   }
 
   if (!process.env.OPENAI_API_KEY) {
@@ -98,6 +118,7 @@ export async function POST(
 
     if (userId) {
       await invalidateResourceCache("tiles", dashboardId, workspaceId);
+      await incrementUsage(userId, "regenerationsCount", 1);
     }
 
     return NextResponse.json({
@@ -115,4 +136,3 @@ export async function POST(
     );
   }
 }
-

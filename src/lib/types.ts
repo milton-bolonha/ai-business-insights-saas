@@ -105,6 +105,8 @@ export interface WorkspaceSnapshot {
   sessionId: string;
   name: string; // Nome do workspace (anteriormente company.name)
   website?: string; // Website do workspace (anteriormente company.website)
+  salesRepCompany?: string; // Empresa do responsável pela pesquisa (user/guest)
+  salesRepWebsite?: string; // Website da empresa do responsável
   generatedAt: string | null;
   tilesToGenerate: number;
   promptSettings?: WorkspacePromptSettings;

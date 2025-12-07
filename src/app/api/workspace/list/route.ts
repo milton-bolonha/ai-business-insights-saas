@@ -124,6 +124,8 @@ export async function GET() {
         id: snapshot.sessionId,
         name: snapshot.name,
         website: snapshot.website,
+        salesRepCompany: snapshot.salesRepCompany,
+        salesRepWebsite: snapshot.salesRepWebsite,
         dashboards,
         createdAt: toIso(doc.createdAt ?? snapshot.generatedAt ?? new Date()),
         updatedAt: toIso(doc.updatedAt ?? snapshot.generatedAt ?? new Date()),

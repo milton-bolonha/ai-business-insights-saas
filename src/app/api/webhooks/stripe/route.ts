@@ -12,6 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const MEMBER_PRICE_ID = process.env.STRIPE_PRICE_ID;
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +74,28 @@ interface UserDocument {
   stripeCustomerId?: string;
   subscriptionStatus?: string;
   subscriptionId?: string;
+  plan?: "guest" | "member" | "business";
+}
+
+function resolvePlanFromSession(session: Stripe.Checkout.Session): "member" | "business" {
+  const priceId =
+    (session?.line_items as any)?.data?.[0]?.price?.id || session?.metadata?.priceId;
+  if (priceId && MEMBER_PRICE_ID && priceId === MEMBER_PRICE_ID) {
+    return "member";
+  }
+  const planMeta = session.metadata?.plan;
+  if (planMeta === "business") return "business";
+  return "member";
+}
+
+function resolvePlanFromSubscription(subscription: Stripe.Subscription): "member" | "business" {
+  const priceId = subscription.items?.data?.[0]?.price?.id;
+  if (priceId && MEMBER_PRICE_ID && priceId === MEMBER_PRICE_ID) {
+    return "member";
+  }
+  const planMeta = (subscription.metadata?.plan as string) || "";
+  if (planMeta === "business") return "business";
+  return "member";
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
@@ -95,6 +118,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  const plan = resolvePlanFromSession(session);
+
   try {
     // Mark user as member in database
     // Note: session.customer and session.subscription can be string | null
@@ -116,6 +141,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           isMember: true,
           stripeCustomerId,
           subscriptionId,
+          plan,
           membershipStartedAt: new Date(),
           updatedAt: new Date(),
           // Flag to indicate migration is needed (client will check this)
@@ -149,6 +175,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     }
 
     const userId = userDoc.userId;
+    const plan = resolvePlanFromSubscription(subscription);
     const isActive = subscription.status === "active";
 
     await db.updateOne<UserDocument>(
@@ -159,6 +186,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
           isMember: isActive,
           subscriptionStatus: subscription.status,
           subscriptionId: subscription.id,
+          plan,
           updatedAt: new Date(),
         },
       }
