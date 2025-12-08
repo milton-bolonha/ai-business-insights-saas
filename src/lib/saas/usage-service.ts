@@ -43,6 +43,38 @@ const planCache: Map<PlanId, { limits: UsageLimits; loadedAt: number }> =
   new Map();
 const PLAN_CACHE_TTL_MS = 60_000; // 1 minuto
 
+const SAFE_DEFAULT_GUEST: UsageLimits = {
+  companiesCount: 3,
+  contactsCount: 5,
+  notesCount: 20,
+  tilesCount: 30,
+  tileChatsCount: 20,
+  contactChatsCount: 20,
+  regenerationsCount: 10,
+  assetsCount: 0,
+  tokensUsed: 3000,
+};
+
+const SAFE_DEFAULT_MEMBER: UsageLimits = {
+  companiesCount: 100,
+  contactsCount: 1000,
+  notesCount: 2000,
+  tilesCount: 2000,
+  tileChatsCount: 5000,
+  contactChatsCount: 5000,
+  regenerationsCount: 2000,
+  assetsCount: 10000,
+  tokensUsed: 1_000_000,
+};
+
+function getCachedLimits(planId: PlanId): UsageLimits | null {
+  const cached = planCache.get(planId);
+  if (cached && Date.now() - cached.loadedAt < PLAN_CACHE_TTL_MS) {
+    return cached.limits;
+  }
+  return null;
+}
+
 /**
  * Busca limites de plano no DB, com cache e fallback
  */
@@ -223,7 +255,18 @@ export async function getPlanForUser(
   userId?: string | null
 ): Promise<{ plan: PlanId; limits: UsageLimits }> {
   if (!userId) {
-    return { plan: "guest", limits: await fetchPlanLimits("guest") };
+    try {
+      return { plan: "guest", limits: await fetchPlanLimits("guest") };
+    } catch (err) {
+      console.warn(
+        "[usage-service] guest plan unavailable, using safe fallback",
+        err
+      );
+      return {
+        plan: "guest",
+        limits: getCachedLimits("guest") ?? SAFE_DEFAULT_GUEST,
+      };
+    }
   }
   try {
     const userDoc = await db.findOne("users", { userId });
@@ -234,17 +277,7 @@ export async function getPlanForUser(
     console.warn("[usage-service] getPlanForUser fallback", err);
     return {
       plan: "member",
-      limits: {
-        companiesCount: 0,
-        contactsCount: 0,
-        notesCount: 0,
-        tilesCount: 0,
-        tileChatsCount: 0,
-        contactChatsCount: 0,
-        regenerationsCount: 0,
-        assetsCount: 0,
-        tokensUsed: 0,
-      },
+      limits: getCachedLimits("member") ?? SAFE_DEFAULT_MEMBER,
     };
   }
 }
