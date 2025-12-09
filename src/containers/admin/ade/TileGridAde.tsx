@@ -246,35 +246,9 @@ export function TileGridAde({
                   <Plus className="h-6 w-6" />
                 </div>
                 <span className="text-sm font-medium">Add Prompt</span>
-                <span className="mt-2 text-xs text-gray-500">
-                  Crie um insight agora
-                </span>
               </button>
             )}
-            {sortedTiles.length === 0 && (
-              <div
-                className="flex h-full min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border border-dashed text-center"
-                style={{
-                  borderColor: appearance?.cardBorderColor || "#e5e7eb",
-                  color: appearance?.mutedTextColor || "#6b7280",
-                  backgroundColor: appearance?.overlayColor || "#f9fafb",
-                }}
-              >
-                <Sparkles className="mb-2 h-6 w-6" />
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: appearance?.textColor || "#111827" }}
-                >
-                  Nenhum insight ainda
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-                >
-                  Clique em Add Prompt para começar
-                </p>
-              </div>
-            )}
+
             {sortedTiles.map((tile, index) => (
               <SortableTileCard
                 key={tile.id}

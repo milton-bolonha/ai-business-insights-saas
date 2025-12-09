@@ -100,12 +100,6 @@ export function NotesPanelAde({
           >
             Notes
           </h3>
-          <p
-            className="text-xs"
-            style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-          >
-            Cards lado a lado com botão de add em estilo tile
-          </p>
         </div>
       </div>
 
@@ -125,12 +119,11 @@ export function NotesPanelAde({
             <Plus className="h-5 w-5" />
           </div>
           <span className="text-sm font-medium">Add Note</span>
-          <span className="text-xs text-gray-500">Criar nova nota</span>
         </button>
 
         {isAddingNote && (
           <div
-            className="flex flex-col rounded-2xl border shadow-sm"
+            className="flex flex-col rounded-2xl border shadow-sm overflow-hidden"
             style={{
               borderColor: appearance?.cardBorderColor || "#e5e7eb",
             }}
@@ -187,7 +180,7 @@ export function NotesPanelAde({
           return (
             <div
               key={note.id}
-              className="flex flex-col rounded-2xl border shadow-sm"
+              className="flex flex-col rounded-2xl border shadow-sm overflow-hidden"
               style={{
                 borderColor: appearance?.cardBorderColor || "#e5e7eb",
               }}

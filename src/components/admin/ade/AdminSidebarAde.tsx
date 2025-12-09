@@ -137,25 +137,6 @@ export function AdminSidebarAde({
           backgroundColor: appearance.surfaceColor,
         }}
       >
-        <div className="flex items-center space-x-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-            <User className="h-4 w-4 text-gray-600" />
-          </div>
-          <div>
-            <div
-              className="text-sm font-medium"
-              style={{ color: appearance.textColor }}
-            >
-              Perfil
-            </div>
-            <div
-              className="text-xs"
-              style={{ color: appearance.mutedTextColor }}
-            >
-              Visão geral do workspace
-            </div>
-          </div>
-        </div>
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div
             className="rounded-lg border px-2 py-1.5 text-center"
@@ -170,7 +151,7 @@ export function AdminSidebarAde({
             <div style={{ color: appearance.mutedTextColor }}>Tiles</div>
           </div>
           <div
-            className="rounded-lg border px-2 py-1.5 text-center"
+            className="rounded-lg border py-1.5 text-center"
             style={{ borderColor: appearance.cardBorderColor }}
           >
             <div

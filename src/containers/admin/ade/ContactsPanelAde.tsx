@@ -22,20 +22,12 @@ export function ContactsPanelAde({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h3
-            className="text-lg font-semibold"
-            style={{ color: appearance?.textColor || "#111827" }}
-          >
-            Contacts
-          </h3>
-          <p
-            className="text-xs"
-            style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-          >
-            Cartões em linha com um card de add sempre visível
-          </p>
-        </div>
+        <h3
+          className="text-lg font-semibold"
+          style={{ color: appearance?.textColor || "#111827" }}
+        >
+          Contacts
+        </h3>
       </div>
 
       {/* Contacts grid */}
@@ -57,7 +49,6 @@ export function ContactsPanelAde({
             <Plus className="h-5 w-5" />
           </div>
           <span className="text-sm font-medium">Add Contact</span>
-          <span className="text-xs text-gray-500">Adicionar um contato</span>
         </button>
 
         {contacts.map((contact) => (
