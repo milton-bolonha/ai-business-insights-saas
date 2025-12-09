@@ -111,15 +111,7 @@ export function TileCard({
 
       {/* Metadata */}
       <div className="mt-3 flex items-center justify-between text-xs pt-2">
-        <span
-          className="rounded bg-gray-100 px-2 py-1 text-gray-600"
-          style={{
-            backgroundColor: appearance?.overlayColor || "#f3f4f6",
-            color: appearance?.mutedTextColor || "#6b7280",
-          }}
-        >
-          {tile.category || "Custom"}
-        </span>
+        {/* categoria removida */}
         {tile.totalTokens && (
           <span
             className="text-gray-400"

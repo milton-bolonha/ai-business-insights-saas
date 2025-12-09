@@ -201,23 +201,7 @@ export function TileGridAde({
         </div>
 
         {/* Sort controls */}
-        <div className="flex items-center space-x-2">
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
-            className="rounded border px-3 py-1 text-sm cursor-pointer"
-            style={{
-              borderColor: appearance?.cardBorderColor || "#e5e7eb",
-              backgroundColor: appearance?.surfaceColor || "#ffffff",
-              color: appearance?.textColor || "#111827",
-            }}
-          >
-            <option value="manual">Manual (drag to reorder)</option>
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="category">By category</option>
-          </select>
-        </div>
+        {/* Sort controls ocultos */}
       </div>
 
       {/* Tiles grid */}
