@@ -34,19 +34,30 @@ export function AdminSidebarAde({
   onAddWorkspace,
   onAddContact,
   onOpenWorkspaceDetails,
-  onOpenUpgrade,
 }: AdminSidebarAdeProps) {
-  const activeWorkspace = workspaces.find(w => w.isActive);
-  const otherWorkspaces = workspaces.filter(w => !w.isActive);
+  const activeWorkspace = workspaces.find((w) => w.isActive);
+  const otherWorkspaces = workspaces.filter((w) => !w.isActive);
   const orderedWorkspaces = activeWorkspace
     ? [activeWorkspace, ...otherWorkspaces]
     : otherWorkspaces;
+  const totals = workspaces.reduce(
+    (acc, ws) => {
+      acc.tiles += ws.tilesCount || 0;
+      acc.notes += ws.notesCount || 0;
+      acc.contacts += ws.contactsCount || 0;
+      return acc;
+    },
+    { tiles: 0, notes: 0, contacts: 0 }
+  );
 
   return (
     <div className="flex h-full flex-col">
       {/* Company name */}
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-lg font-semibold" style={{ color: appearance.textColor }}>
+        <h2
+          className="text-lg font-semibold"
+          style={{ color: appearance.textColor }}
+        >
           {companyName}
         </h2>
         {activeWorkspace && onOpenWorkspaceDetails && (
@@ -55,7 +66,10 @@ export function AdminSidebarAde({
             className="p-1 rounded-full hover:bg-black/10 transition-colors"
             title="View Details"
           >
-            <Info className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
+            <Info
+              className="h-4 w-4"
+              style={{ color: appearance.mutedTextColor }}
+            />
           </button>
         )}
       </div>
@@ -74,9 +88,14 @@ export function AdminSidebarAde({
                   style={{ color: appearance.textColor }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{workspace.name}</span>
+                    <span className="text-sm font-medium">
+                      {workspace.name}
+                    </span>
                     {isActive && (
-                      <ChevronRight className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
+                      <ChevronRight
+                        className="h-4 w-4"
+                        style={{ color: appearance.mutedTextColor }}
+                      />
                     )}
                   </div>
                 </button>
@@ -99,7 +118,7 @@ export function AdminSidebarAde({
 
         <button
           onClick={() => {
-            console.log('[DEBUG] AdminSidebarAde Add Contact button clicked');
+            console.log("[DEBUG] AdminSidebarAde Add Contact button clicked");
             onAddContact?.();
           }}
           className="flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-left transition hover:bg-black/5"
@@ -110,29 +129,72 @@ export function AdminSidebarAde({
         </button>
       </div>
 
-      {/* User info placeholder */}
+      {/* User info / contagem */}
       <div
-        className="mt-4 border-t pt-4 cursor-pointer"
-        style={{ borderColor: appearance.cardBorderColor }}
-        onClick={() => onOpenUpgrade?.()}
-        role="button"
-        tabIndex={0}
+        className="mt-4 space-y-3 rounded-xl border p-4"
+        style={{
+          borderColor: appearance.cardBorderColor,
+          backgroundColor: appearance.surfaceColor,
+        }}
       >
         <div className="flex items-center space-x-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
             <User className="h-4 w-4 text-gray-600" />
           </div>
           <div>
-            <div className="text-sm font-medium" style={{ color: appearance.textColor }}>
-              Guest User
+            <div
+              className="text-sm font-medium"
+              style={{ color: appearance.textColor }}
+            >
+              Perfil
             </div>
-            <div className="text-xs" style={{ color: appearance.mutedTextColor }}>
-              Free Plan
+            <div
+              className="text-xs"
+              style={{ color: appearance.mutedTextColor }}
+            >
+              Visão geral do workspace
             </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div
+            className="rounded-lg border px-2 py-1.5 text-center"
+            style={{ borderColor: appearance.cardBorderColor }}
+          >
+            <div
+              className="font-semibold"
+              style={{ color: appearance.textColor }}
+            >
+              {totals.tiles}
+            </div>
+            <div style={{ color: appearance.mutedTextColor }}>Tiles</div>
+          </div>
+          <div
+            className="rounded-lg border px-2 py-1.5 text-center"
+            style={{ borderColor: appearance.cardBorderColor }}
+          >
+            <div
+              className="font-semibold"
+              style={{ color: appearance.textColor }}
+            >
+              {totals.contacts}
+            </div>
+            <div style={{ color: appearance.mutedTextColor }}>Contacts</div>
+          </div>
+          <div
+            className="rounded-lg border px-2 py-1.5 text-center"
+            style={{ borderColor: appearance.cardBorderColor }}
+          >
+            <div
+              className="font-semibold"
+              style={{ color: appearance.textColor }}
+            >
+              {totals.notes}
+            </div>
+            <div style={{ color: appearance.mutedTextColor }}>Notes</div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

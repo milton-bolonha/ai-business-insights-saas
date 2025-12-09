@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, RefreshCw, Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 
 import type { Tile } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
@@ -9,9 +9,7 @@ import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 interface TileCardProps {
   tile: Tile;
   onDelete?: (tileId: string) => void;
-  onRegenerate?: (tileId: string) => void;
   onOpen?: (tile: Tile) => void;
-  isRegenerating?: boolean;
   appearance?: AdeAppearanceTokens;
   className?: string;
 }
@@ -19,9 +17,7 @@ interface TileCardProps {
 export function TileCard({
   tile,
   onDelete,
-  onRegenerate,
   onOpen,
-  isRegenerating = false,
   appearance,
   className = "",
 }: TileCardProps) {
@@ -41,13 +37,10 @@ export function TileCard({
     onDelete?.(tile.id);
   };
 
-  const handleRegenerate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onRegenerate?.(tile.id);
-  };
-
   const truncateText = (text: string, maxLength: number = 320) => {
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+    return text.length > maxLength
+      ? `${text.substring(0, maxLength)}...`
+      : text;
   };
 
   return (
@@ -86,17 +79,6 @@ export function TileCard({
           <Copy className="h-3 w-3" />
         </button>
 
-        {onRegenerate && (
-          <button
-            onClick={handleRegenerate}
-            disabled={isRegenerating}
-            className="flex h-6 w-6 items-center justify-center rounded transition hover:bg-gray-100 disabled:opacity-50"
-            title="Regenerate"
-          >
-            <RefreshCw className={`h-3 w-3 ${isRegenerating ? "animate-spin" : ""}`} />
-          </button>
-        )}
-
         {onDelete && (
           <button
             onClick={handleDelete}
@@ -122,9 +104,9 @@ export function TileCard({
         >
           {tile.content}
         </p>
-        
+
         {/* Fade out effect at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-linear-to-t from-white to-transparent pointer-events-none"></div>
       </div>
 
       {/* Metadata */}
@@ -150,4 +132,3 @@ export function TileCard({
     </div>
   );
 }
-

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { z } from "zod";
-
-import { getAuth } from "@/lib/auth/get-auth";
+import { randomUUID } from "crypto";
 import { auditLog } from "@/lib/audit/logger";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -12,32 +10,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Runtime: Node.js (required for audit logging)
 export const runtime = "nodejs";
 
-const checkoutRequestSchema = z.object({
-  userId: z.string().min(1),
-});
-
 export async function POST(request: NextRequest) {
   try {
-    const rawBody = await request.json().catch(() => null);
-    const parsedBody = checkoutRequestSchema.safeParse(rawBody);
-
-    if (!parsedBody.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid checkout payload",
-          details: parsedBody.error.flatten(),
-        },
-        { status: 400 }
-      );
-    }
-
-    const { userId: requestUserId } = parsedBody.data;
-    const { userId } = await getAuth();
-
-    // Security: Only allow checkout for authenticated users
-    if (!userId || userId !== requestUserId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const rawBody = await request.json().catch(() => ({}));
+    const requestUserId =
+      typeof rawBody?.userId === "string" && rawBody.userId.trim()
+        ? rawBody.userId.trim()
+        : `guest_${randomUUID()}`;
 
     const priceId = process.env.STRIPE_PRICE_ID;
     if (!priceId) {
@@ -47,6 +26,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const successUrl =
+      process.env.STRIPE_SUCCESS_URL ||
+      `${appUrl}/create-account?success=true&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl =
+      process.env.STRIPE_CANCEL_URL || `${appUrl}/create-account?canceled=true`;
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -55,24 +41,23 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      mode: "payment",
-      client_reference_id: userId,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/admin?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/admin?canceled=true`,
+      mode: "subscription",
+      client_reference_id: requestUserId,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
-        userId,
+        userId: requestUserId,
         plan: "member",
         priceId,
       },
     });
 
-    // Audit log
     await auditLog("payment_checkout", "Payment checkout initiated", {
-      userId,
+      userId: requestUserId,
       userRole: "member",
       details: {
         sessionId: checkoutSession.id,
-        amount: 9900,
+        amount: checkoutSession.amount_total || 0,
       },
       success: true,
       request,

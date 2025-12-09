@@ -61,10 +61,9 @@ export function AdminContainer() {
 
   // Custom hooks
   const payment = usePaymentFlow();
-  const { handleCustomizeBackground, handleSetBackground } = useAppearanceManagement(
-    currentDashboard || undefined
-  );
-  
+  const { handleCustomizeBackground, handleSetBackground } =
+    useAppearanceManagement(currentDashboard || undefined);
+
   // Auto-migrate guest data when user becomes a member
   useGuestDataMigration();
 
@@ -132,17 +131,25 @@ export function AdminContainer() {
           if (workspacesRaw) {
             const workspaces = JSON.parse(workspacesRaw);
             const workspace = workspaces.find((w: any) => w.id === workspaceId);
-            const dashboard = workspace?.dashboards.find((d: any) => d.id === dashboardId);
-            
+            const dashboard = workspace?.dashboards.find(
+              (d: any) => d.id === dashboardId
+            );
+
             if (dashboard?.bgColor) {
-              console.log("[AdminContainer] 🎨 Applying saved bgColor from localStorage:", dashboard.bgColor);
+              console.log(
+                "[AdminContainer] 🎨 Applying saved bgColor from localStorage:",
+                dashboard.bgColor
+              );
               // Update UI store to ensure all components (sidebar, etc.) get the correct tokens
               setBaseColor(dashboard.bgColor);
             }
           }
         }
       } catch (e) {
-        console.error("[AdminContainer] Failed to read/apply saved appearance:", e);
+        console.error(
+          "[AdminContainer] Failed to read/apply saved appearance:",
+          e
+        );
       }
     }
   }, []);
@@ -226,7 +233,11 @@ export function AdminContainer() {
           });
 
           // Update React state immediately
-          workspaceActions.updateDashboard(currentWorkspace.id, freshDashboard.id, freshDashboard);
+          workspaceActions.updateDashboard(
+            currentWorkspace.id,
+            freshDashboard.id,
+            freshDashboard
+          );
 
           console.log("[AdminContainer] ✅ Contacts refreshed immediately");
         }
@@ -267,7 +278,11 @@ export function AdminContainer() {
           });
 
           // Update React state immediately
-          workspaceActions.updateDashboard(currentWorkspace.id, freshDashboard.id, freshDashboard);
+          workspaceActions.updateDashboard(
+            currentWorkspace.id,
+            freshDashboard.id,
+            freshDashboard
+          );
 
           console.log("[AdminContainer] ✅ Notes refreshed immediately");
         }
@@ -334,9 +349,7 @@ export function AdminContainer() {
   const hasTiles = content.tiles.length > 0;
 
   const companyHeading =
-    currentWorkspace?.salesRepCompany ||
-    currentWorkspace?.name ||
-    "Workspace";
+    currentWorkspace?.salesRepCompany || currentWorkspace?.name || "Workspace";
 
   // Get data from current dashboard
   const allTiles = currentDashboard?.tiles || [];
@@ -396,95 +409,76 @@ export function AdminContainer() {
         <>
           {/* Main content area */}
           <div className="flex-1 overflow-auto">
-            {hasTiles ? (
-              <TileGridAde
-                tiles={allTiles}
-                onDeleteTile={async (tileId) => {
-                  console.log("[DEBUG] AdminContainer deleteTile called:", tileId);
-                  try {
-                    await content.deleteTile(tileId);
-                    // Refresh tiles from workspace store
-                    workspaceActions.refreshWorkspaces();
-                    push({
-                      title: "Tile deleted",
-                      description: "The tile has been removed.",
-                      variant: "default",
-                    });
-                  } catch (error) {
-                    console.error("[DEBUG] AdminContainer deleteTile error:", error);
-                    push({
-                      title: "Error",
-                      description: "Failed to delete tile. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                onRegenerateTile={async (tileId) => {
-                  console.log("[DEBUG] AdminContainer regenerateTile called:", tileId);
-                  try {
-                    await content.regenerateTile(tileId);
-                    // Refresh tiles from workspace store
-                    workspaceActions.refreshWorkspaces();
-                    push({
-                      title: "Tile regenerated",
-                      description: "The tile content has been regenerated.",
-                      variant: "default",
-                    });
-                  } catch (error) {
-                    console.error("[DEBUG] AdminContainer regenerateTile error:", error);
-                    push({
-                      title: "Error",
-                      description: "Failed to regenerate tile. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                onReorderTiles={async (order) => {
-                  console.log("[DEBUG] AdminContainer reorderTiles called:", { orderLength: order.length, currentDashboardId: currentDashboard?.id });
-                  if (!currentDashboard?.id) {
-                    console.error("[DEBUG] AdminContainer reorderTiles - No current dashboard");
-                    return;
-                  }
-                  try {
-                    await content.reorderTiles(currentDashboard.id, order);
-                    // Refresh tiles from workspace store
-                    workspaceActions.refreshWorkspaces();
-                    console.log("[DEBUG] AdminContainer reorderTiles success");
-                  } catch (error) {
-                    console.error("[DEBUG] AdminContainer reorderTiles error:", error);
-                    push({
-                      title: "Error",
-                      description: "Failed to reorder tiles. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                onOpenTile={(tile) => {
-                  console.log("[DEBUG] AdminContainer onOpenTile called:", tile.id);
-                  setSelectedTile(tile);
-                }}
-                isReordering={false}
-                regeneratingTileIds={content.regeneratingTileIds}
-                appearance={appearance}
-                onAddPrompt={openAddPrompt}
-                onBulkUploadPrompts={openBulkUpload}
-                animateEntrance={true}
-                workspaceName={currentWorkspace?.name}
-              />
-            ) : (
-              <EmptyStateAde
-                title="No insights yet"
-                description="Add a prompt to generate your first insight."
-                action={{
-                  label: "Add Prompt",
-                  onClick: () =>
-                    push({
-                      title: "Add prompt",
-                      description: "Use the add prompt button",
-                    }),
-                }}
-              />
-            )}
+            <TileGridAde
+              tiles={allTiles}
+              onDeleteTile={async (tileId) => {
+                console.log(
+                  "[DEBUG] AdminContainer deleteTile called:",
+                  tileId
+                );
+                try {
+                  await content.deleteTile(tileId);
+                  // Refresh tiles from workspace store
+                  workspaceActions.refreshWorkspaces();
+                  push({
+                    title: "Tile deleted",
+                    description: "The tile has been removed.",
+                    variant: "default",
+                  });
+                } catch (error) {
+                  console.error(
+                    "[DEBUG] AdminContainer deleteTile error:",
+                    error
+                  );
+                  push({
+                    title: "Error",
+                    description: "Failed to delete tile. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              onReorderTiles={async (order) => {
+                console.log("[DEBUG] AdminContainer reorderTiles called:", {
+                  orderLength: order.length,
+                  currentDashboardId: currentDashboard?.id,
+                });
+                if (!currentDashboard?.id) {
+                  console.error(
+                    "[DEBUG] AdminContainer reorderTiles - No current dashboard"
+                  );
+                  return;
+                }
+                try {
+                  await content.reorderTiles(currentDashboard.id, order);
+                  // Refresh tiles from workspace store
+                  workspaceActions.refreshWorkspaces();
+                  console.log("[DEBUG] AdminContainer reorderTiles success");
+                } catch (error) {
+                  console.error(
+                    "[DEBUG] AdminContainer reorderTiles error:",
+                    error
+                  );
+                  push({
+                    title: "Error",
+                    description: "Failed to reorder tiles. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              onOpenTile={(tile) => {
+                console.log(
+                  "[DEBUG] AdminContainer onOpenTile called:",
+                  tile.id
+                );
+                setSelectedTile(tile);
+              }}
+              isReordering={false}
+              appearance={appearance}
+              onAddPrompt={openAddPrompt}
+              onBulkUploadPrompts={openBulkUpload}
+              animateEntrance={true}
+              workspaceName={currentWorkspace?.name}
+            />
           </div>
 
           {/* Side panels - Always show to allow adding items */}
@@ -493,11 +487,6 @@ export function AdminContainer() {
               contacts={allContacts}
               onAddContact={openAddContact}
               onOpenContact={setSelectedContact}
-              onRegenerateContact={(contactId) => {
-                // TODO: Implement regenerateContact using workspaceStore
-                console.log("Regenerate contact:", contactId);
-              }}
-              regeneratingContactId={undefined}
               appearance={appearance}
             />
 
@@ -603,7 +592,9 @@ export function AdminContainer() {
                     console.log(
                       "[DEBUG] AdminContainer.createWorkspace initializing workspace"
                     );
-                    await workspaceActions.initializeWorkspaceFromHome(data.workspace);
+                    await workspaceActions.initializeWorkspaceFromHome(
+                      data.workspace
+                    );
                   }
 
                   push({
@@ -717,19 +708,27 @@ export function AdminContainer() {
 
       {/* Tile Detail Modal */}
       {/* Tile Detail Modal */}
-      {(() => { console.log("[DEBUG] AdminContainer rendering modal check:", !!modals.selectedTile); return null; })()}
+      {(() => {
+        console.log(
+          "[DEBUG] AdminContainer rendering modal check:",
+          !!modals.selectedTile
+        );
+        return null;
+      })()}
       {modals.selectedTile && (
         <TileDetailModal
           tile={modals.selectedTile}
           onClose={() => setSelectedTile(null)}
           onSubmit={async (payload) => {
             if (auth.canPerformAction("tileChat")) {
-              const serializedAttachments = payload.attachments?.map((file) => ({
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                lastModified: file.lastModified,
-              }));
+              const serializedAttachments = payload.attachments?.map(
+                (file) => ({
+                  name: file.name,
+                  size: file.size,
+                  type: file.type,
+                  lastModified: file.lastModified,
+                })
+              );
               await content.chatWithTile(modals.selectedTile!.id, {
                 message: payload.message,
                 attachments: serializedAttachments,
@@ -748,21 +747,15 @@ export function AdminContainer() {
         <ContactDetailModal
           contact={modals.selectedContact}
           onClose={() => setSelectedContact(null)}
-          onRegenerate={async () => {
-            if (auth.canPerformAction("regenerate")) {
-              await content.regenerateContact(modals.selectedContact!.id);
-              auth.consumeUsage("regenerate");
-            }
-          }}
           onSubmitChat={async (message) => {
             if (auth.canPerformAction("contactChat")) {
-              await content.chatWithContact(modals.selectedContact!.id, message);
+              await content.chatWithContact(
+                modals.selectedContact!.id,
+                message
+              );
               auth.consumeUsage("contactChat");
             }
           }}
-          isRegenerating={
-            content.regeneratingContactId === modals.selectedContact?.id
-          }
           isChatting={content.chattingContactId === modals.selectedContact?.id}
         />
       )}

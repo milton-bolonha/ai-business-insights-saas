@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit3, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import type { Note } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
@@ -9,7 +9,10 @@ import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 interface NotesPanelAdeProps {
   notes: Note[];
   onAddNote?: (noteData: { title: string; content: string }) => Promise<void>;
-  onUpdateNote?: (noteId: string, updates: { title: string; content: string }) => Promise<void>;
+  onUpdateNote?: (
+    noteId: string,
+    updates: { title: string; content: string }
+  ) => Promise<void>;
   onDeleteNote?: (noteId: string) => Promise<void>;
   appearance?: AdeAppearanceTokens;
 }
@@ -36,13 +39,16 @@ export function NotesPanelAde({
 
   const handleSaveNewNote = async () => {
     if (newNoteTitle.trim() && newNoteContent.trim()) {
-      console.log('[DEBUG] NotesPanelAde.handleSaveNewNote called:', { title: newNoteTitle, content: newNoteContent });
+      console.log("[DEBUG] NotesPanelAde.handleSaveNewNote called:", {
+        title: newNoteTitle,
+        content: newNoteContent,
+      });
       try {
         await onAddNote?.({ title: newNoteTitle, content: newNoteContent });
         setIsAddingNote(false);
-        console.log('[DEBUG] NotesPanelAde.handleSaveNewNote completed');
+        console.log("[DEBUG] NotesPanelAde.handleSaveNewNote completed");
       } catch (error) {
-        console.error('[DEBUG] NotesPanelAde.handleSaveNewNote error:', error);
+        console.error("[DEBUG] NotesPanelAde.handleSaveNewNote error:", error);
       }
     }
   };
@@ -55,24 +61,31 @@ export function NotesPanelAde({
 
   const handleSaveEdit = async () => {
     if (editingTitle.trim() && editingContent.trim() && editingNoteId) {
-      console.log('[DEBUG] NotesPanelAde.handleSaveEdit called:', editingNoteId, { title: editingTitle, content: editingContent });
+      console.log(
+        "[DEBUG] NotesPanelAde.handleSaveEdit called:",
+        editingNoteId,
+        { title: editingTitle, content: editingContent }
+      );
       try {
-        await onUpdateNote?.(editingNoteId, { title: editingTitle, content: editingContent });
+        await onUpdateNote?.(editingNoteId, {
+          title: editingTitle,
+          content: editingContent,
+        });
         setEditingNoteId(null);
-        console.log('[DEBUG] NotesPanelAde.handleSaveEdit completed');
+        console.log("[DEBUG] NotesPanelAde.handleSaveEdit completed");
       } catch (error) {
-        console.error('[DEBUG] NotesPanelAde.handleSaveEdit error:', error);
+        console.error("[DEBUG] NotesPanelAde.handleSaveEdit error:", error);
       }
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    console.log('[DEBUG] NotesPanelAde.handleDeleteNote called:', noteId);
+    console.log("[DEBUG] NotesPanelAde.handleDeleteNote called:", noteId);
     try {
       await onDeleteNote?.(noteId);
-      console.log('[DEBUG] NotesPanelAde.handleDeleteNote completed');
+      console.log("[DEBUG] NotesPanelAde.handleDeleteNote completed");
     } catch (error) {
-      console.error('[DEBUG] NotesPanelAde.handleDeleteNote error:', error);
+      console.error("[DEBUG] NotesPanelAde.handleDeleteNote error:", error);
     }
   };
 
@@ -80,187 +93,193 @@ export function NotesPanelAde({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3
-          className="text-lg font-semibold"
-          style={{ color: appearance?.textColor || "#111827" }}
-        >
-          Notes
-        </h3>
-        <button
-          onClick={handleAddNote}
-          className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-black/5"
-          style={{ color: appearance?.actionColor || "#374151" }}
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        <div>
+          <h3
+            className="text-lg font-semibold"
+            style={{ color: appearance?.textColor || "#111827" }}
+          >
+            Notes
+          </h3>
+          <p
+            className="text-xs"
+            style={{ color: appearance?.mutedTextColor || "#6b7280" }}
+          >
+            Cards lado a lado com botão de add em estilo tile
+          </p>
+        </div>
       </div>
 
-      {/* Add note form */}
-      {isAddingNote && (
-        <div
-          className="rounded-lg border p-4"
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <button
+          onClick={handleAddNote}
+          disabled={isAddingNote}
+          type="button"
+          className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed text-center transition hover:bg-white disabled:opacity-60"
           style={{
-            borderColor: appearance?.cardBorderColor || "#e5e7eb",
-            backgroundColor: appearance?.surfaceColor || "#ffffff",
+            borderColor: appearance?.cardBorderColor || "#d1d5db",
+            color: appearance?.mutedTextColor || "#6b7280",
+            backgroundColor: appearance?.overlayColor || "#f8fafc",
           }}
         >
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Note title"
-              value={newNoteTitle}
-              onChange={(e) => setNewNoteTitle(e.target.value)}
-              className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{
-                borderColor: appearance?.cardBorderColor || "#e5e7eb",
-                backgroundColor: appearance?.surfaceColor || "#ffffff",
-                color: appearance?.textColor || "#111827",
-              }}
-            />
-            <textarea
-              placeholder="Note content"
-              value={newNoteContent}
-              onChange={(e) => setNewNoteContent(e.target.value)}
-              rows={3}
-              className="w-full resize-none rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{
-                borderColor: appearance?.cardBorderColor || "#e5e7eb",
-                backgroundColor: appearance?.surfaceColor || "#ffffff",
-                color: appearance?.textColor || "#111827",
-              }}
-            />
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setIsAddingNote(false)}
-                className="rounded px-3 py-1 text-sm transition hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveNewNote}
-                disabled={!newNoteTitle.trim() || !newNoteContent.trim()}
-                className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition hover:bg-blue-700 disabled:opacity-50"
-              >
-                Save
-              </button>
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <Plus className="h-5 w-5" />
+          </div>
+          <span className="text-sm font-medium">Add Note</span>
+          <span className="text-xs text-gray-500">Criar nova nota</span>
+        </button>
+
+        {isAddingNote && (
+          <div
+            className="flex flex-col rounded-2xl border shadow-sm"
+            style={{
+              borderColor: appearance?.cardBorderColor || "#e5e7eb",
+            }}
+          >
+            <div className="flex items-center justify-between bg-[#E87C2A] px-4 py-3 text-white">
+              <h4 className="text-sm font-semibold">Nova note</h4>
+              <div className="flex space-x-2 text-xs">
+                <button
+                  onClick={() => setIsAddingNote(false)}
+                  className="rounded px-2 py-1 hover:bg-white/10"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveNewNote}
+                  disabled={!newNoteTitle.trim() || !newNoteContent.trim()}
+                  className="rounded bg-white/20 px-2 py-1 font-semibold text-white hover:bg-white/30 disabled:opacity-50"
+                >
+                  Salvar
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col gap-3 bg-white p-4">
+              <input
+                type="text"
+                placeholder="Note title"
+                value={newNoteTitle}
+                onChange={(e) => setNewNoteTitle(e.target.value)}
+                className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{
+                  borderColor: appearance?.cardBorderColor || "#e5e7eb",
+                  backgroundColor: appearance?.surfaceColor || "#ffffff",
+                  color: appearance?.textColor || "#111827",
+                }}
+              />
+              <textarea
+                placeholder="Note content"
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                rows={3}
+                className="w-full resize-none rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{
+                  borderColor: appearance?.cardBorderColor || "#e5e7eb",
+                  backgroundColor: appearance?.surfaceColor || "#ffffff",
+                  color: appearance?.textColor || "#111827",
+                }}
+              />
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Notes list */}
-      <div className="space-y-3">
-        {notes.map((note) => (
-          <div
-            key={note.id}
-            className="rounded-lg border p-4"
-            style={{
-              borderColor: appearance?.cardBorderColor || "#e5e7eb",
-              backgroundColor: appearance?.surfaceColor || "#ffffff",
-            }}
-          >
-            {editingNoteId === note.id ? (
-              /* Edit form */
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={editingTitle}
-                  onChange={(e) => setEditingTitle(e.target.value)}
-                  className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{
-                    borderColor: appearance?.cardBorderColor || "#e5e7eb",
-                    backgroundColor: appearance?.surfaceColor || "#ffffff",
-                    color: appearance?.textColor || "#111827",
-                  }}
-                />
-                <textarea
-                  value={editingContent}
-                  onChange={(e) => setEditingContent(e.target.value)}
-                  rows={3}
-                  className="w-full resize-none rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{
-                    borderColor: appearance?.cardBorderColor || "#e5e7eb",
-                    backgroundColor: appearance?.surfaceColor || "#ffffff",
-                    color: appearance?.textColor || "#111827",
-                  }}
-                />
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => handleDeleteNote(note.id)}
-                    className="rounded px-3 py-1 text-sm text-red-600 transition hover:bg-red-50"
-                  >
-                    Delete
-                  </button>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setEditingNoteId(null)}
-                      className="rounded px-3 py-1 text-sm transition hover:bg-gray-100"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={!editingTitle.trim() || !editingContent.trim()}
-                      className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      Save
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Display mode */
-              <div>
-                <div className="flex items-start justify-between">
-                  <h4
-                    className="font-medium"
-                    style={{ color: appearance?.textColor || "#111827" }}
-                  >
-                    {note.title}
-                  </h4>
-                  <button
-                    onClick={() => handleEditNote(note)}
-                    className="flex h-6 w-6 items-center justify-center rounded transition hover:bg-gray-100"
-                    style={{ color: appearance?.actionColor || "#374151" }}
-                  >
-                    <Edit3 className="h-3 w-3" />
-                  </button>
-                </div>
-                <p
-                  className="mt-2 text-sm leading-relaxed"
-                  style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-                >
-                  {note.content}
-                </p>
-                <div
-                  className="mt-2 text-xs"
-                  style={{ color: appearance?.mutedTextColor || "#9ca3af" }}
-                >
-                  {new Date(note.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-
-        {notes.length === 0 && !isAddingNote && (
-          <div
-            className="rounded-lg border-2 border-dashed p-6 text-center"
-            style={{
-              borderColor: appearance?.cardBorderColor || "#e5e7eb",
-              backgroundColor: appearance?.overlayColor || "#f9fafb",
-            }}
-          >
-            <p
-              className="text-sm"
-              style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-            >
-              No notes yet. Add your first note.
-            </p>
-          </div>
         )}
+
+        {notes.map((note) => {
+          const isEditing = editingNoteId === note.id;
+          return (
+            <div
+              key={note.id}
+              className="flex flex-col rounded-2xl border shadow-sm"
+              style={{
+                borderColor: appearance?.cardBorderColor || "#e5e7eb",
+              }}
+            >
+              <div className="flex items-center justify-between bg-[#E87C2A] px-4 py-3 text-white">
+                <h4 className="text-sm font-semibold truncate">
+                  {isEditing ? "Editando note" : note.title}
+                </h4>
+                <div className="flex space-x-2 text-xs">
+                  {!isEditing ? (
+                    <button
+                      onClick={() => handleEditNote(note)}
+                      className="rounded px-2 py-1 hover:bg-white/10"
+                    >
+                      Editar
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setEditingNoteId(null)}
+                        className="rounded px-2 py-1 hover:bg-white/10"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={
+                          !editingTitle.trim() || !editingContent.trim()
+                        }
+                        className="rounded bg-white/20 px-2 py-1 font-semibold text-white hover:bg-white/30 disabled:opacity-50"
+                      >
+                        Salvar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className="flex flex-1 flex-col gap-3 bg-white p-4 text-sm"
+                style={{
+                  color: appearance?.mutedTextColor || "#6b7280",
+                }}
+              >
+                {isEditing ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        borderColor: appearance?.cardBorderColor || "#e5e7eb",
+                        backgroundColor: appearance?.surfaceColor || "#ffffff",
+                        color: appearance?.textColor || "#111827",
+                      }}
+                    />
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      rows={4}
+                      className="w-full resize-none rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        borderColor: appearance?.cardBorderColor || "#e5e7eb",
+                        backgroundColor: appearance?.surfaceColor || "#ffffff",
+                        color: appearance?.textColor || "#111827",
+                      }}
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="rounded px-3 py-1 text-sm text-red-600 transition hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="whitespace-pre-wrap leading-relaxed">
+                      {note.content}
+                    </p>
+                    <div className="text-xs text-gray-400">
+                      {new Date(note.createdAt).toLocaleDateString()}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
-

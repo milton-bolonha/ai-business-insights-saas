@@ -33,6 +33,7 @@
     "framer-motion": "^11.11.17",
     "immer": "^11.0.1",
     "lucide-react": "^0.553.0",
+    "marked": "^17.0.1",
     "mongodb": "^7.0.0",
     "next": "16.0.7",
     "openai": "^6.8.1",

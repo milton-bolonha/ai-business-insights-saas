@@ -27,11 +27,9 @@ import { TileCard } from "@/components/ui/TileCard";
 interface TileGridAdeProps {
   tiles: Tile[];
   onDeleteTile?: (tileId: string) => void;
-  onRegenerateTile?: (tileId: string) => void;
   onReorderTiles?: (order: string[]) => void;
   onOpenTile?: (tile: Tile) => void;
   isReordering?: boolean;
-  regeneratingTileIds?: Set<string>;
   appearance?: AdeAppearanceTokens;
   onAddPrompt?: () => void;
   onBulkUploadPrompts?: () => void;
@@ -43,18 +41,14 @@ interface TileGridAdeProps {
 function SortableTileCard({
   tile,
   onDelete,
-  onRegenerate,
   onOpen,
-  isRegenerating,
   appearance,
   animateEntrance,
   index,
 }: {
   tile: Tile;
   onDelete?: (tileId: string) => void;
-  onRegenerate?: (tileId: string) => void;
   onOpen?: (tile: Tile) => void;
-  isRegenerating?: boolean;
   appearance?: AdeAppearanceTokens;
   animateEntrance?: boolean;
   index: number;
@@ -93,9 +87,7 @@ function SortableTileCard({
         <TileCard
           tile={tile}
           onDelete={onDelete}
-          onRegenerate={onRegenerate}
           onOpen={onOpen}
-          isRegenerating={isRegenerating}
           appearance={appearance}
         />
       </div>
@@ -106,10 +98,8 @@ function SortableTileCard({
 export function TileGridAde({
   tiles,
   onDeleteTile,
-  onRegenerateTile,
   onReorderTiles,
   onOpenTile,
-  regeneratingTileIds = new Set(),
   appearance,
   onAddPrompt,
   animateEntrance = true,
@@ -231,102 +221,86 @@ export function TileGridAde({
       </div>
 
       {/* Tiles grid */}
-      {sortedTiles.length > 0 ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={sortedTiles.map((t) => t.id)}
+          strategy={rectSortingStrategy}
         >
-          <SortableContext
-            items={sortedTiles.map((t) => t.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {onAddPrompt && (
-                <button
-                  onClick={() => onAddPrompt()}
-                  type="button"
-                  className="flex h-full min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed transition  hover:bg-white hover:cursor-pointer"
-                  style={{
-                    borderColor: appearance?.cardBorderColor || "#d1d5db",
-                    color: appearance?.mutedTextColor || "#6b7280",
-                  }}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {onAddPrompt && (
+              <button
+                onClick={() => onAddPrompt()}
+                type="button"
+                className="flex h-full min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed transition hover:bg-white hover:cursor-pointer"
+                style={{
+                  borderColor: appearance?.cardBorderColor || "#d1d5db",
+                  color: appearance?.mutedTextColor || "#6b7280",
+                  backgroundColor: appearance?.overlayColor || "#f8fafc",
+                }}
+              >
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <Plus className="h-6 w-6" />
+                </div>
+                <span className="text-sm font-medium">Add Prompt</span>
+                <span className="mt-2 text-xs text-gray-500">
+                  Crie um insight agora
+                </span>
+              </button>
+            )}
+            {sortedTiles.length === 0 && (
+              <div
+                className="flex h-full min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border border-dashed text-center"
+                style={{
+                  borderColor: appearance?.cardBorderColor || "#e5e7eb",
+                  color: appearance?.mutedTextColor || "#6b7280",
+                  backgroundColor: appearance?.overlayColor || "#f9fafb",
+                }}
+              >
+                <Sparkles className="mb-2 h-6 w-6" />
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: appearance?.textColor || "#111827" }}
                 >
-                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                    <Plus className="h-6 w-6" />
-                  </div>
-                  <span className="text-sm font-medium">Add Prompt</span>
-                </button>
-              )}
-              {sortedTiles.map((tile, index) => (
-                <SortableTileCard
-                  key={tile.id}
-                  tile={tile}
-                  onDelete={onDeleteTile}
-                  onRegenerate={onRegenerateTile}
-                  onOpen={(t) => {
-                    console.log(
-                      "[DEBUG] TileGridAde onOpen wrapper called for:",
-                      t.id
+                  Nenhum insight ainda
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: appearance?.mutedTextColor || "#6b7280" }}
+                >
+                  Clique em Add Prompt para começar
+                </p>
+              </div>
+            )}
+            {sortedTiles.map((tile, index) => (
+              <SortableTileCard
+                key={tile.id}
+                tile={tile}
+                onDelete={onDeleteTile}
+                onOpen={(t) => {
+                  console.log(
+                    "[DEBUG] TileGridAde onOpen wrapper called for:",
+                    t.id
+                  );
+                  if (onOpenTile) {
+                    onOpenTile(t);
+                  } else {
+                    console.error(
+                      "[DEBUG] TileGridAde onOpenTile prop is missing"
                     );
-                    if (onOpenTile) {
-                      onOpenTile(t);
-                    } else {
-                      console.error(
-                        "[DEBUG] TileGridAde onOpenTile prop is missing"
-                      );
-                    }
-                  }}
-                  isRegenerating={regeneratingTileIds.has(tile.id)}
-                  appearance={appearance}
-                  animateEntrance={animateEntrance}
-                  index={index}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        /* Empty state */
-        <div
-          className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12 text-center"
-          style={{
-            borderColor: appearance?.cardBorderColor || "#e5e7eb",
-            backgroundColor: appearance?.overlayColor || "#f9fafb",
-          }}
-        >
-          <div className="mb-4">
-            <Sparkles
-              className="mx-auto h-12 w-12"
-              style={{ color: appearance?.mutedTextColor || "#9ca3af" }}
-            />
+                  }
+                }}
+                appearance={appearance}
+                animateEntrance={animateEntrance}
+                index={index}
+              />
+            ))}
           </div>
-          <h3
-            className="mb-2 text-lg font-medium"
-            style={{ color: appearance?.textColor || "#111827" }}
-          >
-            No insights yet
-          </h3>
-          <p
-            className="mb-6 text-sm"
-            style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-          >
-            Generate your first insight to get started.
-          </p>
-          {onAddPrompt && (
-            <button
-              onClick={() => {
-                console.log("[DEBUG] TileGridAde Add Prompt button clicked");
-                onAddPrompt?.();
-              }}
-              className="inline-flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Prompt</span>
-            </button>
-          )}
-        </div>
-      )}
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }

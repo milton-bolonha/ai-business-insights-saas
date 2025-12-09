@@ -1,24 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { X, MessageCircle, RefreshCw, Mail, Phone } from "lucide-react";
+import { X, MessageCircle, Mail, Phone } from "lucide-react";
 import type { Contact } from "@/lib/types";
 
 interface ContactDetailModalProps {
   contact: Contact | null;
   onClose: () => void;
-  onRegenerate?: () => void;
   onSubmitChat?: (message: string) => void;
-  isRegenerating?: boolean;
   isChatting?: boolean;
 }
 
 export function ContactDetailModal({
   contact,
   onClose,
-  onRegenerate,
   onSubmitChat,
-  isRegenerating = false,
   isChatting = false,
 }: ContactDetailModalProps) {
   const [chatMessage, setChatMessage] = useState("");
@@ -55,16 +51,6 @@ export function ContactDetailModal({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {onRegenerate && (
-              <button
-                onClick={onRegenerate}
-                disabled={isRegenerating}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRegenerating ? "animate-spin" : ""}`} />
-                <span>Regenerate</span>
-              </button>
-            )}
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
@@ -79,7 +65,9 @@ export function ContactDetailModal({
           {/* Contact Info */}
           <div className="space-y-4 mb-6">
             <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Contact Information</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
+                Contact Information
+              </h3>
               <div className="space-y-2">
                 {contact.jobTitle && (
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -106,13 +94,17 @@ export function ContactDetailModal({
             {/* Outreach Content */}
             {contact.outreach && (
               <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Outreach Content</h3>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">
+                  Outreach Content
+                </h3>
                 <div className="space-y-4">
                   {contact.outreach.emailPitch && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-2">
                         <Mail className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-900">Email Pitch</span>
+                        <span className="text-sm font-medium text-blue-900">
+                          Email Pitch
+                        </span>
                       </div>
                       <p className="text-sm text-blue-800 whitespace-pre-wrap">
                         {contact.outreach.emailPitch.content}
@@ -124,7 +116,9 @@ export function ContactDetailModal({
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-2">
                         <Phone className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-900">Cold Call Script</span>
+                        <span className="text-sm font-medium text-green-900">
+                          Cold Call Script
+                        </span>
                       </div>
                       <p className="text-sm text-green-800 whitespace-pre-wrap">
                         {contact.outreach.coldCallScript.content}
@@ -138,12 +132,18 @@ export function ContactDetailModal({
             {/* Chat History */}
             {contact.chatHistory && contact.chatHistory.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Chat History</h3>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">
+                  Chat History
+                </h3>
                 <div className="space-y-3 max-h-48 overflow-y-auto">
                   {contact.chatHistory.map((message, index) => (
                     <div
                       key={message.id || index}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
                     >
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
@@ -189,4 +189,3 @@ export function ContactDetailModal({
     </div>
   );
 }
-

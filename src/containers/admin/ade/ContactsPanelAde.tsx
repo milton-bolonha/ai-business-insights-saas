@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { MessageCircle, Plus, RefreshCw, User } from "lucide-react";
+import { MessageCircle, Plus, User } from "lucide-react";
 
 import type { Contact } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
@@ -10,8 +9,6 @@ interface ContactsPanelAdeProps {
   contacts: Contact[];
   onAddContact?: () => void;
   onOpenContact?: (contact: Contact) => void;
-  onRegenerateContact?: (contactId: string) => void;
-  regeneratingContactId?: string;
   appearance?: AdeAppearanceTokens;
 }
 
@@ -19,159 +16,123 @@ export function ContactsPanelAde({
   contacts,
   onAddContact,
   onOpenContact,
-  onRegenerateContact,
-  regeneratingContactId,
   appearance,
 }: ContactsPanelAdeProps) {
-  const [showActions, setShowActions] = useState<string | null>(null);
-
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3
-          className="text-lg font-semibold"
-          style={{ color: appearance?.textColor || "#111827" }}
-        >
-          Contacts
-        </h3>
-        <button
-          onClick={() => {
-            console.log('[DEBUG] ContactsPanelAde Add Contact button clicked');
-            onAddContact?.();
-          }}
-          className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-black/5"
-          style={{ color: appearance?.actionColor || "#374151" }}
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        <div>
+          <h3
+            className="text-lg font-semibold"
+            style={{ color: appearance?.textColor || "#111827" }}
+          >
+            Contacts
+          </h3>
+          <p
+            className="text-xs"
+            style={{ color: appearance?.mutedTextColor || "#6b7280" }}
+          >
+            Cartões em linha com um card de add sempre visível
+          </p>
+        </div>
       </div>
 
-      {/* Contacts list */}
-      <div className="space-y-3">
+      {/* Contacts grid */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <button
+          onClick={() => {
+            console.log("[DEBUG] ContactsPanelAde Add Contact button clicked");
+            onAddContact?.();
+          }}
+          type="button"
+          className="flex min-h-[180px] flex-col items-center justify-center rounded-2xl border-2 border-dashed text-center transition hover:bg-white"
+          style={{
+            borderColor: appearance?.cardBorderColor || "#d1d5db",
+            color: appearance?.mutedTextColor || "#6b7280",
+            backgroundColor: appearance?.overlayColor || "#f8fafc",
+          }}
+        >
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <Plus className="h-5 w-5" />
+          </div>
+          <span className="text-sm font-medium">Add Contact</span>
+          <span className="text-xs text-gray-500">Adicionar um contato</span>
+        </button>
+
         {contacts.map((contact) => (
           <div
             key={contact.id}
-            className="group relative rounded-lg border p-4 transition hover:shadow-sm"
+            className="flex min-h-[180px] flex-col rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             style={{
               borderColor: appearance?.cardBorderColor || "#e5e7eb",
               backgroundColor: appearance?.surfaceColor || "#ffffff",
             }}
-            onMouseEnter={() => setShowActions(contact.id)}
-            onMouseLeave={() => setShowActions(null)}
           >
-            {/* Actions overlay */}
-            {showActions === contact.id && (
-              <div className="absolute right-2 top-2 flex items-center space-x-1 rounded-md border bg-white p-1 shadow-sm">
-                {onRegenerateContact && (
-                  <button
-                    onClick={() => onRegenerateContact(contact.id)}
-                    disabled={regeneratingContactId === contact.id}
-                    className="flex h-6 w-6 items-center justify-center rounded transition hover:bg-gray-100 disabled:opacity-50"
-                    title="Regenerate"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${regeneratingContactId === contact.id ? "animate-spin" : ""}`} />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Content */}
             <div
-              className="cursor-pointer"
-              onClick={() => onOpenContact?.(contact)}
+              className="flex items-start justify-between border-b px-4 py-3"
+              style={{
+                borderColor: appearance?.cardBorderColor || "#e5e7eb",
+                backgroundColor: appearance?.overlayColor || "#f9fafb",
+              }}
             >
               <div className="flex items-start space-x-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
                   <User className="h-5 w-5 text-gray-600" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0">
                   <h4
-                    className="font-medium truncate"
+                    className="truncate text-sm font-semibold"
                     style={{ color: appearance?.textColor || "#111827" }}
                   >
                     {contact.name}
                   </h4>
                   {contact.jobTitle && (
                     <p
-                      className="text-sm truncate"
+                      className="truncate text-xs"
                       style={{ color: appearance?.mutedTextColor || "#6b7280" }}
                     >
                       {contact.jobTitle}
                     </p>
                   )}
                   {contact.linkedinUrl && (
-                    <p
-                      className="text-xs truncate text-blue-600 mt-1"
-                    >
-                      LinkedIn
-                    </p>
+                    <p className="text-xs text-blue-600">LinkedIn</p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Outreach info */}
-            {contact.outreach && (
-              <div className="mt-3 space-y-2">
-                {contact.outreach.emailPitch && (
-                  <div className="flex items-center space-x-2 text-xs">
-                    <MessageCircle className="h-3 w-3" />
-                    <span style={{ color: appearance?.mutedTextColor || "#6b7280" }}>
-                      Email pitch available
-                    </span>
-                  </div>
-                )}
-                {contact.outreach.coldCallScript && (
-                  <div className="flex items-center space-x-2 text-xs">
-                    <MessageCircle className="h-3 w-3" />
-                    <span style={{ color: appearance?.mutedTextColor || "#6b7280" }}>
-                      Call script available
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            <button
+              className="flex flex-1 flex-col items-start space-y-2 px-4 py-3 text-left"
+              onClick={() => onOpenContact?.(contact)}
+            >
+              {contact.outreach && (
+                <div className="space-y-1 text-xs">
+                  {contact.outreach.emailPitch && (
+                    <div className="flex items-center space-x-2 text-gray-700">
+                      <MessageCircle className="h-3 w-3" />
+                      <span>Email pitch disponível</span>
+                    </div>
+                  )}
+                  {contact.outreach.coldCallScript && (
+                    <div className="flex items-center space-x-2 text-gray-700">
+                      <MessageCircle className="h-3 w-3" />
+                      <span>Call script disponível</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Chat history indicator */}
-            {contact.chatHistory && contact.chatHistory.length > 0 && (
-              <div className="mt-2 flex items-center space-x-1 text-xs">
-                <MessageCircle className="h-3 w-3" />
-                <span style={{ color: appearance?.mutedTextColor || "#6b7280" }}>
-                  {contact.chatHistory.length} messages
-                </span>
-              </div>
-            )}
+              {contact.chatHistory && contact.chatHistory.length > 0 && (
+                <div className="flex items-center space-x-1 text-xs text-gray-500">
+                  <MessageCircle className="h-3 w-3" />
+                  <span>{contact.chatHistory.length} mensagens</span>
+                </div>
+              )}
+            </button>
           </div>
         ))}
-
-        {contacts.length === 0 && (
-          <div
-            className="rounded-lg border-2 border-dashed p-6 text-center"
-            style={{
-              borderColor: appearance?.cardBorderColor || "#e5e7eb",
-              backgroundColor: appearance?.overlayColor || "#f9fafb",
-            }}
-          >
-            <div className="mb-4">
-              <User className="mx-auto h-8 w-8 text-gray-400" />
-            </div>
-            <h4
-              className="mb-2 text-sm font-medium"
-              style={{ color: appearance?.textColor || "#111827" }}
-            >
-              No contacts yet
-            </h4>
-            <p
-              className="text-sm"
-              style={{ color: appearance?.mutedTextColor || "#6b7280" }}
-            >
-              Add your first contact to start building relationships.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
 }
-

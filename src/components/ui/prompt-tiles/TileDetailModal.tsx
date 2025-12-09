@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { marked } from "marked";
 import { X, Copy, MessageCircle, Clock } from "lucide-react";
 import type { Tile } from "@/lib/types";
 
@@ -28,7 +29,19 @@ export function TileDetailModal({
 }: TileDetailModalProps) {
   const [chatMessage, setChatMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
-  
+  const contentHtml = marked.parse(tile?.content || "", {
+    breaks: true,
+  });
+  const promptHtml = tile?.prompt
+    ? marked.parse(tile.prompt, {
+        breaks: true,
+      })
+    : "";
+  const renderMessage = (value: string) =>
+    marked.parse(value || "", {
+      breaks: true,
+    });
+
   console.log("[DEBUG] TileDetailModal rendering for:", tile?.id);
 
   if (!tile) return null;
@@ -55,11 +68,11 @@ export function TileDetailModal({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setAttachments(prev => [...prev, ...files]);
+    setAttachments((prev) => [...prev, ...files]);
   };
 
   const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const formatDate = (dateString: string) => {
@@ -69,17 +82,20 @@ export function TileDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" 
-        onClick={onClose} 
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
       />
-      
+
       {/* Drawer */}
       <div className="relative w-full md:w-1/2 max-w-4xl h-full bg-white shadow-2xl rounded-l-3xl overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10">
           <div className="flex-1 min-w-0 mr-4">
-            <h2 className="text-xl font-bold text-gray-900 truncate" title={tile.title}>
+            <h2
+              className="text-xl font-bold text-gray-900 truncate"
+              title={tile.title}
+            >
               {tile.title}
             </h2>
             <div className="flex items-center space-x-3 mt-1.5 text-xs font-medium text-gray-500">
@@ -113,13 +129,13 @@ export function TileDetailModal({
         {/* Content Scroll Area */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50">
           <div className="p-6 space-y-8">
-            
             {/* Main Content Card */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="prose prose-slate max-w-none">
-                <div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-base">
-                  {tile.content}
-                </div>
+                <div
+                  className="text-gray-800 leading-relaxed text-base prose-headings:mt-4 prose-headings:mb-2 prose-p:mb-3 prose-ul:list-disc prose-ol:list-decimal prose-li:my-0.5"
+                  dangerouslySetInnerHTML={{ __html: contentHtml }}
+                />
               </div>
             </div>
 
@@ -127,17 +143,23 @@ export function TileDetailModal({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                 <div className="text-xs text-gray-500 mb-1">Model</div>
-                <div className="font-medium text-gray-900 text-sm truncate">{tile.model}</div>
+                <div className="font-medium text-gray-900 text-sm truncate">
+                  {tile.model}
+                </div>
               </div>
               {tile.totalTokens && (
                 <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                   <div className="text-xs text-gray-500 mb-1">Tokens</div>
-                  <div className="font-medium text-gray-900 text-sm">{tile.totalTokens}</div>
+                  <div className="font-medium text-gray-900 text-sm">
+                    {tile.totalTokens}
+                  </div>
                 </div>
               )}
               <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                 <div className="text-xs text-gray-500 mb-1">Attempts</div>
-                <div className="font-medium text-gray-900 text-sm">{tile.attempts}</div>
+                <div className="font-medium text-gray-900 text-sm">
+                  {tile.attempts}
+                </div>
               </div>
               <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                 <div className="text-xs text-gray-500 mb-1">Status</div>
@@ -155,9 +177,10 @@ export function TileDetailModal({
                   <span className="w-1 h-4 bg-blue-500 rounded-full mr-2"></span>
                   Original Prompt
                 </h3>
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 leading-relaxed">
-                  {tile.prompt}
-                </div>
+                <div
+                  className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 leading-relaxed prose"
+                  dangerouslySetInnerHTML={{ __html: promptHtml }}
+                />
               </div>
             )}
 
@@ -172,7 +195,11 @@ export function TileDetailModal({
                   {tile.history.map((message, index) => (
                     <div
                       key={message.id || index}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
                     >
                       <div
                         className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
@@ -181,7 +208,12 @@ export function TileDetailModal({
                             : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
                         }`}
                       >
-                        {message.content}
+                        <div
+                          className="prose prose-slate max-w-none text-sm leading-relaxed prose-p:mb-1 prose-ul:list-disc prose-ol:list-decimal"
+                          dangerouslySetInnerHTML={{
+                            __html: renderMessage(message.content),
+                          }}
+                        />
                       </div>
                     </div>
                   ))}
@@ -198,8 +230,13 @@ export function TileDetailModal({
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 px-2">
                 {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center space-x-2 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
-                    <span className="text-xs font-medium text-gray-700 truncate max-w-[150px]">{file.name}</span>
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200"
+                  >
+                    <span className="text-xs font-medium text-gray-700 truncate max-w-[150px]">
+                      {file.name}
+                    </span>
                     <button
                       type="button"
                       onClick={() => removeAttachment(index)}
@@ -223,12 +260,22 @@ export function TileDetailModal({
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      />
                     </svg>
                   </label>
                 )}
-                
+
                 <input
                   type="text"
                   value={chatMessage}
@@ -237,16 +284,18 @@ export function TileDetailModal({
                   className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2.5 px-1 min-h-[44px] max-h-32"
                   disabled={isSubmitting || isGuest}
                 />
-                
+
                 <button
                   type="submit"
                   disabled={!chatMessage.trim() || isSubmitting || isGuest}
                   className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all hover:shadow-md shrink-0"
                 >
-                  <MessageCircle className={`h-5 w-5 ${isSubmitting ? 'animate-pulse' : ''}`} />
+                  <MessageCircle
+                    className={`h-5 w-5 ${isSubmitting ? "animate-pulse" : ""}`}
+                  />
                 </button>
               </div>
-              
+
               {isGuest && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-2xl border border-gray-100">
                   <p className="text-xs font-medium text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
@@ -261,4 +310,3 @@ export function TileDetailModal({
     </div>
   );
 }
-

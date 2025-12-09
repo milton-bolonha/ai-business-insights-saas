@@ -41,9 +41,35 @@ export function usePaymentFlow() {
     [auth]
   );
 
-  const startCheckout = useCallback(() => {
-    return auth.startCheckout();
-  }, [auth]);
+  const startCheckout = useCallback(async () => {
+    try {
+      let stored = "";
+      if (typeof window !== "undefined") {
+        stored = localStorage.getItem("guest_checkout_user_id") || "";
+        if (!stored) {
+          stored = `guest_${crypto.randomUUID()}`;
+          localStorage.setItem("guest_checkout_user_id", stored);
+        }
+      }
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: stored || "guest_temp" }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.url) {
+        console.error("[usePaymentFlow] checkout failed", data);
+        return false;
+      }
+      if (typeof window !== "undefined") {
+        window.location.href = data.url as string;
+      }
+      return true;
+    } catch (err) {
+      console.error("[usePaymentFlow] checkout error", err);
+      return false;
+    }
+  }, []);
 
   const confirmMembership = useCallback(() => {
     setUpgradeModalOpen(false);
@@ -99,9 +125,13 @@ export function usePaymentFlow() {
     };
   };
 
-  const resolvedLimits = mapLimits(serverLimits) || auth.limits;
+  const resolvedLimits = auth.isGuest
+    ? auth.limits
+    : mapLimits(serverLimits) || auth.limits;
 
-  const resolvedUsage = mapUsage(serverUsage) || auth.usage;
+  const resolvedUsage = auth.isGuest
+    ? auth.usage
+    : mapUsage(serverUsage) || auth.usage;
 
   return {
     isGuest: auth.isGuest,

@@ -80,11 +80,14 @@ export function UpgradeModal({
         <div className="space-y-4">
           <div className="text-center">
             <p className="text-sm text-gray-600 mb-4">
-              You&apos;ve reached your free limit for {getActionDescription(lastAction || "")}.
+              You&apos;ve reached your free limit for{" "}
+              {getActionDescription(lastAction || "")}.
             </p>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Free Plan Limits</h3>
+              <h3 className="font-semibold text-blue-900 mb-2">
+                Free Plan Limits
+              </h3>
               <div className="space-y-1 text-sm text-blue-800">
                 <div>Workspaces: {getUsageText("createWorkspace")}</div>
                 <div>Contacts: {getUsageText("createContact")}</div>
@@ -94,7 +97,9 @@ export function UpgradeModal({
             </div>
 
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-green-900 mb-2">Pro Plan Benefits</h3>
+              <h3 className="font-semibold text-green-900 mb-2">
+                Pro Plan Benefits
+              </h3>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2 text-sm text-green-800">
                   <Check className="h-4 w-4" />
@@ -120,14 +125,7 @@ export function UpgradeModal({
             </div>
           </div>
 
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="flex-1 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              disabled={isProcessing}
-            >
-              Maybe Later
-            </button>
+          <div className="flex">
             <button
               onClick={handleCheckout}
               disabled={isProcessing}
@@ -155,4 +153,3 @@ export function UpgradeModal({
     </div>
   );
 }
-

@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-
 import { AdminContainer } from "@/containers/admin/AdminContainer";
 
 function AdminFallback() {
@@ -19,4 +18,3 @@ export default function AdminPage() {
     </Suspense>
   );
 }
-
