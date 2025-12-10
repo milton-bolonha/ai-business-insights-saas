@@ -175,10 +175,10 @@ export function ClassicHeroForm({
             </div>
           );
         })}
-
+        {/* 
         <p className="text-lg text-black text-center">
           Peça para a WebApp pesquisar todo o seu território por você.
-        </p>
+        </p> */}
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
@@ -190,7 +190,7 @@ export function ClassicHeroForm({
               handleSubmit(e as any);
             }}
           >
-            <span>{isSubmitting ? "Gerando..." : "Gerar insights"}</span>
+            <span>{isSubmitting ? "isSubmitting..." : "Submit"}</span>
             <ArrowRight className="w-5 h-5" />
           </button>
           <button
