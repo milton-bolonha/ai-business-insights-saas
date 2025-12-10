@@ -38,6 +38,12 @@ export function HomeContainer() {
   const [isSubmitting] = useState(false);
   const payment = usePaymentFlow();
 
+  const normalizeUrl = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+  };
+
   const handleSubmit = async ({
     company,
     companyWebsite,
@@ -89,10 +95,10 @@ export function HomeContainer() {
       const targetUrl = "/api/generate";
       const payload = {
         salesRepCompany: company,
-        salesRepWebsite: companyWebsite,
+        salesRepWebsite: normalizeUrl(companyWebsite),
         solution,
         targetCompany: researchTarget,
-        targetWebsite: researchWebsite,
+        targetWebsite: normalizeUrl(researchWebsite),
         templateId,
         model,
         promptAgent,
