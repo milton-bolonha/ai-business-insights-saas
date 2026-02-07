@@ -35,7 +35,7 @@ export function HomeContainer() {
     (state) => state.initializeWorkspaceFromHome
   );
   const clearWorkspace = useWorkspaceStore((state) => state.clearWorkspace);
-  const [isSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const payment = usePaymentFlow();
 
   const normalizeUrl = (url: string) => {
@@ -57,106 +57,110 @@ export function HomeContainer() {
     promptVariables,
     bulkPrompts,
   }: ClassicHeroFormSubmission) => {
-    if (isSubmitting) return;
 
-    if (user?.role !== "member") {
-      const preview = evaluateUsage("createWorkspace");
-      if (!preview.allowed) {
-        payment.setUpgradeModalOpen(true);
-        push({
-          title: "Limit reached",
-          description: `You already created ${preview.used} workspaces. Upgrade to create more.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    push({
-      title: "Redirecting to dashboard...",
-      description: "Your insights are being generated in the background.",
-      variant: "default",
-    });
-
-    if (!isMember) {
-      const usageResult = consumeUsage("createWorkspace");
-      if (!usageResult.allowed) {
-        payment.setUpgradeModalOpen(true);
-        push({
-          title: "Limit reached",
-          description: `You already created ${usageResult.used} workspaces. Upgrade to create more.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    const generateInBackground = async () => {
-      const targetUrl = "/api/generate";
-      const payload = {
-        salesRepCompany: company,
-        salesRepWebsite: normalizeUrl(companyWebsite),
-        solution,
-        targetCompany: researchTarget,
-        targetWebsite: normalizeUrl(researchWebsite),
-        templateId,
-        model,
-        promptAgent,
-        responseLength,
-        promptVariables,
-        bulkPrompts,
-      };
-
-      try {
-        const response = await fetch(targetUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await response.json().catch(() => null);
-
-        if (!response.ok) {
+    setIsSubmitting(true);
+    try {
+      if (user?.role !== "member") {
+        const preview = evaluateUsage("createWorkspace");
+        if (!preview.allowed) {
+          payment.setUpgradeModalOpen(true);
           push({
-            title: "Generation failed",
-            description:
-              (data?.error as string) ?? "Failed to start insight generation.",
+            title: "Limit reached",
+            description: `You already created ${preview.used} workspaces. Upgrade to create more.`,
             variant: "destructive",
           });
           return;
         }
-
-        if (data?.workspace) {
-          // Initialize workspace in local store
-          const workspace = await initializeWorkspaceFromHome(data.workspace);
-
-          // Navigate to admin with workspaceId query param if needed,
-          // but since we're using localStorage/Zustand, the state is already there.
-          // For members, the workspace is in MongoDB.
-          router.push(`/admin?workspaceId=${workspace.id}`);
-        } else {
-          router.push("/admin");
-        }
-
-        push({
-          title: "Insights generated!",
-          description:
-            "Your workspace is ready. Check the tiles for new insights.",
-          variant: "success",
-        });
-      } catch (error) {
-        console.error("[HomeContainer] 🚨 Generation request threw", error);
-        push({
-          title: "Generation failed",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Please try again in a few moments.",
-          variant: "destructive",
-        });
       }
-    };
 
-    generateInBackground();
+      push({
+        title: "Redirecting to dashboard...",
+        description: "Your insights are being generated in the background.",
+        variant: "default",
+      });
+
+      if (!isMember) {
+        const usageResult = consumeUsage("createWorkspace");
+        if (!usageResult.allowed) {
+          payment.setUpgradeModalOpen(true);
+          push({
+            title: "Limit reached",
+            description: `You already created ${usageResult.used} workspaces. Upgrade to create more.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      const generateInBackground = async () => {
+        const targetUrl = "/api/generate";
+        const payload = {
+          salesRepCompany: company,
+          salesRepWebsite: normalizeUrl(companyWebsite),
+          solution,
+          targetCompany: researchTarget,
+          targetWebsite: normalizeUrl(researchWebsite),
+          templateId,
+          model,
+          promptAgent,
+          responseLength,
+          promptVariables,
+          bulkPrompts,
+        };
+
+        try {
+          const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            push({
+              title: "Generation failed",
+              description:
+                (data?.error as string) ?? "Failed to start insight generation.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (data?.workspace) {
+            // Initialize workspace in local store
+            const workspace = await initializeWorkspaceFromHome(data.workspace);
+
+            // Navigate to admin with workspaceId query param if needed,
+            // but since we're using localStorage/Zustand, the state is already there.
+            // For members, the workspace is in MongoDB.
+            router.push(`/admin?workspaceId=${workspace.id}`);
+          } else {
+            router.push("/admin");
+          }
+
+          push({
+            title: "Insights generated!",
+            description:
+              "Your workspace is ready. Check the tiles for new insights.",
+            variant: "success",
+          });
+        } catch (error) {
+          console.error("[HomeContainer] 🚨 Generation request threw", error);
+          push({
+            title: "Generation failed",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Please try again in a few moments.",
+            variant: "destructive",
+          });
+        }
+      };
+
+      await generateInBackground();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetWorkspace = async () => {
