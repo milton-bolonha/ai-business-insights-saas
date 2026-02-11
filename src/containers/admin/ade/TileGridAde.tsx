@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Tile } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { TileCard } from "@/components/ui/TileCard";
+import { useCurrentWorkspace } from "@/lib/stores";
 
 interface TileGridAdeProps {
   tiles: Tile[];
@@ -117,6 +118,10 @@ export function TileGridAde({
   const [localTiles, setLocalTiles] = useState<Tile[]>(tiles);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
+  const currentWorkspace = useCurrentWorkspace();
+  const isLoveWriters = currentWorkspace?.promptSettings?.templateId === "template_love_writers";
+  const gridTitle = isLoveWriters ? "Book Arcs" : "Insight Cards";
+
   // Dashboard Data
   const currentDashboard = dashboards.find(d => d.isActive);
   const otherDashboards = dashboards.filter(d => !d.isActive);
@@ -202,13 +207,13 @@ export function TileGridAde({
             className="text-2xl font-bold"
             style={{ color: appearance?.textColor || "#111827" }}
           >
-            Book Arcs
+            {gridTitle}
           </h2>
           <p
             className="mt-1 text-sm"
             style={{ color: appearance?.mutedTextColor || "#6b7280" }}
           >
-            {tiles.length} arc{tiles.length !== 1 ? "s" : ""} generated
+            {tiles.length} {isLoveWriters ? "arc" : "insight"}{tiles.length !== 1 ? "s" : ""} generated
           </p>
         </div>
 
@@ -249,7 +254,7 @@ export function TileGridAde({
                         onCreateBlankDashboard?.();
                         setIsDashboardOpen(false);
                       }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg text-left mt-1 border-t border-gray-100"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg text-left mt-1"
                     >
                       <Plus className="h-3 w-3" />
                       <span>New Dashboard</span>
@@ -272,7 +277,7 @@ export function TileGridAde({
           items={sortedTiles.map((t) => t.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {onAddPrompt && (
               <button
                 onClick={() => onAddPrompt()}

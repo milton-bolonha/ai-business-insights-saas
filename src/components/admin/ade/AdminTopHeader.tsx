@@ -22,7 +22,8 @@ import { usePathname } from "next/navigation";
 import {
     useWorkspaceStore,
     useCurrentWorkspace,
-    useWorkspaceActions
+    useWorkspaceActions,
+    useUIStore
 } from "@/lib/stores";
 
 export interface AdminTopHeaderProps {
@@ -81,7 +82,7 @@ export function AdminTopHeader({
                 color: appearance.headingColor,
             }}
         >
-            <div className="container mx-auto px-6 py-4 flex items-center justify-between relative">
+            <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between relative">
 
                 {/* Left: Brand & Info */}
                 <div className="flex items-center gap-3">
@@ -140,7 +141,7 @@ export function AdminTopHeader({
                                                 ))}
                                             </div>
                                             <div className="relative">
-                                                <label className="block text-xs font-medium text-white mb-1 bg-black/80 px-1 rounded w-fit">Custom Color</label>
+                                                <label className="block text-xs font-medium text-black mb-1 w-fit">Custom Color</label>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="color"
@@ -157,19 +158,19 @@ export function AdminTopHeader({
                     </div>
                 </div>
 
-                {/* Center: Workspace Chooser */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
+                {/* Center: Workspace Chooser - Hidden on mobile if needed, or adjusted */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-200">
                     <div className="relative">
                         <button
                             onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
-                            className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium hover:bg-white/10 transition-colors cursor-pointer"
+                            className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10"
                         >
                             {activeWorkspaceDisplay.type === 'love_writers' ? (
                                 <BookOpen className="h-4 w-4 text-rose-500" />
                             ) : (
                                 <PieChart className="h-4 w-4 text-blue-500" />
                             )}
-                            <span className="hidden md:block">{activeWorkspaceDisplay.name}</span>
+                            <span className="hidden md:block max-w-[150px] truncate">{activeWorkspaceDisplay.name}</span>
                             <ChevronDown className="h-4 w-4 text-gray-500" />
                         </button>
 
@@ -221,13 +222,9 @@ export function AdminTopHeader({
                                             <button
                                                 onClick={() => {
                                                     setIsWorkspaceOpen(false);
-                                                    // Add workspace logic handled by parent if needed, strictly we just close here 
-                                                    // and user might use a different button or we assume "Add" is in the list?
-                                                    // Implementation plan said "Add Workspace" opens the modal. 
-                                                    // We can signal parent or use store. Let's assume there is a global modal for it.
-                                                    // For now, let's leave as is or add a callback if provided.
+                                                    useUIStore.getState().openAddWorkspace();
                                                 }}
-                                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+                                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800 cursor-pointer"
                                             >
                                                 <div className="flex h-5 w-5 items-center justify-center rounded border border-dashed border-gray-400">
                                                     <Plus className="h-3 w-3" />

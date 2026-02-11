@@ -452,6 +452,14 @@ export function HomeContainer() {
             <span className="text-xl font-semibold text-black">WebApp</span>
           </Link>
           <div className="flex items-center space-x-3">
+            {messages.length > 0 && (
+              <button
+                onClick={handleResetWorkspace}
+                className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors"
+              >
+                Start Over
+              </button>
+            )}
             <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-black">Log in</Link>
             <Link href="/signup" className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors">Sign up</Link>
           </div>
