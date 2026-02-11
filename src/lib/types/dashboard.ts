@@ -1,5 +1,5 @@
 import type { Tile, Note, Contact } from "@/lib/types";
-import type { WorkspaceAppearance } from "@/lib/types";
+import type { WorkspaceAppearance, WorkspacePromptSettings } from "@/lib/types";
 
 /**
  * Dashboard representa uma vista/configuração dentro de um Workspace
