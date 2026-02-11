@@ -165,6 +165,28 @@ export const cache = {
   getImplementation(): "vercel" | "upstash" | null {
     return cacheImpl;
   },
+
+  /**
+   * Find keys matching pattern
+   */
+  async keys(pattern: string): Promise<string[]> {
+    const client = getClient();
+    if (!client) {
+      return [];
+    }
+
+    try {
+      if (cacheImpl === "vercel") {
+        return await client.keys(pattern);
+      } else if (cacheImpl === "upstash") {
+        return await client.keys(pattern);
+      }
+      return [];
+    } catch (error) {
+      console.warn(`[Cache] Keys failed for pattern "${pattern}":`, error);
+      return [];
+    }
+  },
 };
 
 /**

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/lib/state/toast-context";
 import { AdminShellAde } from "@/components/admin/ade/AdminShellAde";
 import { AdminHeaderAde } from "@/components/admin/ade/AdminHeaderAde";
-import { AdminSidebarAde } from "@/components/admin/ade/AdminSidebarAde";
+// import { AdminSidebar } from "../../components/admin/ade/AdminSidebar";
 import { TileGridAde } from "@/containers/admin/ade/TileGridAde";
 import { NotesPanelAde } from "@/containers/admin/ade/NotesPanelAde";
 import { ContactsPanelAde } from "@/containers/admin/ade/ContactsPanelAde";
@@ -21,6 +21,7 @@ import { PaymentEmailModal } from "@/components/ui/PaymentEmailModal";
 import { TileDetailModal } from "@/components/ui/prompt-tiles/TileDetailModal";
 import { ContactDetailModal } from "@/components/admin/ade/ContactDetailModal";
 import { WorkspaceDetailModal } from "@/components/admin/ade/WorkspaceDetailModal";
+import { BookReaderModal } from "@/components/admin/ade/BookReaderModal";
 
 // Zustand stores
 import {
@@ -64,6 +65,91 @@ export function AdminContainer() {
   const { handleCustomizeBackground, handleSetBackground } =
     useAppearanceManagement(currentDashboard || undefined);
 
+  // Sequential Writer Logic (Client-Side Orchestration)
+  useEffect(() => {
+    let isGenerating = false;
+
+    const generateNextTile = async () => {
+      // 1. Validate Context
+      if (
+        !currentWorkspace ||
+        currentWorkspace.promptSettings?.templateId !== "template_love_writers" ||
+        !currentDashboard
+      ) {
+        return;
+      }
+
+      // 2. Find next empty tile (Draft)
+      // Sort by orderIndex to ensure sequence
+      const tiles = [...currentDashboard.tiles].sort((a, b) => a.orderIndex - b.orderIndex);
+      const nextTile = tiles.find(t => t.content === null || t.content === "");
+
+      if (!nextTile) return; // All done
+
+      if (isGenerating) return; // Already busy
+      isGenerating = true;
+
+      try {
+        console.log(`[SequentialWriter] Starting generation for tile: ${nextTile.title}`);
+
+        // 3. Prepare Prompt with Context (Previous Arc)
+        const previousTile = tiles.find(t => t.orderIndex === nextTile.orderIndex - 1);
+        const previousContent = previousTile?.content || "This is the beginning of the story.";
+
+        // Inject context locally
+        const contextualizedPrompt = nextTile.prompt.replace(
+          "{previous_arc}",
+          previousContent
+        );
+
+        // 4. Update UI to "Generating..." state
+        // We can use a temporary content placeholder or a status field if we added one.
+        // For now, let's use a optimistic update or just rely on the API call time.
+        // Better: Update the tile with a loading indicator or specific text? 
+        // Let's rely on the fact that content is null. UI should show "Writing..." for null content if previous is done.
+
+        // 5. Call API
+        const response = await fetch("/api/generate/tile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: contextualizedPrompt,
+            title: nextTile.title,
+            model: "gpt-4o-mini", // Or from settings
+            maxTokens: 1000, // Adjust as needed
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.content) {
+          // 6. Save Content
+          await content.updateTile(nextTile.id, {
+            content: data.content,
+            // Remove 'pending' status if we added it
+          });
+
+          console.log(`[SequentialWriter] Completed tile: ${nextTile.title}`);
+
+          // Trigger next iteration automatically via dependency change? 
+          // Updating the store triggers re-render, which triggers useEffect again.
+        } else {
+          console.error("[SequentialWriter] API Error:", data.error);
+        }
+
+      } catch (e) {
+        console.error("[SequentialWriter] Loop Error:", e);
+      } finally {
+        isGenerating = false;
+      }
+    };
+
+    // Run the loop
+    const timer = setTimeout(generateNextTile, 1000); // Small delay to allow UI to settle
+    return () => clearTimeout(timer);
+
+  }, [currentWorkspace, currentDashboard, content]); // Dependencies trigger re-run on updates
+
   // Auto-migrate guest data when user becomes a member
   useGuestDataMigration();
 
@@ -84,6 +170,8 @@ export function AdminContainer() {
     closeWorkspaceDetail,
     setSelectedTile,
     setSelectedContact,
+    openPreview,
+    closePreview,
   } = useUIStore();
 
   // Shared ref for dashboard updates (prevents race conditions)
@@ -349,40 +437,21 @@ export function AdminContainer() {
   const hasTiles = content.tiles.length > 0;
 
   const companyHeading =
-    currentWorkspace?.salesRepCompany || currentWorkspace?.name || "Workspace";
+    currentWorkspace?.salesRepCompany || currentWorkspace?.name || "Book Project";
 
   // Get data from current dashboard
   const allTiles = currentDashboard?.tiles || [];
   const allContacts = currentDashboard?.contacts || [];
   const allNotes = currentDashboard?.notes || [];
 
+
+
   return (
     <AdminShellAde
       appearance={appearance}
-      sidebar={
-        <AdminSidebarAde
-          appearance={appearance}
-          companyName={companyHeading}
-          workspaces={workspacesForSidebar}
-          onSelectWorkspace={workspaceActions.switchWorkspace}
-          onAddWorkspace={openAddWorkspace}
-          onAddContact={openAddContact}
-          onOpenWorkspaceDetails={openWorkspaceDetail}
-          onOpenUpgrade={() => payment.setUpgradeModalOpen(true)}
-        />
-      }
-      header={
-        <AdminHeaderAde
-          appearance={appearance}
-          workspaceId={currentWorkspace?.id}
-          currentDashboardId={currentDashboard?.id}
-          dashboards={dashboardsForHeader}
-          onCustomizeBackground={handleCustomizeBackground}
-          onSetSpecificColor={handleSetBackground}
-          onCreateBlankDashboard={openCreateBlankDashboard}
-          onSelectDashboard={workspaceActions.setActiveDashboard}
-        />
-      }
+      // Top Header Props
+      onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
+      onSetSpecificColor={handleSetBackground}
     >
       {!hasWorkspace ? (
         <EmptyStateAde
@@ -407,131 +476,145 @@ export function AdminContainer() {
         />
       ) : (
         <>
-          {/* Main content area */}
-          <div className="flex-1 overflow-auto">
-            <TileGridAde
-              tiles={allTiles}
-              onDeleteTile={async (tileId) => {
-                console.log(
-                  "[DEBUG] AdminContainer deleteTile called:",
-                  tileId
-                );
-                try {
-                  await content.deleteTile(tileId);
-                  // Refresh tiles from workspace store
-                  workspaceActions.refreshWorkspaces();
-                  push({
-                    title: "Tile deleted",
-                    description: "The tile has been removed.",
-                    variant: "default",
-                  });
-                } catch (error) {
-                  console.error(
-                    "[DEBUG] AdminContainer deleteTile error:",
-                    error
-                  );
-                  push({
-                    title: "Error",
-                    description: "Failed to delete tile. Please try again.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              onReorderTiles={async (order) => {
-                console.log("[DEBUG] AdminContainer reorderTiles called:", {
-                  orderLength: order.length,
-                  currentDashboardId: currentDashboard?.id,
-                });
-                if (!currentDashboard?.id) {
-                  console.error(
-                    "[DEBUG] AdminContainer reorderTiles - No current dashboard"
-                  );
-                  return;
-                }
-                try {
-                  await content.reorderTiles(currentDashboard.id, order);
-                  // Refresh tiles from workspace store
-                  workspaceActions.refreshWorkspaces();
-                  console.log("[DEBUG] AdminContainer reorderTiles success");
-                } catch (error) {
-                  console.error(
-                    "[DEBUG] AdminContainer reorderTiles error:",
-                    error
-                  );
-                  push({
-                    title: "Error",
-                    description: "Failed to reorder tiles. Please try again.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              onOpenTile={(tile) => {
-                console.log(
-                  "[DEBUG] AdminContainer onOpenTile called:",
-                  tile.id
-                );
-                setSelectedTile(tile);
-              }}
-              isReordering={false}
-              appearance={appearance}
-              onAddPrompt={openAddPrompt}
-              onBulkUploadPrompts={openBulkUpload}
-              animateEntrance={true}
-              workspaceName={currentWorkspace?.name}
-            />
-          </div>
+          {/* Dashboard Header (Secondary) */}
+          {/* AdminHeaderAde moved to Top Header */}
 
-          {/* Side panels - Always show to allow adding items */}
-          <div className="space-y-8">
-            <ContactsPanelAde
-              contacts={allContacts}
-              onAddContact={openAddContact}
-              onOpenContact={setSelectedContact}
-              appearance={appearance}
-            />
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-h-0 relative z-0">
 
-            <NotesPanelAde
-              notes={content.notes}
-              onAddNote={async (noteData) => {
-                console.log(
-                  "[DEBUG] AdminContainer.onAddNote called:",
-                  noteData
-                );
-                if (currentDashboard) {
-                  await content.createNote(currentDashboard.id, noteData);
-                  // Refresh notes from workspace store
-                  handleNotesChanged();
-                  push({
-                    title: "Note created",
-                    description: "The note has been added successfully.",
-                    variant: "default",
-                  });
-                }
-              }}
-              onUpdateNote={async (noteId, updates) => {
-                console.log(
-                  "[DEBUG] AdminContainer.onUpdateNote called:",
-                  noteId,
-                  updates
-                );
-                await content.updateNote(noteId, updates);
-                // Refresh notes from workspace store
-                handleNotesChanged();
-              }}
-              onDeleteNote={async (noteId) => {
-                console.log(
-                  "[DEBUG] AdminContainer.onDeleteNote called:",
-                  noteId
-                );
-                await content.deleteNote(noteId);
-                // Refresh notes from workspace store
-                handleNotesChanged();
-              }}
-              appearance={appearance}
-            />
+            <main className="flex-1 overflow-y-auto px-6 pb-6 pt-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+              {/* Main content area */}
+              <div className="flex-1 overflow-auto">
+                <TileGridAde
+                  tiles={allTiles}
+                  onDeleteTile={async (tileId) => {
+                    console.log(
+                      "[DEBUG] AdminContainer deleteTile called:",
+                      tileId
+                    );
+                    try {
+                      await content.deleteTile(tileId);
+                      // Refresh tiles from workspace store
+                      workspaceActions.refreshWorkspaces();
+                      push({
+                        title: "Tile deleted",
+                        description: "The tile has been removed.",
+                        variant: "default",
+                      });
+                    } catch (error) {
+                      console.error(
+                        "[DEBUG] AdminContainer deleteTile error:",
+                        error
+                      );
+                      push({
+                        title: "Error",
+                        description: "Failed to delete tile. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  onReorderTiles={async (order) => {
+                    console.log("[DEBUG] AdminContainer reorderTiles called:", {
+                      orderLength: order.length,
+                      currentDashboardId: currentDashboard?.id,
+                    });
+                    if (!currentDashboard?.id) {
+                      console.error(
+                        "[DEBUG] AdminContainer reorderTiles - No current dashboard"
+                      );
+                      return;
+                    }
+                    try {
+                      await content.reorderTiles(currentDashboard.id, order);
+                      // Refresh tiles from workspace store
+                      workspaceActions.refreshWorkspaces();
+                      console.log("[DEBUG] AdminContainer reorderTiles success");
+                    } catch (error) {
+                      console.error(
+                        "[DEBUG] AdminContainer reorderTiles error:",
+                        error
+                      );
+                      push({
+                        title: "Error",
+                        description: "Failed to reorder tiles. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  onOpenTile={(tile) => {
+                    console.log(
+                      "[DEBUG] AdminContainer onOpenTile called:",
+                      tile.id
+                    );
+                    setSelectedTile(tile);
+                  }}
+                  isReordering={false}
+                  appearance={appearance}
+                  onAddPrompt={openAddPrompt}
+                  onBulkUploadPrompts={openBulkUpload}
+                  animateEntrance={true}
+                  workspaceName={currentWorkspace?.name}
 
-            {/* Files placeholder */}
-            <FilesPlaceholderAde appearance={appearance} />
+                  // Dashboard Props for Header
+                  dashboards={dashboardsForHeader}
+                  onSelectDashboard={workspaceActions.setActiveDashboard}
+                  onCreateBlankDashboard={openCreateBlankDashboard}
+                />
+              </div>
+
+              {/* Side panels - Always show to allow adding items */}
+              <div className="space-y-8">
+                <ContactsPanelAde
+                  contacts={allContacts}
+                  onAddContact={openAddContact}
+                  onOpenContact={setSelectedContact}
+                  appearance={appearance}
+                />
+
+                <NotesPanelAde
+                  notes={content.notes}
+                  onAddNote={async (noteData) => {
+                    console.log(
+                      "[DEBUG] AdminContainer.onAddNote called:",
+                      noteData
+                    );
+                    if (currentDashboard) {
+                      await content.createNote(currentDashboard.id, noteData);
+                      // Refresh notes from workspace store
+                      handleNotesChanged();
+                      push({
+                        title: "Note created",
+                        description: "The note has been added successfully.",
+                        variant: "default",
+                      });
+                    }
+                  }}
+                  onUpdateNote={async (noteId, updates) => {
+                    console.log(
+                      "[DEBUG] AdminContainer.onUpdateNote called:",
+                      noteId,
+                      updates
+                    );
+                    await content.updateNote(noteId, updates);
+                    // Refresh notes from workspace store
+                    handleNotesChanged();
+                  }}
+                  onDeleteNote={async (noteId) => {
+                    console.log(
+                      "[DEBUG] AdminContainer.onDeleteNote called:",
+                      noteId
+                    );
+                    await content.deleteNote(noteId);
+                    // Refresh notes from workspace store
+                    handleNotesChanged();
+                  }}
+                  appearance={appearance}
+                />
+
+                {/* Files placeholder */}
+                <FilesPlaceholderAde appearance={appearance} />
+              </div>
+            </main>
           </div>
         </>
       )}
@@ -779,6 +862,15 @@ export function AdminContainer() {
         limits={payment.limits}
         stripeCheckoutUrl={payment.stripeCheckoutUrl}
       />
-    </AdminShellAde>
+
+      {/* Book Reader Preview */}
+      <BookReaderModal
+        open={modals.isPreviewOpen}
+        onClose={closePreview}
+        tiles={allTiles}
+        title={currentWorkspace?.name || "Book Preview"}
+      />
+
+    </AdminShellAde >
   );
 }

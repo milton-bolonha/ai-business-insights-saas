@@ -19,6 +19,7 @@ export interface UIState {
     isAddWorkspaceOpen: boolean;
     isBulkUploadOpen: boolean;
     isWorkspaceDetailOpen: boolean;
+    isPreviewOpen: boolean;
     viewingWorkspaceId: string | null;
     selectedTile: Tile | null;
     selectedContact: Contact | null;
@@ -41,6 +42,8 @@ export interface UIState {
   closeBulkUpload: () => void;
   openWorkspaceDetail: (workspaceId: string) => void;
   closeWorkspaceDetail: () => void;
+  openPreview: () => void;
+  closePreview: () => void;
   setSelectedTile: (tile: Tile | null) => void;
   setSelectedContact: (contact: Contact | null) => void;
 }
@@ -60,6 +63,7 @@ export const useUIStore = create<UIState>()(
         isAddWorkspaceOpen: false,
         isBulkUploadOpen: false,
         isWorkspaceDetailOpen: false,
+        isPreviewOpen: false,
         viewingWorkspaceId: null,
         selectedTile: null,
         selectedContact: null,
@@ -119,13 +123,25 @@ export const useUIStore = create<UIState>()(
         modals: { ...state.modals, isAddWorkspaceOpen: false }
       })),
 
-      openWorkspaceDetail: (workspaceId) => set(state => ({
-        modals: { ...state.modals, isWorkspaceDetailOpen: true, viewingWorkspaceId: workspaceId }
-      })),
+      // Workspace Detail
+      openWorkspaceDetail: (workspaceId) =>
+        set((state) => ({
+          modals: { ...state.modals, isWorkspaceDetailOpen: true, viewingWorkspaceId: workspaceId },
+        })),
+      closeWorkspaceDetail: () =>
+        set((state) => ({
+          modals: { ...state.modals, isWorkspaceDetailOpen: false, viewingWorkspaceId: null },
+        })),
 
-      closeWorkspaceDetail: () => set(state => ({
-        modals: { ...state.modals, isWorkspaceDetailOpen: false, viewingWorkspaceId: null }
-      })),
+      // Preview (Book Reader)
+      openPreview: () =>
+        set((state) => ({
+          modals: { ...state.modals, isPreviewOpen: true },
+        })),
+      closePreview: () =>
+        set((state) => ({
+          modals: { ...state.modals, isPreviewOpen: false },
+        })),
 
       setSelectedTile: (tile) => set(state => ({
         modals: { ...state.modals, selectedTile: tile }

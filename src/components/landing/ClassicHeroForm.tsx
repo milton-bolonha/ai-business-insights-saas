@@ -15,6 +15,10 @@ export interface ClassicHeroFormSubmission {
   responseLength: string;
   promptVariables: string[];
   bulkPrompts: string[];
+  // Love Writers / Guest Fields
+  user_name?: string;
+  partner_name?: string;
+  meeting_story?: string;
 }
 
 interface ClassicHeroFormProps {

@@ -26,7 +26,7 @@ export function ContactsPanelAde({
           className="text-lg font-semibold"
           style={{ color: appearance?.textColor || "#111827" }}
         >
-          Contacts
+          Characters
         </h3>
       </div>
 
@@ -48,7 +48,7 @@ export function ContactsPanelAde({
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
             <Plus className="h-5 w-5" />
           </div>
-          <span className="text-sm font-medium">Add Contact</span>
+          <span className="text-sm font-medium">Add Character</span>
         </button>
 
         {contacts.map((contact) => (

@@ -867,6 +867,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               };
               dashboard.updatedAt = new Date().toISOString();
               workspace.updatedAt = new Date().toISOString();
+
+              // Update current references
+              if (state.currentWorkspace?.id === workspaceId) {
+                state.currentWorkspace = workspace;
+                if (state.currentDashboard?.id === dashboardId) {
+                  state.currentDashboard = dashboard;
+                }
+              }
             }
           });
 

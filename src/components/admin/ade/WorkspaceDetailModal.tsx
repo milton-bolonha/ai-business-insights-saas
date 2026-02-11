@@ -31,10 +31,14 @@ export function WorkspaceDetailModal({
     dashboards: workspace.dashboards.length,
   };
 
+  const isLoveWriters = workspace.promptSettings?.templateId === "template_love_writers";
+  const tilesLabel = isLoveWriters ? "Arcs" : "Tiles";
+  const contactsLabel = isLoveWriters ? "Characters" : "Contacts";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div 
+      <div
         className="relative max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-lg shadow-xl"
         style={{ backgroundColor: appearance.surfaceColor }}
       >
@@ -48,9 +52,9 @@ export function WorkspaceDetailModal({
               <div>
                 <h2 className="text-xl font-semibold" style={{ color: appearance.headingColor }}>{workspace.name}</h2>
                 {workspace.website && (
-                  <a 
-                    href={workspace.website} 
-                    target="_blank" 
+                  <a
+                    href={workspace.website}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline"
                   >
@@ -72,14 +76,14 @@ export function WorkspaceDetailModal({
             <div className="p-4 rounded-lg border" style={{ borderColor: appearance.cardBorderColor, backgroundColor: appearance.baseColor }}>
               <div className="flex items-center space-x-2 mb-2">
                 <FileText className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
-                <span className="text-sm font-medium" style={{ color: appearance.mutedTextColor }}>Tiles</span>
+                <span className="text-sm font-medium" style={{ color: appearance.mutedTextColor }}>{tilesLabel}</span>
               </div>
               <div className="text-2xl font-bold" style={{ color: appearance.headingColor }}>{stats.tiles}</div>
             </div>
             <div className="p-4 rounded-lg border" style={{ borderColor: appearance.cardBorderColor, backgroundColor: appearance.baseColor }}>
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="h-4 w-4" style={{ color: appearance.mutedTextColor }} />
-                <span className="text-sm font-medium" style={{ color: appearance.mutedTextColor }}>Contacts</span>
+                <span className="text-sm font-medium" style={{ color: appearance.mutedTextColor }}>{contactsLabel}</span>
               </div>
               <div className="text-2xl font-bold" style={{ color: appearance.headingColor }}>{stats.contacts}</div>
             </div>
@@ -120,13 +124,13 @@ export function WorkspaceDetailModal({
               <h3 className="text-sm font-medium mb-3 uppercase tracking-wider" style={{ color: appearance.headingColor }}>Dashboards</h3>
               <div className="space-y-2">
                 {workspace.dashboards.map((dashboard) => (
-                  <div 
+                  <div
                     key={dashboard.id}
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-black/5 transition-colors"
                     style={{ borderColor: appearance.cardBorderColor }}
                   >
                     <div className="flex items-center space-x-3">
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full border"
                         style={{ backgroundColor: dashboard.bgColor || '#f5f5f0', borderColor: appearance.sidebarBorderColor }}
                       />

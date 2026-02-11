@@ -11,6 +11,7 @@ export interface AdeAppearanceTokens {
   sidebarColor: string;
   sidebarBorderColor: string;
   cardBorderColor: string;
+  primaryColor?: string;
   headingColor: string;
   textColor: string;
   mutedTextColor: string;

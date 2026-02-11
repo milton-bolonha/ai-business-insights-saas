@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles, ChevronDown } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion, AnimatePresence } from "framer-motion";
 
 import type { Tile } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
@@ -35,6 +36,10 @@ interface TileGridAdeProps {
   onBulkUploadPrompts?: () => void;
   animateEntrance?: boolean;
   workspaceName?: string;
+  // Dashboard Props
+  dashboards?: Array<{ id: string; name: string; isActive?: boolean }>;
+  onSelectDashboard?: (dashboardId: string) => void;
+  onCreateBlankDashboard?: () => void;
 }
 
 // Sortable Tile Card Component
@@ -75,9 +80,8 @@ function SortableTileCard({
         ...style,
         animationDelay: animateEntrance ? `${index * 50}ms` : undefined,
       }}
-      className={`${
-        animateEntrance ? "animate-in fade-in slide-in-from-bottom-4" : ""
-      } h-full`}
+      className={`${animateEntrance ? "animate-in fade-in slide-in-from-bottom-4" : ""
+        } h-full`}
     >
       <div
         {...attributes}
@@ -103,11 +107,19 @@ export function TileGridAde({
   appearance,
   onAddPrompt,
   animateEntrance = true,
+  dashboards = [],
+  onSelectDashboard,
+  onCreateBlankDashboard,
 }: TileGridAdeProps) {
   const [sortOrder, setSortOrder] = useState<
     "newest" | "oldest" | "category" | "manual"
   >("manual");
   const [localTiles, setLocalTiles] = useState<Tile[]>(tiles);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+
+  // Dashboard Data
+  const currentDashboard = dashboards.find(d => d.isActive);
+  const otherDashboards = dashboards.filter(d => !d.isActive);
 
   // Update local tiles when prop changes
   useEffect(() => {
@@ -190,18 +202,64 @@ export function TileGridAde({
             className="text-2xl font-bold"
             style={{ color: appearance?.textColor || "#111827" }}
           >
-            Insights
+            Book Arcs
           </h2>
           <p
             className="mt-1 text-sm"
             style={{ color: appearance?.mutedTextColor || "#6b7280" }}
           >
-            {tiles.length} insight{tiles.length !== 1 ? "s" : ""} generated
+            {tiles.length} arc{tiles.length !== 1 ? "s" : ""} generated
           </p>
         </div>
 
-        {/* Sort controls */}
-        {/* Sort controls ocultos */}
+        {/* Dashboard Switcher (Right aligned) */}
+        {dashboards.length > 0 && (
+          <div className="relative z-20">
+            <button
+              onClick={() => setIsDashboardOpen(!isDashboardOpen)}
+              className="flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors text-gray-700 shadow-sm"
+            >
+              <span className="hidden md:block">{currentDashboard?.name || "Dashboard"}</span>
+              <ChevronDown className="h-3 w-3 text-gray-400" />
+            </button>
+            <AnimatePresence>
+              {isDashboardOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsDashboardOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg p-1"
+                  >
+                    {otherDashboards.map(d => (
+                      <button
+                        key={d.id}
+                        onClick={() => {
+                          onSelectDashboard?.(d.id);
+                          setIsDashboardOpen(false);
+                        }}
+                        className="flex w-full items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg text-left"
+                      >
+                        {d.name}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => {
+                        onCreateBlankDashboard?.();
+                        setIsDashboardOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg text-left mt-1 border-t border-gray-100"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>New Dashboard</span>
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       {/* Tiles grid */}
@@ -229,7 +287,7 @@ export function TileGridAde({
                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                   <Plus className="h-6 w-6" />
                 </div>
-                <span className="text-sm font-medium">Add Prompt</span>
+                <span className="text-sm font-medium">Add Manual Arc</span>
               </button>
             )}
 

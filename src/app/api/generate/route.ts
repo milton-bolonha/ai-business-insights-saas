@@ -74,7 +74,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const template = getGuestTemplate(templateId);
+    // Parse promptVariables (["key: value"]) into an object for the context
+    const parsedVariables: Record<string, string> = {};
+    if (normalizedPromptVariables.length > 0) {
+      normalizedPromptVariables.forEach((item) => {
+        const [key, ...valueParts] = item.split(":");
+        if (key && valueParts.length > 0) {
+          const value = valueParts.join(":").trim(); // Rejoin in case value contained colons
+          parsedVariables[key.trim()] = value;
+        }
+      });
+    }
+
     const normalizedContext = {
+      ...parsedVariables, // Add parsed variables to context
       salesRepAt: salesRepCompany,
       salesRepCompany,
       salesRepCompanyWebsite: salesRepWebsite.trim(),
@@ -137,41 +150,93 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const tilePromises = prompts.map(async (item, orderIndex) => {
-      const generation = await generateTileContent({
-        client: openai,
-        prompt: item.prompt,
-        title: item.title,
-        orderIndex,
-        model: model || "gpt-4o-mini",
-        templateId,
-        templateTileId: item.templateTileId ?? item.id,
-        category: item.category,
-        maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    let tiles: any[] = [];
+
+    if (template.generationMode === "sequential") {
+      let previousArcContent = "";
+      
+      for (const [index, item] of prompts.entries()) {
+        // Inject previous context into the prompt
+        const contextualizedPrompt = item.prompt.replace(
+          "{previous_arc}",
+          previousArcContent || "This is the beginning of the story."
+        );
+
+        const generation = await generateTileContent({
+          client: openai,
+          prompt: contextualizedPrompt,
+          title: item.title,
+          orderIndex: index,
+          model: model || "gpt-4o-mini",
+          templateId,
+          templateTileId: item.templateTileId ?? item.id,
+          category: item.category,
+          maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+        });
+
+        const tile = {
+          id: `tile_${randomUUID()}`,
+          title: item.title,
+          content: generation.content,
+          prompt: contextualizedPrompt,
+          templateId,
+          templateTileId: item.templateTileId,
+          category: item.category,
+          model: generation.model,
+          orderIndex: index,
+          createdAt: generation.createdAt,
+          updatedAt: generation.updatedAt,
+          totalTokens: generation.totalTokens,
+          attempts: generation.attempts,
+          history: generation.history,
+          agentId: item.agentId,
+          responseLength: item.preferredLength,
+          promptVariables: item.runtimeVariables,
+        };
+
+        tiles.push(tile);
+        
+        // Update context for next iteration
+        previousArcContent = generation.content;
+      }
+    } else {
+      // Parallel Generation (Default)
+      const tilePromises = prompts.map(async (item, orderIndex) => {
+        const generation = await generateTileContent({
+          client: openai,
+          prompt: item.prompt,
+          title: item.title,
+          orderIndex,
+          model: model || "gpt-4o-mini",
+          templateId,
+          templateTileId: item.templateTileId ?? item.id,
+          category: item.category,
+          maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+        });
+
+        return {
+          id: `tile_${randomUUID()}`,
+          title: item.title,
+          content: generation.content,
+          prompt: item.prompt,
+          templateId,
+          templateTileId: item.templateTileId,
+          category: item.category,
+          model: generation.model,
+          orderIndex,
+          createdAt: generation.createdAt,
+          updatedAt: generation.updatedAt,
+          totalTokens: generation.totalTokens,
+          attempts: generation.attempts,
+          history: generation.history,
+          agentId: item.agentId,
+          responseLength: item.preferredLength,
+          promptVariables: item.runtimeVariables,
+        };
       });
 
-      return {
-        id: `tile_${randomUUID()}`,
-        title: item.title,
-        content: generation.content,
-        prompt: item.prompt,
-        templateId,
-        templateTileId: item.templateTileId,
-        category: item.category,
-        model: generation.model,
-        orderIndex,
-        createdAt: generation.createdAt,
-        updatedAt: generation.updatedAt,
-        totalTokens: generation.totalTokens,
-        attempts: generation.attempts,
-        history: generation.history,
-        agentId: item.agentId,
-        responseLength: item.preferredLength,
-        promptVariables: item.runtimeVariables,
-      };
-    });
-
-    const tiles = await Promise.all(tilePromises);
+      tiles = await Promise.all(tilePromises);
+    }
 
     if (userId) {
       const { checkLimit } = await import("@/lib/saas/usage-service");

@@ -123,8 +123,24 @@ export function useContent() {
       return result.tile;
     },
     async updateTile(tileId: string, updates: Partial<Tile>) {
-      // TODO: implementar updateTile mutation
-      console.warn('updateTile not implemented yet');
+      if (!currentWorkspace?.id || !currentDashboard?.id) {
+        throw new Error("No dashboard selected");
+      }
+      
+      console.log('[DEBUG] useContent.updateTile called:', { tileId, updates });
+      
+      // Update local store immediately (optimistic update)
+      const { useWorkspaceStore } = await import('./workspaceStore');
+      useWorkspaceStore.getState().updateTileInDashboard(
+        currentWorkspace.id,
+        currentDashboard.id,
+        tileId,
+        updates
+      );
+      
+      // TODO: If we had a backend mutation, we would call it here.
+      // For now, since we use local storage persistence via the store, 
+      // the updateTileInDashboard action handles the persistence.
     },
     async deleteTile(tileId: string) {
       console.log('[DEBUG] useContent.deleteTile called:', { tileId, dashboardId: currentDashboard?.id, workspaceId: currentWorkspace?.id });

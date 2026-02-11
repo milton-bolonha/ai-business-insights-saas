@@ -11,6 +11,8 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
   const { updateDashboard } = useWorkspaceStore();
   const { isGuest } = useAuthStore();
   const { mutate: updateBgColorApi } = useUpdateBgColor();
+  const workspaces = useWorkspaceStore(state => state.workspaces);
+  const currentWorkspace = workspaces.find(w => w.dashboards.find(d => d.id === currentDashboard?.id)) || workspaces[0];
 
   const handleCustomizeBackground = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -28,25 +30,37 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
       const nextIndex = (currentIndex + 1) % colors.length;
       const nextColor = colors[nextIndex];
 
+      const workspaceId = currentDashboard.workspaceId || currentWorkspace?.id;
+
+      if (!workspaceId) {
+        console.warn('[DEBUG] useAppearanceManagement: missing workspaceId, skipping API call');
+        // Still update local state though
+        if (currentDashboard.workspaceId) {
+             updateDashboard(currentDashboard.workspaceId, currentDashboard.id, {
+                bgColor: nextColor
+             });
+        }
+        setBaseColor(nextColor);
+        return;
+      }
+
       console.log('[DEBUG] useAppearanceManagement:', {
         currentDashboardId: currentDashboard.id,
         currentBgColor,
-        nextColor
+        nextColor,
+        workspaceId
       });
 
       // Update the dashboard's bgColor
       // 1. Optimistic update (local store)
-      updateDashboard(currentDashboard.workspaceId, currentDashboard.id, {
+      updateDashboard(workspaceId, currentDashboard.id, {
         bgColor: nextColor
       });
 
       // 2. Persist to server (for both members and guests)
-      // Guests: Updates server-side memory/logs for consistency
-      // Members: Updates MongoDB
-      console.log('[DEBUG] useAppearanceManagement: persisting to server via dedicated API', { dashboardId: currentDashboard.id, nextColor });
       updateBgColorApi({
         dashboardId: currentDashboard.id,
-        workspaceId: currentDashboard.workspaceId,
+        workspaceId: workspaceId,
         bgColor: nextColor
       });
 
@@ -58,6 +72,7 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
       setBaseColor,
       updateDashboard,
       currentDashboard,
+      currentWorkspace,
       isGuest,
       updateBgColorApi,
     ]
@@ -70,22 +85,30 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
         return;
       }
 
+      const workspaceId = currentDashboard.workspaceId || currentWorkspace?.id;
+
+      if (!workspaceId) {
+         console.warn('[DEBUG] useAppearanceManagement.handleSetBackground: missing workspaceId');
+         setBaseColor(color);
+         return;
+      }
+
       console.log('[DEBUG] useAppearanceManagement.handleSetBackground:', {
         currentDashboardId: currentDashboard.id,
-        color
+        color,
+        workspaceId
       });
 
       // Update the dashboard's bgColor
       // 1. Optimistic update (local store)
-      updateDashboard(currentDashboard.workspaceId, currentDashboard.id, {
+      updateDashboard(workspaceId, currentDashboard.id, {
         bgColor: color
       });
 
       // 2. Persist to server (for both members and guests)
-      console.log('[DEBUG] useAppearanceManagement: persisting to server via dedicated API', { dashboardId: currentDashboard.id, color });
       updateBgColorApi({
         dashboardId: currentDashboard.id,
-        workspaceId: currentDashboard.workspaceId,
+        workspaceId: workspaceId,
         bgColor: color
       });
 
@@ -96,6 +119,7 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
       setBaseColor,
       updateDashboard,
       currentDashboard,
+      currentWorkspace,
       updateBgColorApi,
     ]
   );

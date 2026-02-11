@@ -114,6 +114,7 @@ export function getOrCreateWorkspaceFromWorkspaceSnapshot(
       website: workspace.website,
       salesRepCompany: workspace.salesRepCompany,
       salesRepWebsite: workspace.salesRepWebsite,
+      promptSettings: workspace.promptSettings,
       dashboards: [
         {
           id: `dashboard_${workspace.sessionId}_default`,
@@ -144,8 +145,8 @@ export function getOrCreateWorkspaceFromWorkspaceSnapshot(
     // Update existing workspace
     workspaceEntity.name = workspace.name;
     workspaceEntity.website = workspace.website;
-    workspaceEntity.salesRepCompany = workspace.salesRepCompany ?? workspaceEntity.salesRepCompany;
     workspaceEntity.salesRepWebsite = workspace.salesRepWebsite ?? workspaceEntity.salesRepWebsite;
+    workspaceEntity.promptSettings = workspace.promptSettings ?? workspaceEntity.promptSettings;
     workspaceEntity.updatedAt = new Date().toISOString();
 
     // Update tiles in the default dashboard if workspace has tiles

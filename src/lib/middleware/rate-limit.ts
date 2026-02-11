@@ -34,7 +34,7 @@ const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
   // Critical endpoints (AI generation, payments)
   critical: {
     windowMs: 60 * 1000, // 1 minute
-    maxRequests: 5,
+    maxRequests: 20,
     message: "Rate limit exceeded for this operation. Please wait before trying again.",
   },
 };
@@ -43,7 +43,7 @@ const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
  * Get client identifier for rate limiting
  * Uses IP address for guests, userId for members
  */
-async function getClientId(request: NextRequest): Promise<string> {
+export async function getClientId(request: NextRequest): Promise<string> {
   // Try to get authenticated user first
   try {
     const { userId } = await getAuth();

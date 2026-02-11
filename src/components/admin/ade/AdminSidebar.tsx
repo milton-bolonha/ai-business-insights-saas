@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, User, UserPlus, Info, ChevronRight } from "lucide-react";
+import { Plus, User, UserPlus, Info, ChevronRight, RotateCcw } from "lucide-react";
 
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 
@@ -10,12 +10,12 @@ interface WorkspaceOption {
   generatedAt?: string;
   tilesCount: number;
   notesCount: number;
-  contactsCount: number;
+  contactsCount: number; // Now represents Characters
   dashboardsCount?: number;
   isActive: boolean;
 }
 
-interface AdminSidebarAdeProps {
+interface AdminSidebarProps {
   appearance: AdeAppearanceTokens;
   companyName: string;
   workspaces: WorkspaceOption[];
@@ -24,9 +24,11 @@ interface AdminSidebarAdeProps {
   onAddContact?: () => void;
   onOpenWorkspaceDetails?: (sessionId: string) => void;
   onOpenUpgrade?: () => void;
+  onPreviewBook?: () => void;
+  onPublishBook?: () => void;
 }
 
-export function AdminSidebarAde({
+export function AdminSidebar({
   appearance,
   companyName,
   workspaces = [],
@@ -34,7 +36,9 @@ export function AdminSidebarAde({
   onAddWorkspace,
   onAddContact,
   onOpenWorkspaceDetails,
-}: AdminSidebarAdeProps) {
+  onPreviewBook,
+  onPublishBook,
+}: AdminSidebarProps) {
   const activeWorkspace = workspaces.find((w) => w.isActive);
   const otherWorkspaces = workspaces.filter((w) => !w.isActive);
   const orderedWorkspaces = activeWorkspace
@@ -72,6 +76,27 @@ export function AdminSidebarAde({
             />
           </button>
         )}
+      </div>
+
+      <div className="mb-4 flex space-x-2">
+        <button
+          onClick={onPreviewBook}
+          disabled={true} // Disabled until first publish
+          className="flex-1 rounded-md border py-1.5 text-xs font-semibold disabled:opacity-50"
+          style={{
+            borderColor: appearance.cardBorderColor,
+            color: appearance.mutedTextColor
+          }}
+        >
+          Preview
+        </button>
+        <button
+          onClick={onPublishBook}
+          className="flex-1 rounded-md py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+          style={{ backgroundColor: appearance.primaryColor || '#e11d48' }} // Default to Love Writers color
+        >
+          Publish
+        </button>
       </div>
 
       {/* Workspaces list (active first) */}
@@ -118,14 +143,28 @@ export function AdminSidebarAde({
 
         <button
           onClick={() => {
-            console.log("[DEBUG] AdminSidebarAde Add Contact button clicked");
+            console.log("[DEBUG] AdminSidebar Add Contact button clicked");
             onAddContact?.();
           }}
           className="flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-left transition hover:bg-black/5"
           style={{ color: appearance.textColor }}
         >
           <UserPlus className="h-4 w-4" />
-          <span className="text-sm">Add Contact</span>
+          <span className="text-sm">Add Character</span>
+        </button>
+
+        <button
+          onClick={() => {
+            if (confirm("Are you sure you want to reset your user state? This will clear all local data and reload.")) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}
+          className="flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-left transition hover:bg-red-500/10"
+          style={{ color: appearance.primaryColor || '#e11d48' }}
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span className="text-sm">Reset User</span>
         </button>
       </div>
 
@@ -148,7 +187,7 @@ export function AdminSidebarAde({
             >
               {totals.tiles}
             </div>
-            <div style={{ color: appearance.mutedTextColor }}>Tiles</div>
+            <div style={{ color: appearance.mutedTextColor }}>Arcs</div>
           </div>
           <div
             className="rounded-lg border py-1.5 text-center"
@@ -160,7 +199,7 @@ export function AdminSidebarAde({
             >
               {totals.contacts}
             </div>
-            <div style={{ color: appearance.mutedTextColor }}>Contacts</div>
+            <div style={{ color: appearance.mutedTextColor }}>Chars</div>
           </div>
           <div
             className="rounded-lg border px-2 py-1.5 text-center"
