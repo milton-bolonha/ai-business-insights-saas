@@ -66,10 +66,15 @@ export function BookReaderModal({ open, onClose, tiles, title = "Book Preview" }
                             </div>
 
                             <div className="prose prose-lg prose-stone mx-auto font-serif leading-relaxed text-gray-800">
-                                {/* Simple whitespace rendering for now, or markdown if available */}
-                                {currentArc?.content?.split('\n').map((para, i) => (
-                                    para.trim() && <p key={i} className="mb-4 text-lg">{para}</p>
-                                ))}
+                                {(() => {
+                                    const separator = "[EXCERPT]";
+                                    const parts = currentArc?.content?.split(separator);
+                                    const cleanContent = parts ? parts[0].trim() : "";
+
+                                    return cleanContent.split('\n').map((para, i) => (
+                                        para.trim() && <p key={i} className="mb-4 text-lg">{para}</p>
+                                    ));
+                                })()}
                             </div>
                         </div>
                     ) : (

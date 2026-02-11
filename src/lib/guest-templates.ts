@@ -265,7 +265,7 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
         id: "arc_destiny",
         title: "I. The Before (Destiny)",
         prompt:
-          "Write a short arc about the lives of {user_name} and {partner_name} right before they met. Contextualize with their eventual meeting story: '{meeting_story}'. Use this to add ironic foreshadowing or a sense of 'almost crossing paths' before the actual event.",
+          "Write a short arc about the lives of {user_name} and {partner_name} right before they met. Contextualize with their eventual meeting story: '{meeting_story}'. Use this to add ironic foreshadowing or a sense of 'almost crossing paths' before the actual event.\n\n[EXCERPT]\nWrite a short 2-sentence teaser of this arc.",
         category: "arc",
         orderIndex: 0,
         agentId: "ade_research_analyst",
@@ -275,7 +275,7 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
         id: "arc_meeting",
         title: "II. The Spark (Meeting)",
         prompt:
-          "Analyze the user's story: '{meeting_story}'. Identify the 'Meet-Cute' dynamic: 1) Pull/Pull (Instant attraction), 2) Push/Push (Initial dislike/banter), 3) Push/Pull (One pursues, one resists), or 4) Neutral/Nervous (One awkward, one oblivious). Write a cinematic scene focusing on this dynamic. Maintain the tone established in the previous arc: {previous_arc}.",
+          "Analyze the user's story: '{meeting_story}'. Identify the 'Meet-Cute' dynamic: 1) Pull/Pull (Instant attraction), 2) Push/Push (Initial dislike/banter), 3) Push/Pull (One pursues, one resists), or 4) Neutral/Nervous (One awkward, one oblivious). Write a cinematic scene focusing on this dynamic. Maintain the tone established in the previous arc: {previous_arc}.\n\n[EXCERPT]\nWrite a short 2-sentence teaser of this arc.",
         category: "arc",
         orderIndex: 1,
         agentId: "ade_research_analyst",
@@ -285,7 +285,7 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
         id: "arc_realization",
         title: "III. The Realization",
         prompt:
-          "Describe the specific moment {user_name} realized {partner_name} was 'the one'. Contrast this moment with the initial spark described in the previous arc: {previous_arc}. Show how their connection has deepened.",
+          "Describe the specific moment {user_name} realized {partner_name} was 'the one'. Contrast this moment with the initial spark described in the meeting story: '{meeting_story}' and the previous arc: {previous_arc}. Show how their connection has deepened.\n\n[EXCERPT]\nWrite a short 2-sentence teaser of this arc.",
         category: "arc",
         orderIndex: 2,
         agentId: "ade_research_analyst",
@@ -295,7 +295,7 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
         id: "arc_journey",
         title: "IV. The Journey",
         prompt:
-          "Describe a significant challenge or adventure {user_name} and {partner_name} faced together. ensure the dynamic is consistent with the previous arc: {previous_arc}. Focus on growth and partnership.",
+          "Describe a significant challenge or adventure {user_name} and {partner_name} faced together. ensure the dynamic is consistent with their history ('{meeting_story}') and the previous arc: {previous_arc}. Focus on growth and partnership.\n\n[EXCERPT]\nWrite a short 2-sentence teaser of this arc.",
         category: "arc",
         orderIndex: 3,
         agentId: "ade_research_analyst",
@@ -305,7 +305,7 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
         id: "arc_vows",
         title: "V. The Promise (Vows)",
         prompt:
-          "Draft a heartfelt letter or set of vows from {user_name} to {partner_name}. Reference specific details from their history as described in the previous arc: {previous_arc}. Focus on gratitude and the promise of forever.",
+          "Draft a heartfelt letter or set of vows from {user_name} to {partner_name}. Reference specific details from their history (including how they met: '{meeting_story}') as described in the previous arc: {previous_arc}. Focus on gratitude and the promise of forever.\n\n[EXCERPT]\nWrite a short 2-sentence teaser of this arc.",
         category: "arc",
         orderIndex: 4,
         agentId: "ade_research_analyst",
@@ -315,7 +315,7 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
         id: "arc_future",
         title: "VI. The Future",
         prompt:
-          "Write a vision of the future for {user_name} and {partner_name}. Where are they in 10 years? Call back to the journey described in the previous arc: {previous_arc}. End on a hopeful, timeless note.",
+          "Write a vision of the future for {user_name} and {partner_name}. Where are they in 10 years? Call back to the journey described in the previous arc: {previous_arc} and their origin story ('{meeting_story}'). End on a hopeful, timeless note.\n\n[EXCERPT]\nWrite a short 2-sentence teaser of this arc.",
         category: "arc",
         orderIndex: 5,
         agentId: "ade_research_analyst",

@@ -64,9 +64,8 @@ export function TileCard({
     >
       {/* Actions overlay */}
       <div
-        className={`absolute right-2 top-2 flex items-center space-x-1 rounded-md border bg-white p-1 shadow-sm transition-opacity z-10 ${
-          showActions ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute right-2 top-2 flex items-center space-x-1 rounded-md border bg-white p-1 shadow-sm transition-opacity z-10 ${showActions ? "opacity-100" : "opacity-0"
+          }`}
         style={{
           borderColor: appearance?.cardBorderColor || "#e5e7eb",
         }}
@@ -102,7 +101,20 @@ export function TileCard({
           className="text-sm leading-relaxed"
           style={{ color: appearance?.mutedTextColor || "#6b7280" }}
         >
-          {tile.content}
+          {(() => {
+            const separator = "[EXCERPT]";
+            const parts = tile.content?.split(separator);
+            const excerpt = parts && parts.length > 1 ? parts[1].trim() : null;
+            const mainContent = parts ? parts[0].trim() : "";
+
+            // If we have an explicit excerpt, show it
+            if (excerpt) {
+              return excerpt;
+            }
+
+            // Fallback to truncation if no excerpt found
+            return truncateText(mainContent || tile.content || "");
+          })()}
         </p>
 
         {/* Fade out effect at bottom */}

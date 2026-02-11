@@ -446,6 +446,13 @@ export function AdminContainer() {
 
 
 
+  // Filter tiles for sequential writer (Love Writers)
+  // Hide empty tiles to prevent clutter until they are generated
+  const displayedTiles =
+    currentWorkspace?.promptSettings?.templateId === "template_love_writers"
+      ? allTiles.filter(t => t.content && t.content.trim().length > 0)
+      : allTiles;
+
   return (
     <AdminShellAde
       appearance={appearance}
@@ -486,7 +493,7 @@ export function AdminContainer() {
               {/* Main content area */}
               <div className="flex-1 overflow-auto">
                 <TileGridAde
-                  tiles={allTiles}
+                  tiles={displayedTiles}
                   onDeleteTile={async (tileId) => {
                     console.log(
                       "[DEBUG] AdminContainer deleteTile called:",

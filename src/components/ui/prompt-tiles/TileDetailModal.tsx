@@ -29,13 +29,20 @@ export function TileDetailModal({
 }: TileDetailModalProps) {
   const [chatMessage, setChatMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
-  const contentHtml = marked.parse(tile?.content || "", {
-    breaks: true,
-  });
+  const contentHtml = marked.parse(
+    (() => {
+      const separator = "[EXCERPT]";
+      const parts = tile?.content?.split(separator);
+      return parts ? parts[0].trim() : tile?.content || "";
+    })(),
+    {
+      breaks: true,
+    }
+  );
   const promptHtml = tile?.prompt
     ? marked.parse(tile.prompt, {
-        breaks: true,
-      })
+      breaks: true,
+    })
     : "";
   const renderMessage = (value: string) =>
     marked.parse(value || "", {
@@ -195,18 +202,16 @@ export function TileDetailModal({
                   {tile.history.map((message, index) => (
                     <div
                       key={message.id || index}
-                      className={`flex ${
-                        message.role === "user"
+                      className={`flex ${message.role === "user"
                           ? "justify-end"
                           : "justify-start"
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                          message.role === "user"
+                        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${message.role === "user"
                             ? "bg-blue-600 text-white rounded-br-none"
                             : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
-                        }`}
+                          }`}
                       >
                         <div
                           className="prose prose-slate max-w-none text-sm leading-relaxed prose-p:mb-1 prose-ul:list-disc prose-ol:list-decimal"

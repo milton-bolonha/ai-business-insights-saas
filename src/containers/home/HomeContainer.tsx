@@ -141,7 +141,7 @@ export function HomeContainer() {
           // Trigger submission after a short delay
           setTimeout(() => {
             if (activeAppTag === 'love_writers') {
-              handleBookSubmit();
+              handleBookSubmit(updatedValues);
             } else {
               handleSubmit(updatedValues as ClassicHeroFormSubmission);
             }
@@ -279,9 +279,10 @@ export function HomeContainer() {
     }
   };
 
-  const handleBookSubmit = async () => {
-    const userName = formValues.user_name || "Author";
-    const partnerName = formValues.partner_name || "Partner";
+  const handleBookSubmit = async (values?: Partial<ClassicHeroFormSubmission>) => {
+    const currentValues = values || formValues;
+    const userName = currentValues.user_name || "Author";
+    const partnerName = currentValues.partner_name || "Partner";
     const bookTitle = `${userName} & ${partnerName}`;
 
     setIsSubmitting(true);
@@ -302,7 +303,7 @@ export function HomeContainer() {
 
       // 2. Resolve Tiles (Client-Side)
       // Format promptVariables as ["key: value"] for internal logic
-      const promptVariablesList = Object.entries(formValues).map(([key, value]) => `${key}: ${value}`);
+      const promptVariablesList = Object.entries(currentValues).map(([key, value]) => `${key}: ${value}`);
 
       const resolvedTiles = resolveTemplateTiles(template, {
         templateId,
@@ -315,7 +316,7 @@ export function HomeContainer() {
       const context = {
         user_name: userName,
         partner_name: partnerName,
-        meeting_story: formValues.meeting_story,
+        meeting_story: currentValues.meeting_story,
       };
 
       // 4. Construct Tile Objects (Empty Content)
