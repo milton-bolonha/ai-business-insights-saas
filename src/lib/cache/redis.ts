@@ -167,6 +167,54 @@ export const cache = {
   },
 
   /**
+   * Increment value of a key
+   */
+  async incr(key: string, amount: number = 1): Promise<number> {
+    const client = getClient();
+    if (!client) {
+      return 0;
+    }
+
+    try {
+      if (cacheImpl === "vercel") {
+        if (amount === 1) {
+          return await client.incr(key);
+        }
+        return await client.incrby(key, amount);
+      } else if (cacheImpl === "upstash") {
+        if (amount === 1) {
+          return await client.incr(key);
+        }
+        return await client.incrby(key, amount);
+      }
+      return 0;
+    } catch (error) {
+      console.warn(`[Cache] Increment failed for key "${key}":`, error);
+      return 0;
+    }
+  },
+
+  /**
+   * Set expiration for a key
+   */
+  async expire(key: string, seconds: number): Promise<void> {
+    const client = getClient();
+    if (!client) {
+      return;
+    }
+
+    try {
+      if (cacheImpl === "vercel") {
+        await client.expire(key, seconds);
+      } else if (cacheImpl === "upstash") {
+        await client.expire(key, seconds);
+      }
+    } catch (error) {
+      console.warn(`[Cache] Expire failed for key "${key}":`, error);
+    }
+  },
+
+  /**
    * Find keys matching pattern
    */
   async keys(pattern: string): Promise<string[]> {

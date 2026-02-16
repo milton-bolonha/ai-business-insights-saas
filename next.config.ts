@@ -51,12 +51,13 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev", // allow Clerk loader
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://unpkg.com https://identity.netlify.com https://challenges.cloudflare.com",
+              "style-src 'self' 'unsafe-inline' https://unpkg.com",
+              "img-src 'self' data: https: https://img.clerk.com",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.clerk.accounts.dev https://*.stripe.com https://api.openai.com",
-              "frame-src 'self' https://*.stripe.com https://*.clerk.accounts.dev",
+              "connect-src 'self' https://*.clerk.accounts.dev https://*.stripe.com https://api.openai.com https://unpkg.com https://*.cloudflare.com",
+              "worker-src 'self' blob:",
+              "frame-src 'self' https://*.stripe.com https://*.clerk.accounts.dev https://identity.netlify.com https://challenges.cloudflare.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

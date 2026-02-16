@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 
 import {
     useWorkspaceStore,
@@ -25,6 +26,7 @@ import {
     useWorkspaceActions,
     useUIStore
 } from "@/lib/stores";
+import { useUsage, useAuthStore } from "@/lib/stores/authStore";
 
 export interface AdminTopHeaderProps {
     appearance: AdeAppearanceTokens;
@@ -49,6 +51,7 @@ export function AdminTopHeader({
     const workspaces = useWorkspaceStore((state) => state.workspaces);
     const currentWorkspace = useCurrentWorkspace();
     const { switchWorkspace } = useWorkspaceActions();
+    const usage = useUsage();
 
     // Determine context based on workspace template
     const isLoveWriters = currentWorkspace?.promptSettings?.templateId === "template_love_writers";
@@ -126,7 +129,7 @@ export function AdminTopHeader({
                                         >
                                             <div className="grid grid-cols-4 gap-2 mb-3">
                                                 {[
-                                                    { color: "#f5f5f0", name: "Beige" },
+                                                    { color: "#f7f7f7", name: "Beige" },
                                                     { color: "#e8f4fd", name: "Blue" },
                                                     { color: "#f0f9e8", name: "Green" },
                                                     { color: "#fef7ed", name: "Orange" }
@@ -247,6 +250,27 @@ export function AdminTopHeader({
 
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />
 
+                    {/* Plan Indicator Badge */}
+                    <button
+                        onClick={onOpenSaaSLimits}
+                        className={cn(
+                            "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold transition-colors border",
+                            // Style based on Plan
+                            (!usage.createTile && !useAuthStore.getState().user) ? "bg-gray-100 text-gray-500 border-gray-200" :
+                                (useAuthStore.getState().user?.role === "member" && useAuthStore.getState().user?.plan === "business")
+                                    ? "bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 border-yellow-400/50" // Premium
+                                    : (useAuthStore.getState().user?.role === "member")
+                                        ? "bg-blue-100 text-blue-700 border-blue-200" // Member Free
+                                        : "bg-gray-100 text-gray-600 border-gray-200" // Guest
+                        )}
+                        title="Your Plan"
+                    >
+                        {(!useAuthStore.getState().user || useAuthStore.getState().user?.role === "guest") ? "Guest" :
+                            (useAuthStore.getState().user?.plan === "business") ? "Member Premium" : "Member Free"}
+                    </button>
+
+                    <div className="h-6 w-px bg-gray-200/20 mx-1" />
+
                     {/* SaaS Limit Counter (Trigger) */}
                     <button
                         onClick={onOpenSaaSLimits}
@@ -254,12 +278,12 @@ export function AdminTopHeader({
                         title="Usage Limits"
                     >
                         <div className="flex flex-col items-end leading-none">
-                            <span className="text-xs font-bold">14</span>
+                            <span className="text-xs font-bold">{usage.createTile || 0}</span>
                             <span className="text-[10px] opacity-70">Arcs</span>
                         </div>
                         <div className="h-8 w-px bg-gray-200/20 mx-1" />
                         <div className="flex flex-col items-start leading-none">
-                            <span className="text-xs font-bold">0</span>
+                            <span className="text-xs font-bold">{usage.createContact}</span>
                             <span className="text-[10px] opacity-70">Chars</span>
                         </div>
                     </button>
@@ -269,10 +293,6 @@ export function AdminTopHeader({
                     {/* Love Writers Specific Actions */}
                     {isLoveWriters && (
                         <>
-                            <button className="flex items-center gap-2 rounded-lg bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-500/20 transition-colors">
-                                <Plus className="h-4 w-4" />
-                                <span>Book Arc</span>
-                            </button>
 
                             <button className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-gray-500">
                                 <MonitorPlay className="h-5 w-5" />
@@ -283,6 +303,10 @@ export function AdminTopHeader({
                             </button>
                         </>
                     )}
+                    {/* Clerk User Button */}
+                    <div className="ml-2">
+                        <UserButton afterSignOutUrl="/" />
+                    </div>
                 </div>
             </div>
         </header >

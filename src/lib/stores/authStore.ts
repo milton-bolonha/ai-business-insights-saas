@@ -6,7 +6,8 @@ export type GuestAction =
   | 'contactChat'
   | 'regenerate'
   | 'createContact'
-  | 'createWorkspace';
+  | 'createWorkspace'
+  | 'createTile';
 
 export interface UsageResult {
   action: GuestAction;
@@ -20,7 +21,7 @@ type UsageCounts = Record<GuestAction, number>;
 
 interface AuthState {
   // Estado de usuário
-  user: { role: 'guest' | 'member'; isPaid?: boolean } | null;
+  user: { role: 'guest' | 'member'; isPaid?: boolean; plan?: string } | null;
   isAuthenticated: boolean;
 
   // Limites de uso (definidos por role)
@@ -33,8 +34,9 @@ interface AuthState {
   canPerformAction: (action: string) => boolean;
   evaluateUsage: (action: GuestAction) => UsageResult;
   consumeUsage: (action: GuestAction) => UsageResult;
+  setUsage: (newUsage: Partial<UsageCounts>) => void;
   resetUsage: () => void;
-  setUser: (user: { role: 'guest' | 'member'; isPaid?: boolean } | null) => void;
+  setUser: (user: { role: 'guest' | 'member'; isPaid?: boolean; plan?: string } | null) => void;
   startCheckout: () => boolean;
 
   // Legacy compatibility
@@ -49,17 +51,19 @@ const GUEST_LIMITS: Record<GuestAction, number> = {
   regenerate: 5,
   createContact: 5,
   createWorkspace: 3,
+  createTile: 20,
 };
 
 const MEMBER_LIMITS: Record<GuestAction, number> = {
-  tileChat: 10000, // Praticamente ilimitado
-  contactChat: 10000,
-  regenerate: 1000,
-  createContact: 10000,
-  createWorkspace: 1000,
+  tileChat: 50,
+  contactChat: 50,
+  regenerate: 20,
+  createContact: 5,
+  createWorkspace: 3,
+  createTile: 20,
 };
 
-const USAGE_VERSION = 1;
+const USAGE_VERSION = 2;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export const useAuthStore = create<AuthState>()(
@@ -75,6 +79,7 @@ export const useAuthStore = create<AuthState>()(
         regenerate: 0,
         createContact: 0,
         createWorkspace: 0,
+        createTile: 0,
       },
 
       // Getters computados (legacy compatibility)
@@ -123,12 +128,7 @@ export const useAuthStore = create<AuthState>()(
       consumeUsage: (action: GuestAction): UsageResult => {
         const { user, usage, limits } = get();
 
-        // Não consumir uso de members
-        if (user?.role === 'member') {
-          return get().evaluateUsage(action);
-        }
-
-        // Incrementar uso para guests
+        // Optimistic update for everyone (guests AND members)
         const newUsage = {
           ...usage,
           [action]: (usage[action] || 0) + 1,
@@ -140,9 +140,15 @@ export const useAuthStore = create<AuthState>()(
           action,
           allowed: true, // Já verificado anteriormente
           used: newUsage[action],
-          remaining: Math.max(0, (limits[action] || 0) - newUsage[action]),
+          remaining: user?.role === 'member' ? Infinity : Math.max(0, (limits[action] || 0) - newUsage[action]),
           limit: limits[action] || 0,
         };
+      },
+
+      setUsage: (newUsage: Partial<UsageCounts>) => {
+        set((state) => ({
+          usage: { ...state.usage, ...newUsage }
+        }));
       },
 
       resetUsage: (): void => {
@@ -153,6 +159,7 @@ export const useAuthStore = create<AuthState>()(
             regenerate: 0,
             createContact: 0,
             createWorkspace: 0,
+            createTile: 0,
           }
         });
       },
@@ -191,6 +198,7 @@ export const useAuthStore = create<AuthState>()(
               regenerate: 0,
               createContact: 0,
               createWorkspace: 0,
+              createTile: 0,
             }
           };
         }
@@ -211,6 +219,7 @@ export const useAuthStore = create<AuthState>()(
               regenerate: 0,
               createContact: 0,
               createWorkspace: 0,
+              createTile: 0,
             }
           };
         }

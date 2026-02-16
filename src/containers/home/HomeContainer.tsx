@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 
 import { useToast } from "@/lib/state/toast-context";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -417,8 +418,9 @@ export function HomeContainer() {
       clearWorkspace();
       setFormValues({});
 
-      // Resetar uso
+      // Resetar uso e estado de autenticação (voltar para Guest)
       resetUsage();
+      useAuthStore.getState().setUser(null);
 
       push({
         title: "Workspace cleared",
@@ -460,8 +462,16 @@ export function HomeContainer() {
                 Start Over
               </button>
             )}
-            <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-black">Log in</Link>
-            <Link href="/signup" className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors">Sign up</Link>
+            <SignInButton mode="modal">
+              <button className="text-sm font-medium text-gray-600 hover:text-black">
+                Log in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors">
+                Sign up
+              </button>
+            </SignUpButton>
           </div>
         </div>
       </header>

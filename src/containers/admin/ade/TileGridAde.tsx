@@ -37,6 +37,7 @@ interface TileGridAdeProps {
   onBulkUploadPrompts?: () => void;
   animateEntrance?: boolean;
   workspaceName?: string;
+  isGenerating?: boolean;
   // Dashboard Props
   dashboards?: Array<{ id: string; name: string; isActive?: boolean }>;
   onSelectDashboard?: (dashboardId: string) => void;
@@ -108,6 +109,7 @@ export function TileGridAde({
   appearance,
   onAddPrompt,
   animateEntrance = true,
+  isGenerating = false,
   dashboards = [],
   onSelectDashboard,
   onCreateBlankDashboard,
@@ -278,6 +280,8 @@ export function TileGridAde({
           strategy={rectSortingStrategy}
         >
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+
             {onAddPrompt && (
               <button
                 onClick={() => onAddPrompt()}
@@ -319,6 +323,23 @@ export function TileGridAde({
                 index={index}
               />
             ))}
+
+            {isGenerating && (
+              <div className="flex flex-col h-full min-h-[200px] border border-gray-100 rounded-xl bg-white shadow-sm overflow-hidden animate-pulse">
+                <div className="flex items-center justify-between p-4 border-b border-gray-50">
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                </div>
+                <div className="flex-1 p-4 space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+                </div>
+                <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center">
+                  <span className="text-xs font-medium text-gray-400 animate-pulse">Writing next arc...</span>
+                </div>
+              </div>
+            )}
           </div>
         </SortableContext>
       </DndContext>

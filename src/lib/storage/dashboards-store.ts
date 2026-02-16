@@ -124,10 +124,10 @@ export function getOrCreateWorkspaceFromWorkspaceSnapshot(
           tiles: workspace.tiles || [],
           notes: [],
           contacts: [],
-          bgColor: workspace.appearance?.baseColor || "#f5f5f0",
+          bgColor: workspace.appearance?.baseColor || "#f7f7f7",
           appearance:
             workspace.appearance?.baseColor &&
-            workspace.appearance.baseColor.trim()
+              workspace.appearance.baseColor.trim()
               ? workspace.appearance
               : undefined,
           createdAt: workspace.generatedAt ?? new Date().toISOString(),
@@ -187,7 +187,7 @@ export function createDashboard(
     tiles: [],
     notes: [],
     contacts: [],
-    bgColor: "#f5f5f0", // Default background color
+    bgColor: "#f7f7f7", // Default background color
     appearance: undefined,
     contrastMode: false,
     createdAt: new Date().toISOString(),

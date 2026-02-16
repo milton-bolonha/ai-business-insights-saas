@@ -12,11 +12,15 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const rawBody = await request.json().catch(() => ({}));
-    const requestUserId =
-      typeof rawBody?.userId === "string" && rawBody.userId.trim()
-        ? rawBody.userId.trim()
-        : `guest_${randomUUID()}`;
+    const { userId } = await request.json().catch(() => ({}));
+
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json(
+        { error: "Unauthorized: User must be logged in to upgrade." },
+        { status: 401 }
+      );
+    }
+    const requestUserId = userId.trim();
 
     const priceId = process.env.STRIPE_PRICE_ID;
     if (!priceId) {

@@ -28,8 +28,8 @@ const ADE_APPEARANCE_TOKENS_KEY = "ade-appearance-tokens";
 
 export function AdminThemeProvider({ children }: PropsWithChildren) {
   const [baseColor, setBaseColorState] = useState(() => {
-    if (typeof window === "undefined") return "#f5f5f0";
-    return window.localStorage.getItem(ADE_BASE_COLOR_KEY) || "#f5f5f0";
+    if (typeof window === "undefined") return "#f7f7f7";
+    return window.localStorage.getItem(ADE_BASE_COLOR_KEY) || "#f7f7f7";
   });
 
   const appearance = useMemo(

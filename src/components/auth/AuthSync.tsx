@@ -21,18 +21,9 @@ export function AuthSync() {
           isPaid: false, // You might want to fetch this from publicMetadata
         });
 
-        if (!hasClearedMemberCache.current) {
-          clearWorkspace();
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.removeItem("insights_workspaces");
-              localStorage.removeItem("insights_active_dashboard");
-            } catch {
-              // Ignorar erros de limpeza
-            }
-          }
-          hasClearedMemberCache.current = true;
-        }
+        // Removed aggressive cache clearing. 
+        // Migration logic (useGuestDataMigration) handles data movement and cleanup.
+        // Clearing here causes race conditions and data loss on reload if migration hasn't run.
       } else {
         // User is guest
         console.log("[AuthSync] User is guest");

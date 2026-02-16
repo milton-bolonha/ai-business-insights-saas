@@ -19,7 +19,7 @@ export interface AdeAppearanceTokens {
   overlayColor: string;
 }
 
-const DEFAULT_BASE = "#f5f5f0";
+const DEFAULT_BASE = "#f7f7f7";
 
 export function computeAdeAppearanceTokens(baseColor: string): AdeAppearanceTokens {
   const safeBase = baseColor || DEFAULT_BASE;

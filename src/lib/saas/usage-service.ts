@@ -43,11 +43,11 @@ const planCache: Map<PlanId, { limits: UsageLimits; loadedAt: number }> =
   new Map();
 const PLAN_CACHE_TTL_MS = 60_000; // 1 minuto
 
-const SAFE_DEFAULT_GUEST: UsageLimits = {
+export const SAFE_DEFAULT_GUEST: UsageLimits = {
   companiesCount: 3,
   contactsCount: 5,
   notesCount: 20,
-  tilesCount: 30,
+  tilesCount: 30, // Updated from 3 to 30 as per saas.md real limits
   tileChatsCount: 20,
   contactChatsCount: 20,
   regenerationsCount: 10,
@@ -55,16 +55,16 @@ const SAFE_DEFAULT_GUEST: UsageLimits = {
   tokensUsed: 3000,
 };
 
-const SAFE_DEFAULT_MEMBER: UsageLimits = {
-  companiesCount: 100,
-  contactsCount: 1000,
-  notesCount: 2000,
-  tilesCount: 2000,
-  tileChatsCount: 5000,
-  contactChatsCount: 5000,
-  regenerationsCount: 2000,
-  assetsCount: 10000,
-  tokensUsed: 1_000_000,
+export const SAFE_DEFAULT_MEMBER: UsageLimits = {
+  companiesCount: 3,
+  contactsCount: 5,
+  notesCount: 20,
+  tilesCount: 20,
+  tileChatsCount: 50,
+  contactChatsCount: 50,
+  regenerationsCount: 20,
+  assetsCount: 10,
+  tokensUsed: 10_000,
 };
 
 function getCachedLimits(planId: PlanId): UsageLimits | null {
@@ -146,6 +146,40 @@ export async function checkLimit(
     // Fail closed for security
     return { allowed: false, reason: "Limit check unavailable" };
   }
+}
+
+/**
+ * Check if a specific feature is enabled for the user/app
+ */
+export async function checkFeature(
+  userId: string,
+  featureId: string,
+  appTag?: string
+): Promise<{ allowed: boolean; reason?: string }> {
+  if (!userId) {
+    return {
+      allowed: false,
+      reason: "You need to be logged in to use this feature."
+    };
+  }
+
+  // Example: "Publish" is a premium feature for "Love Writers"
+  if (featureId === "canPublish" && appTag === "love_writers") {
+    const plan = await getPlanForUser(userId);
+
+    // Logic: Only Members (Pro) can publish
+    if (plan.plan === "member" || plan.plan === "business") {
+      return { allowed: true };
+    }
+
+    return {
+      allowed: false,
+      reason: "Publishing is available only for Pro members."
+    };
+  }
+
+  // Default: Allow if no specific rule blocks it
+  return { allowed: true };
 }
 
 /**

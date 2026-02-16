@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 // Removed sidebar related imports
 import { AdminTopHeader } from "./AdminTopHeader";
 import { SaaSLimitsModal } from "./SaaSLimitsModal";
+import { useUIStore } from "@/lib/stores/uiStore";
 
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 
@@ -27,16 +28,13 @@ export function AdminShellAde({
   onOpenWorkspaceDetail,
   onSetSpecificColor
 }: AdminShellAdeProps) {
-  // Use lazy initialization to avoid setState in effect
-  const [mounted, setMounted] = useState(() => false);
-  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  // Use lazy initialization to avoid self-reference or hydration issues
+  const [mounted, setMounted] = useState(false);
+  const { modals, openSaaSLimits, closeSaaSLimits } = useUIStore();
 
   // Only render after mount to prevent hydration mismatch
   useEffect(() => {
-    // Use requestAnimationFrame to avoid synchronous setState
-    requestAnimationFrame(() => {
-      setMounted(true);
-    });
+    setMounted(true);
   }, []);
 
   // Don't render until mounted and appearance is ready
@@ -55,7 +53,7 @@ export function AdminShellAde({
       {/* Top Header */}
       <AdminTopHeader
         appearance={appearance}
-        onOpenSaaSLimits={() => setIsLimitModalOpen(true)}
+        onOpenSaaSLimits={openSaaSLimits}
         onOpenWorkspaceDetail={onOpenWorkspaceDetail}
         onSetSpecificColor={onSetSpecificColor}
       />
@@ -75,8 +73,8 @@ export function AdminShellAde({
 
       {/* Modals */}
       <SaaSLimitsModal
-        isOpen={isLimitModalOpen}
-        onClose={() => setIsLimitModalOpen(false)}
+        isOpen={modals.isSaaSLimitsOpen}
+        onClose={closeSaaSLimits}
         appearance={appearance}
       />
     </div>

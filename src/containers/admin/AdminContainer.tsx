@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useToast } from "@/lib/state/toast-context";
@@ -66,8 +66,9 @@ export function AdminContainer() {
     useAppearanceManagement(currentDashboard || undefined);
 
   // Sequential Writer Logic (Client-Side Orchestration)
+  const [isGenerating, setIsGenerating] = useState(false);
+
   useEffect(() => {
-    let isGenerating = false;
 
     const generateNextTile = async () => {
       // 1. Validate Context
@@ -79,6 +80,13 @@ export function AdminContainer() {
         return;
       }
 
+      // 1b. Safety: Ensure workspace exists in store to prevent "Workspace not found" errors
+      const workspaceExists = workspaces.some(w => w.id === currentWorkspace.id);
+      if (!workspaceExists) {
+        console.warn("[SequentialWriter] Workspace not found in store, skipping cycle");
+        return;
+      }
+
       // 2. Find next empty tile (Draft)
       // Sort by orderIndex to ensure sequence
       const tiles = [...currentDashboard.tiles].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -87,7 +95,17 @@ export function AdminContainer() {
       if (!nextTile) return; // All done
 
       if (isGenerating) return; // Already busy
-      isGenerating = true;
+
+      // 2b. Check Usage Limits
+      if (!auth.canPerformAction("createTile")) {
+        console.warn("[SequentialWriter] Limit reached for createTile");
+        // Optionally trigger limit modal if this was a user interaction, 
+        // but for auto-generation we might just stop or show a subtle indicator.
+        // For now, let's stop.
+        return;
+      }
+
+      setIsGenerating(true);
 
       try {
         console.log(`[SequentialWriter] Starting generation for tile: ${nextTile.title}`);
@@ -101,12 +119,6 @@ export function AdminContainer() {
           "{previous_arc}",
           previousContent
         );
-
-        // 4. Update UI to "Generating..." state
-        // We can use a temporary content placeholder or a status field if we added one.
-        // For now, let's use a optimistic update or just rely on the API call time.
-        // Better: Update the tile with a loading indicator or specific text? 
-        // Let's rely on the fact that content is null. UI should show "Writing..." for null content if previous is done.
 
         // 5. Call API
         const response = await fetch("/api/generate/tile", {
@@ -129,6 +141,9 @@ export function AdminContainer() {
             // Remove 'pending' status if we added it
           });
 
+          // 7. Consume Usage
+          auth.consumeUsage("createTile");
+
           console.log(`[SequentialWriter] Completed tile: ${nextTile.title}`);
 
           // Trigger next iteration automatically via dependency change? 
@@ -140,7 +155,7 @@ export function AdminContainer() {
       } catch (e) {
         console.error("[SequentialWriter] Loop Error:", e);
       } finally {
-        isGenerating = false;
+        setIsGenerating(false);
       }
     };
 
@@ -494,6 +509,7 @@ export function AdminContainer() {
               <div className="flex-1 overflow-auto">
                 <TileGridAde
                   tiles={displayedTiles}
+                  isGenerating={isGenerating}
                   onDeleteTile={async (tileId) => {
                     console.log(
                       "[DEBUG] AdminContainer deleteTile called:",
@@ -611,9 +627,16 @@ export function AdminContainer() {
                       "[DEBUG] AdminContainer.onDeleteNote called:",
                       noteId
                     );
-                    await content.deleteNote(noteId);
-                    // Refresh notes from workspace store
-                    handleNotesChanged();
+                    if (currentWorkspace && currentDashboard) {
+                      await content.deleteNote(noteId, currentWorkspace.id, currentDashboard.id);
+                      // Refresh notes from workspace store
+                      handleNotesChanged();
+                      push({
+                        title: "Note deleted",
+                        description: "The note has been deleted successfully.",
+                        variant: "default",
+                      });
+                    }
                   }}
                   appearance={appearance}
                 />
@@ -718,6 +741,9 @@ export function AdminContainer() {
               console.log(
                 "[DEBUG] AdminContainer.createWorkspace allowance DENIED"
               );
+              // Open the limits modal instead of just a toast
+              useUIStore.getState().openSaaSLimits();
+
               push({
                 title: "Workspace limit reached",
                 description: "Upgrade your plan to create more workspaces",

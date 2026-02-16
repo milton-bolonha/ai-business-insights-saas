@@ -4,4 +4,5 @@ export * from "./Dashboard";
 export * from "./Note";
 export * from "./Tile";
 export * from "./Workspace";
+export * from "./Purchase";
 

@@ -20,6 +20,7 @@ export interface UIState {
     isBulkUploadOpen: boolean;
     isWorkspaceDetailOpen: boolean;
     isPreviewOpen: boolean;
+    isSaaSLimitsOpen: boolean;
     viewingWorkspaceId: string | null;
     selectedTile: Tile | null;
     selectedContact: Contact | null;
@@ -40,6 +41,8 @@ export interface UIState {
   closeAddWorkspace: () => void;
   openBulkUpload: () => void;
   closeBulkUpload: () => void;
+  openSaaSLimits: () => void;
+  closeSaaSLimits: () => void;
   openWorkspaceDetail: (workspaceId: string) => void;
   closeWorkspaceDetail: () => void;
   openPreview: () => void;
@@ -52,9 +55,9 @@ export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
       // Estado inicial
-      baseColor: '#f5f5f0',
+      baseColor: '#f7f7f7',
       theme: 'ade',
-      appearance: computeAdeAppearanceTokens('#f5f5f0'),
+      appearance: computeAdeAppearanceTokens('#f7f7f7'),
 
       modals: {
         isAddPromptOpen: false,
@@ -64,6 +67,7 @@ export const useUIStore = create<UIState>()(
         isBulkUploadOpen: false,
         isWorkspaceDetailOpen: false,
         isPreviewOpen: false,
+        isSaaSLimitsOpen: false,
         viewingWorkspaceId: null,
         selectedTile: null,
         selectedContact: null,
@@ -121,6 +125,14 @@ export const useUIStore = create<UIState>()(
 
       closeAddWorkspace: () => set(state => ({
         modals: { ...state.modals, isAddWorkspaceOpen: false }
+      })),
+
+      openSaaSLimits: () => set(state => ({
+        modals: { ...state.modals, isSaaSLimitsOpen: true }
+      })),
+
+      closeSaaSLimits: () => set(state => ({
+        modals: { ...state.modals, isSaaSLimitsOpen: false }
       })),
 
       // Workspace Detail

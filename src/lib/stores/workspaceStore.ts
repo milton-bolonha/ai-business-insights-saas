@@ -128,28 +128,10 @@ export interface WorkspaceState {
   ) => void;
 }
 
-// Funções auxiliares para determinar se deve persistir dados
-function shouldPersistForUser(): boolean {
-  try {
-    const authState = useAuthStore.getState?.();
-    if (!authState || !authState.user) {
-      return true; // Usuário anônimo continua como guest
-    }
-    return authState.user.role === "guest";
-  } catch {
-    return true;
-  }
-}
-
+// Always persist to local storage as a backup/cache
 function persistWorkspacesSafely(workspaces: WorkspaceWithDashboards[]) {
-  if (shouldPersistForUser()) {
+  if (typeof window !== "undefined") {
     saveWorkspacesWithDashboards(workspaces);
-  } else if (typeof window !== "undefined") {
-    try {
-      localStorage.removeItem("insights_workspaces");
-    } catch {
-      // Ignorar falhas ao limpar cache para members
-    }
   }
 }
 
@@ -214,7 +196,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             if (workspace) {
               // Encontrar dashboard ativo
               const activeDashboard = getActiveDashboard(workspace.id);
-              state.currentDashboard = activeDashboard;
+              // Fallback para o primeiro dashboard se não houver um ativo salvo
+              state.currentDashboard = activeDashboard || workspace.dashboards[0] || null;
+
+              // Se fizemos fallback, marcar como ativo na store
+              if (!activeDashboard && workspace.dashboards[0]) {
+                setActiveDashboardInStore(workspace.id, workspace.dashboards[0].id);
+              }
             } else {
               state.currentDashboard = null;
             }
@@ -246,13 +234,27 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         refreshWorkspaces: async () => {
           console.log("[DEBUG] workspaceStore.refreshWorkspaces called");
 
-          if (shouldPersistForUser()) {
-            const workspaces = loadWorkspacesWithDashboards();
+          // Strategy: Try to load from Local Storage first for immediate UI
+          // Then if Member, validate/update against Server
+          const localWorkspaces = loadWorkspacesWithDashboards();
+          const authState = useAuthStore.getState();
+          const isMember = authState.user?.role === 'member';
+
+          set((state) => {
+            // Initial load from local (fast)
+            if (!state.workspaces.length && localWorkspaces.length) {
+              state.workspaces = localWorkspaces;
+            }
+          });
+
+          // If Guest, we are done (local is truth)
+          if (!isMember) {
             set((state) => {
-              state.workspaces = workspaces;
+              state.workspaces = localWorkspaces;
+              reconcileGuestWorkspaceUsage(localWorkspaces.length);
 
               if (state.currentWorkspace) {
-                const updatedWorkspace = workspaces.find(
+                const updatedWorkspace = localWorkspaces.find(
                   (w) => w.id === state.currentWorkspace?.id
                 );
                 state.currentWorkspace = updatedWorkspace ?? state.currentWorkspace;
@@ -265,26 +267,22 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                     state.currentDashboard = updatedDashboard;
                   }
                 }
-              } else if (workspaces.length > 0) {
-                state.currentWorkspace = workspaces[0];
+              } else if (localWorkspaces.length > 0) {
+                state.currentWorkspace = localWorkspaces[0];
                 state.currentDashboard =
-                  workspaces[0].dashboards.find((d) => d.isActive) ??
-                  workspaces[0].dashboards[0] ??
+                  localWorkspaces[0].dashboards.find((d) => d.isActive) ??
+                  localWorkspaces[0].dashboards[0] ??
                   null;
               } else {
                 state.currentDashboard = null;
               }
             });
-
-            reconcileGuestWorkspaceUsage(workspaces.length);
-
-            console.log("[DEBUG] workspaceStore.refreshWorkspaces completed (guest)", {
-              workspacesCount: workspaces.length,
-              currentWorkspaceId: get().currentWorkspace?.id,
-              currentDashboardId: get().currentDashboard?.id,
-            });
+            console.log("[DEBUG] workspaceStore (Guest) loaded from local", localWorkspaces.length);
             return;
           }
+
+          // If Member, continue to fetch from API
+          // ...
 
           if (typeof window === "undefined") {
             return;
@@ -299,6 +297,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
             if (!response.ok) {
               console.warn("[DEBUG] workspaceStore.refreshWorkspaces member fetch failed", response.status);
+
+              if (response.status === 401) {
+                console.warn("[workspaceStore] 401 Unauthorized - clearing local auth state");
+                // Force logout locally since session is invalid
+                useAuthStore.getState().setUser(null);
+                // Fallback to local storage loading immediately
+                const localWorkspaces = loadWorkspacesWithDashboards();
+                set({ workspaces: localWorkspaces });
+              }
               return;
             }
 
@@ -335,6 +342,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               currentWorkspaceId: get().currentWorkspace?.id,
               currentDashboardId: get().currentDashboard?.id,
             });
+
+            // Update local cache
+            persistWorkspacesSafely(workspacesFromServer);
+
+            // Mark as migrated/synced to prevent useGuestDataMigration from re-migrating this data
+            // (Since it came from server, it's already safe)
+            if (typeof window !== "undefined") {
+              localStorage.setItem("guest_data_migrated", "true");
+            }
           } catch (error) {
             console.error("[DEBUG] workspaceStore.refreshWorkspaces error", error);
           }
@@ -514,7 +530,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
         updateDashboard: (workspaceId, dashboardId, updates) => {
           console.log("[DEBUG] workspaceStore.updateDashboard called:", { workspaceId, dashboardId, updates });
-          
+
           // Ensure we have the workspace in our list
           let currentWorkspaces = get().workspaces;
           if (!currentWorkspaces.find(w => w.id === workspaceId)) {
@@ -558,14 +574,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           const updatedWorkspaces = get().workspaces;
           const updatedWorkspace = updatedWorkspaces.find(w => w.id === workspaceId);
           const updatedDashboard = updatedWorkspace?.dashboards.find(d => d.id === dashboardId);
-          
-          console.log("[DEBUG] workspaceStore.updateDashboard: saving to storage", { 
+
+          console.log("[DEBUG] workspaceStore.updateDashboard: saving to storage", {
             workspaceFound: !!updatedWorkspace,
             dashboardFound: !!updatedDashboard,
             savedBgColor: updatedDashboard?.bgColor,
             updatesBgColor: updates.bgColor
           });
-          
+
           persistWorkspacesSafely(updatedWorkspaces);
         },
 
@@ -848,19 +864,27 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         },
 
         updateTileInDashboard: (workspaceId, dashboardId, tileId, updates) => {
+          console.log("[DEBUG] workspaceStore.updateTileInDashboard", { workspaceId, dashboardId, tileId, updates });
           set((state) => {
             const workspace = state.workspaces.find(
               (w) => w.id === workspaceId
             );
-            if (!workspace) return;
+            if (!workspace) {
+              console.error("[DEBUG] workspaceStore updateTile: Workspace not found", workspaceId);
+              return;
+            }
 
             const dashboard = workspace.dashboards.find(
               (d) => d.id === dashboardId
             );
-            if (!dashboard || !dashboard.tiles) return;
+            if (!dashboard || !dashboard.tiles) {
+              console.error("[DEBUG] workspaceStore updateTile: Dashboard not found or no tiles", dashboardId);
+              return;
+            }
 
             const tileIndex = dashboard.tiles.findIndex((t) => t.id === tileId);
             if (tileIndex >= 0) {
+              console.log("[DEBUG] workspaceStore updateTile: Updating tile", tileId);
               dashboard.tiles[tileIndex] = {
                 ...dashboard.tiles[tileIndex],
                 ...updates,
@@ -875,6 +899,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                   state.currentDashboard = dashboard;
                 }
               }
+            } else {
+              console.error("[DEBUG] workspaceStore updateTile: Tile not found", tileId);
             }
           });
 
@@ -930,7 +956,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             dashboard.updatedAt = new Date().toISOString();
             workspace.updatedAt = new Date().toISOString();
 
-// ensure current workspace/dash references updated
+            // ensure current workspace/dash references updated
             if (state.currentWorkspace?.id === workspaceId) {
               state.currentWorkspace = workspace;
               if (state.currentDashboard?.id === dashboardId) {
@@ -952,8 +978,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           currentWorkspace: state.currentWorkspace,
           currentDashboard: state.currentDashboard,
         }),
-        // Só persistir para guests (members usam MongoDB)
-        skipHydration: !shouldPersistForUser(),
+        // Só persistir para guests (members usam MongoDB) - Agora persistimos todos como cache
+        // skipHydration: !shouldPersistForUser(),
         onRehydrateStorage: () => (state) => {
           console.log("[DEBUG] workspaceStore rehydrated. Triggering refreshWorkspaces to load data.");
           state?.refreshWorkspaces();

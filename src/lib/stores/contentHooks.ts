@@ -126,9 +126,9 @@ export function useContent() {
       if (!currentWorkspace?.id || !currentDashboard?.id) {
         throw new Error("No dashboard selected");
       }
-      
+
       console.log('[DEBUG] useContent.updateTile called:', { tileId, updates });
-      
+
       // Update local store immediately (optimistic update)
       const { useWorkspaceStore } = await import('./workspaceStore');
       useWorkspaceStore.getState().updateTileInDashboard(
@@ -137,7 +137,7 @@ export function useContent() {
         tileId,
         updates
       );
-      
+
       // TODO: If we had a backend mutation, we would call it here.
       // For now, since we use local storage persistence via the store, 
       // the updateTileInDashboard action handles the persistence.
@@ -180,10 +180,10 @@ export function useContent() {
     },
     async reorderTiles(dashboardId: string, order: string[]) {
       console.log('[DEBUG] useContent.reorderTiles called:', { dashboardId, workspaceId: currentWorkspace?.id, orderLength: order.length });
-      await reorderTilesMutation.mutateAsync({ 
-        dashboardId, 
+      await reorderTilesMutation.mutateAsync({
+        dashboardId,
         workspaceId: currentWorkspace?.id,
-        order 
+        order
       });
     },
 
@@ -208,8 +208,16 @@ export function useContent() {
       });
       return result.note;
     },
-    async deleteNote(noteId: string) {
-      await deleteNoteMutation.mutateAsync(noteId);
+    async deleteNote(noteId: string, workspaceId?: string, dashboardId?: string) {
+      if (!currentWorkspace?.id || !currentDashboard?.id) {
+        // If context is missing, we can't reliably delete from store for guests.
+        // But maybe caller provided IDs.
+      }
+      await deleteNoteMutation.mutateAsync({
+        noteId,
+        workspaceId: workspaceId || currentWorkspace?.id,
+        dashboardId: dashboardId || currentDashboard?.id
+      });
     },
 
     // Contacts
@@ -221,9 +229,9 @@ export function useContent() {
         if (!data.name) {
           throw new Error("Contact name is required");
         }
-        
-        const result = await createContactMutation.mutateAsync({ 
-          dashboardId, 
+
+        const result = await createContactMutation.mutateAsync({
+          dashboardId,
           workspaceId: currentWorkspace?.id,
           contactData: {
             name: data.name,

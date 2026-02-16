@@ -71,6 +71,37 @@ export async function POST(
         { status: 429 }
       );
     }
+  } else {
+    // 🔒 Guest Security Check
+    const { checkGuestLimit } = await import("@/lib/middleware/guest-limit");
+    const { SAFE_DEFAULT_GUEST } = await import("@/lib/saas/usage-service");
+
+    // Check "generation" limit (shared with tile generation for now, or specific)
+    // Using "generation" as a proxy for "AI interactions" if specific not defined
+    const guestLimitData = await checkGuestLimit(
+      request,
+      "generation",
+      SAFE_DEFAULT_GUEST.tileChatsCount,
+      1
+    );
+
+    if (!guestLimitData.allowed) {
+      const errorRes = NextResponse.json(
+        {
+          error: guestLimitData.reason,
+          upgradeRequired: true
+        },
+        { status: 403 }
+      );
+      if (guestLimitData.response) {
+        guestLimitData.response.cookies.getAll().forEach((c) => errorRes.cookies.set(c));
+      }
+      return errorRes;
+    }
+
+    // Pass cookie response for later use
+    (request as any)._guestLimitResponse = guestLimitData.response;
+    (request as any)._guestId = guestLimitData.guestId;
   }
 
   if (!process.env.OPENAI_API_KEY) {
@@ -117,12 +148,27 @@ export async function POST(
     if (userId) {
       await invalidateResourceCache("tiles", dashboardId, workspaceId);
       await incrementUsage(userId, "tileChatsCount", 1);
+    } else {
+      // Increment Guest Usage
+      const guestId = (request as any)._guestId;
+      if (guestId) {
+        const { incrementGuestUsage } = await import("@/lib/middleware/guest-limit");
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+        await incrementGuestUsage(guestId, ip, "generation", 1);
+      }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       tile: chatTile,
     });
+
+    // Set cookie if needed
+    const guestResponse = (request as any)._guestLimitResponse as NextResponse | undefined;
+    if (guestResponse) {
+      guestResponse.cookies.getAll().forEach((c) => response.cookies.set(c));
+    }
+    return response;
   } catch (error) {
     console.error("[API] Error in tile chat:", error);
     return NextResponse.json(

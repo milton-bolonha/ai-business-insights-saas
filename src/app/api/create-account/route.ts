@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { getAuth } from "@clerk/nextjs/server";
 
 import { db } from "@/lib/db/mongodb";
 import { auditLog } from "@/lib/audit/logger";
@@ -13,6 +14,7 @@ type PlanId = "guest" | "member" | "business";
 
 interface UserDocument {
   userId: string;
+  clerkId?: string;
   stripeCustomerId?: string;
   subscriptionStatus?: string;
   subscriptionId?: string;
@@ -69,14 +71,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userId = session.client_reference_id || session.metadata?.userId;
+    // 1. Determine the effective User ID
+    // Check if user is legally signed in via Clerk
+    const { userId: clerkUserId } = await getAuth();
 
-    if (!userId) {
+    // The userId from Stripe metadata (might be a guest ID like 'guest_...')
+    const stripeUserId = session.client_reference_id || session.metadata?.userId;
+
+    // Use Clerk ID if available (Account Linking), otherwise fallback to Stripe ID
+    let targetUserId = clerkUserId || stripeUserId;
+
+    if (!targetUserId) {
       return NextResponse.json(
         { error: "Missing userId in checkout session" },
         { status: 400 }
       );
     }
+
+    console.log(`[create-account] Processing for TargetUser: ${targetUserId} (Clerk: ${clerkUserId}, Stripe: ${stripeUserId})`);
 
     const plan = resolvePlanFromSession(session);
 
@@ -90,32 +102,91 @@ export async function POST(req: NextRequest) {
         ? session.subscription
         : session.subscription?.id;
 
-    await db.updateOne<UserDocument>(
-      "users",
-      { userId },
-      {
-        $set: {
-          isMember: true,
-          stripeCustomerId,
-          subscriptionId,
-          plan,
-          membershipStartedAt: new Date(),
-          updatedAt: new Date(),
-          migrationNeeded: true,
+    const email = session.customer_details?.email || session.customer_email;
+
+    // 2. Update or Create User
+    try {
+      await db.updateOne<UserDocument>(
+        "users",
+        { userId: targetUserId },
+        {
+          $set: {
+            isMember: true,
+            stripeCustomerId,
+            subscriptionId,
+            plan,
+            email,
+            membershipStartedAt: new Date(),
+            updatedAt: new Date(),
+            migrationNeeded: true,
+            // If we have a Clerk ID, ensure it's saved
+            ...(clerkUserId ? { clerkId: clerkUserId } : {})
+          },
+          $setOnInsert: {
+            userId: targetUserId,
+            clerkId: clerkUserId || targetUserId,
+            createdAt: new Date(),
+          },
         },
-        $setOnInsert: {
-          userId,
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
+        { upsert: true }
+      );
+    } catch (error: any) {
+      if (error.code === 11000 && email) {
+        console.log(`[create-account] Duplicate email ${email} found. Merging membership to existing user.`);
+
+        // Find the user by email to get their REAL ID
+        const existingUser = await db.findOne<UserDocument>("users", { email });
+        if (existingUser) {
+          console.log(`[create-account] Found existing user ${existingUser.userId}. Linking purchase to them.`);
+          targetUserId = existingUser.userId; // Update target for Purchase record
+
+          await db.updateOne<UserDocument>(
+            "users",
+            { email },
+            {
+              $set: {
+                isMember: true,
+                stripeCustomerId,
+                subscriptionId,
+                plan,
+                membershipStartedAt: new Date(),
+                updatedAt: new Date(),
+                migrationNeeded: true,
+                // If we are currently signed in as Clerk User, link this old account to us? 
+                // Complex case, but at least update the subscription.
+              }
+            }
+          );
+        }
+      } else {
+        throw error;
+      }
+    }
+
+    // 3. Record Purchase
+    try {
+      await db.insertOne("purchases", {
+        userId: targetUserId,
+        stripeSessionId: sessionId,
+        stripeCustomerId,
+        stripeSubscriptionId: subscriptionId,
+        amount: session.amount_total || 0,
+        currency: session.currency || 'usd',
+        plan,
+        status: session.payment_status,
+        createdAt: new Date()
+      });
+      console.log(`[create-account] Purchase recorded for ${targetUserId}`);
+    } catch (err) {
+      console.error("Failed to record purchase", err);
+      // Don't fail the request just because purchase log failed
+    }
 
     await auditLog(
       "payment_success",
       "Membership confirmed via create-account",
       {
-        userId,
+        userId: targetUserId,
         userRole: "member",
         details: {
           sessionId,
@@ -127,7 +198,7 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    const planInfo = await getPlanForUser(userId);
+    const planInfo = await getPlanForUser(targetUserId);
 
     return NextResponse.json(
       {
@@ -143,8 +214,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error("[create-account] Error confirming membership:", error);
+    // return detailed error in dev
     return NextResponse.json(
-      { error: "Failed to confirm membership" },
+      { error: `Failed to confirm membership: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     );
   }

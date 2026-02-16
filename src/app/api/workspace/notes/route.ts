@@ -5,11 +5,17 @@ import type { Note } from "@/lib/types";
 import { getAuth } from "@/lib/auth/get-auth";
 import { addNoteToDashboard, loadWorkspacesWithDashboards } from "@/lib/storage/dashboards-store";
 import { audit } from "@/lib/audit/logger";
+import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 
 // Runtime: Node.js (required for MongoDB)
-export const runtime = 'nodejs';
+// export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  console.log("[API] HIT: /api/workspace/notes POST");
+
+  const rate = await checkRateLimitMiddleware(request, "/api/workspace/notes");
+  if (!rate.allowed && rate.response) return rate.response;
+
   const body = await request.json().catch(() => null);
   const { userId } = await getAuth();
   let usageService: typeof import("@/lib/saas/usage-service") | null = null;
@@ -106,10 +112,10 @@ export async function POST(request: NextRequest) {
 
       if (workspace) {
         addNoteToDashboard(workspace.id, dashboardId, noteData);
-        
+
         // Audit log
         await audit.createNote(noteId, dashboardId, null, request);
-        
+
         console.log("[API] /api/workspace/notes - Note saved to localStorage", {
           noteId,
           workspaceId: workspace.id,

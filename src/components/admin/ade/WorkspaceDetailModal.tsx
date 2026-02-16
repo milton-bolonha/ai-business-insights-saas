@@ -132,7 +132,7 @@ export function WorkspaceDetailModal({
                     <div className="flex items-center space-x-3">
                       <div
                         className="w-3 h-3 rounded-full border"
-                        style={{ backgroundColor: dashboard.bgColor || '#f5f5f0', borderColor: appearance.sidebarBorderColor }}
+                        style={{ backgroundColor: dashboard.bgColor || '#f7f7f7', borderColor: appearance.sidebarBorderColor }}
                       />
                       <span className="font-medium" style={{ color: appearance.textColor }}>{dashboard.name}</span>
                     </div>

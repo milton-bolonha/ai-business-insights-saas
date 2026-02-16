@@ -82,6 +82,16 @@ export function NotesPanelAde({
   const handleDeleteNote = async (noteId: string) => {
     console.log("[DEBUG] NotesPanelAde.handleDeleteNote called:", noteId);
     try {
+      // Need workspaceId and dashboardId to properly delete from store (for guests)
+      // These should be passed or available in context/props?
+      // For now, let's assume the parent handles it OR we need to pass them.
+      // Actually, NotesPanelAde doesn't know about workspaceId/dashboardId directly unless passed.
+      // We should check where NotesPanelAde is used (AdminContainer) and see if we can pass them there.
+      // But wait, the prop `onDeleteNote` signature in `NotesPanelAde` needs to match `note.queries.ts` mutation input?
+      // No, `onDeleteNote` prop here is likely just `(id) => void`.
+      // The CALLER (AdminContainer) calls `deleteNoteMutation.mutate(...)`.
+      // So we need to update `AdminContainer.tsx`.
+
       await onDeleteNote?.(noteId);
       console.log("[DEBUG] NotesPanelAde.handleDeleteNote completed");
     } catch (error) {
@@ -129,7 +139,7 @@ export function NotesPanelAde({
             }}
           >
             <div className="flex items-center justify-between bg-[#E87C2A] px-4 py-3 text-white">
-              <h4 className="text-sm font-semibold">Nova note</h4>
+              <h4 className="text-sm font-semibold">New note</h4>
               <div className="flex space-x-2 text-xs">
                 <button
                   onClick={() => setIsAddingNote(false)}

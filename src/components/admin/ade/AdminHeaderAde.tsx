@@ -138,8 +138,8 @@ export function AdminHeaderAde({
         {/* Quick color presets */}
         <div className="flex items-center space-x-1">
           <button
-            onClick={() => handleColorChange("#f5f5f0")}
-            className="h-6 w-6 rounded-full border-2 border-white bg-[#f5f5f0] shadow-sm"
+            onClick={() => handleColorChange("#f7f7f7")}
+            className="h-6 w-6 rounded-full border-2 border-white bg-[#f7f7f7] shadow-sm"
             title="Beige"
           />
           <button

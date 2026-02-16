@@ -24,7 +24,7 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
       }
 
       // Cycle through some predefined colors
-      const colors = ["#f5f5f0", "#e8f4fd", "#f0f9e8", "#fef7ed"];
+      const colors = ["#f7f7f7", "#e8f4fd", "#f0f9e8", "#fef7ed"];
       const currentBgColor = currentDashboard.bgColor || appearance.baseColor;
       const currentIndex = colors.indexOf(currentBgColor);
       const nextIndex = (currentIndex + 1) % colors.length;
@@ -36,9 +36,9 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
         console.warn('[DEBUG] useAppearanceManagement: missing workspaceId, skipping API call');
         // Still update local state though
         if (currentDashboard.workspaceId) {
-             updateDashboard(currentDashboard.workspaceId, currentDashboard.id, {
-                bgColor: nextColor
-             });
+          updateDashboard(currentDashboard.workspaceId, currentDashboard.id, {
+            bgColor: nextColor
+          });
         }
         setBaseColor(nextColor);
         return;
@@ -88,9 +88,9 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
       const workspaceId = currentDashboard.workspaceId || currentWorkspace?.id;
 
       if (!workspaceId) {
-         console.warn('[DEBUG] useAppearanceManagement.handleSetBackground: missing workspaceId');
-         setBaseColor(color);
-         return;
+        console.warn('[DEBUG] useAppearanceManagement.handleSetBackground: missing workspaceId');
+        setBaseColor(color);
+        return;
       }
 
       console.log('[DEBUG] useAppearanceManagement.handleSetBackground:', {

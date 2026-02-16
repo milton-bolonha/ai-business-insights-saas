@@ -141,6 +141,39 @@ export async function POST(request: NextRequest) {
 
     const { userId } = await getAuth();
 
+    // 🔒 Guest Security Check (Server-Side)
+    let guestLimitData: import("@/lib/middleware/guest-limit").GuestLimitResult | null = null;
+
+    if (!userId) {
+      const { checkGuestLimit } = await import("@/lib/middleware/guest-limit");
+      const { SAFE_DEFAULT_GUEST } = await import("@/lib/saas/usage-service");
+
+      // Calculate requested amount strictly (e.g. tiles.length isn't known yet, but template implies it)
+      // For now we check "Access" (1 unit). Real increment happens later.
+      // Better: Check if user has AT LEAST 1 slot remaining.
+      guestLimitData = await checkGuestLimit(
+        request,
+        "tiles",
+        SAFE_DEFAULT_GUEST.tilesCount,
+        1
+      );
+
+      if (!guestLimitData.allowed) {
+        const errorRes = NextResponse.json(
+          {
+            error: guestLimitData.reason,
+            upgradeRequired: true
+          },
+          { status: 403 }
+        );
+        // Ensure creation of guest identity cookie even on error
+        if (guestLimitData.response) {
+          guestLimitData.response.cookies.getAll().forEach((c) => errorRes.cookies.set(c));
+        }
+        return errorRes;
+      }
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY is not configured" },
@@ -154,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     if (template.generationMode === "sequential") {
       let previousArcContent = "";
-      
+
       for (const [index, item] of prompts.entries()) {
         // Inject previous context into the prompt
         const contextualizedPrompt = item.prompt.replace(
@@ -195,7 +228,7 @@ export async function POST(request: NextRequest) {
         };
 
         tiles.push(tile);
-        
+
         // Update context for next iteration
         previousArcContent = generation.content;
       }
@@ -263,7 +296,7 @@ export async function POST(request: NextRequest) {
       tilesToGenerate: tiles.length,
       tiles, // ✅ Tiles serão transferidos para o dashboard padrão pelo getOrCreateWorkspaceFromWorkspaceSnapshot
       appearance: {
-        baseColor: process.env.NEXT_PUBLIC_ADE_BASE_COLOR ?? "#f5f5f0",
+        baseColor: process.env.NEXT_PUBLIC_ADE_BASE_COLOR ?? "#f7f7f7",
       },
       promptSettings: {
         templateId,
@@ -296,6 +329,7 @@ export async function POST(request: NextRequest) {
         // Increment workspace count (stored as companiesCount in usage-service for legacy compatibility)
         const { incrementUsage } = await import("@/lib/saas/usage-service");
         await incrementUsage(userId, "companiesCount", 1);
+        await incrementUsage(userId, "tilesCount", tiles.length);
 
         console.log(
           "[api/generate] ✅ Workspace também salvo no MongoDB (member)"
@@ -314,14 +348,28 @@ export async function POST(request: NextRequest) {
       console.log(
         "[api/generate] ℹ️ Guest mode: Workspace salvo apenas em localStorage (não MongoDB)"
       );
+
+      // Increment Guest Usage (Server-Side)
+      if (guestLimitData?.guestId) {
+        const { incrementGuestUsage } = await import("@/lib/middleware/guest-limit");
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+        await incrementGuestUsage(guestLimitData.guestId, ip, "tiles", tiles.length);
+      }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       tilesGenerated: tiles.length,
       sessionId,
       workspace,
     });
+
+    // Ensure guest cookie is set if it was created/updated during check
+    if (guestLimitData?.response) {
+      guestLimitData.response.cookies.getAll().forEach((c) => response.cookies.set(c));
+    }
+
+    return response;
   } catch (error) {
     console.error("[api/generate] ❌ Unexpected error", error);
     return NextResponse.json(

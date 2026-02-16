@@ -52,10 +52,9 @@ export async function POST(request: NextRequest) {
   const maxTokens = getMaxTokensForSize(requestSize);
 
   const { userId } = await getAuth();
-  let usageService: typeof import("@/lib/saas/usage-service") | null = null;
   if (userId) {
-    usageService = await import("@/lib/saas/usage-service");
-    const limit = await usageService.checkLimit(userId, "tilesCount");
+    const { checkLimit } = await import("@/lib/saas/usage-service");
+    const limit = await checkLimit(userId, "tilesCount"); // Check tile count specifically
     if (!limit.allowed) {
       return NextResponse.json(
         {
@@ -66,8 +65,38 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
+  } else {
+    // 🔒 Guest Security Check (Server-Side)
+    const { checkGuestLimit } = await import("@/lib/middleware/guest-limit");
+    const { SAFE_DEFAULT_GUEST } = await import("@/lib/saas/usage-service");
+
+    // Check "tiles" limit (1 unit)
+    const guestLimitData = await checkGuestLimit(
+      request,
+      "tiles",
+      SAFE_DEFAULT_GUEST.tilesCount,
+      1
+    );
+
+    if (!guestLimitData.allowed) {
+      const errorRes = NextResponse.json(
+        {
+          error: guestLimitData.reason,
+          upgradeRequired: true
+        },
+        { status: 403 }
+      );
+      if (guestLimitData.response) {
+        guestLimitData.response.cookies.getAll().forEach((c) => errorRes.cookies.set(c));
+      }
+      return errorRes;
+    }
+
+    // Pass cookie response for later use
+    (request as any)._guestLimitResponse = guestLimitData.response;
+    (request as any)._guestId = guestLimitData.guestId;
   }
-  
+
   if (!workspaceId) {
     return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
   }
@@ -127,16 +156,33 @@ export async function POST(request: NextRequest) {
     const { userId: auditUserId } = await getAuth();
     await audit.createTile(newTile.id, dashboardId || "", auditUserId, request);
 
-    if (usageService && userId) {
-      await usageService.incrementUsage(userId, "tilesCount", 1);
+    if (userId) {
+      const { incrementUsage } = await import("@/lib/saas/usage-service");
+      await incrementUsage(userId, "tilesCount", 1);
+    } else {
+      // Increment Guest Usage
+      const guestId = (request as any)._guestId;
+      if (guestId) {
+        const { incrementGuestUsage } = await import("@/lib/middleware/guest-limit");
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+        await incrementGuestUsage(guestId, ip, "tiles", 1);
+      }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       tile: newTile,
       dashboardId,
       workspaceId,
     });
+
+    // Set cookie if needed
+    const guestResponse = (request as any)._guestLimitResponse as NextResponse | undefined;
+    if (guestResponse) {
+      guestResponse.cookies.getAll().forEach((c) => response.cookies.set(c));
+    }
+
+    return response;
   } catch (error) {
     console.error("[API] /api/workspace/tiles - Error generating tile:", error);
     return NextResponse.json(
