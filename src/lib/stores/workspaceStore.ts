@@ -299,10 +299,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               console.warn("[DEBUG] workspaceStore.refreshWorkspaces member fetch failed", response.status);
 
               if (response.status === 401) {
-                console.warn("[workspaceStore] 401 Unauthorized - clearing local auth state");
-                // Force logout locally since session is invalid
-                useAuthStore.getState().setUser(null);
-                // Fallback to local storage loading immediately
+                console.warn("[workspaceStore] 401 Unauthorized - falling back to local");
+                // Do NOT force logout here. Let AuthSync handle auth state.
+                // Just fallback to local storage for now.
                 const localWorkspaces = loadWorkspacesWithDashboards();
                 set({ workspaces: localWorkspaces });
               }
