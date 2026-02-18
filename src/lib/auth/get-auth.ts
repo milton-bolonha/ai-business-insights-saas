@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 
 const clerkEnabled =
   Boolean(process.env.CLERK_SECRET_KEY) &&
@@ -15,10 +15,10 @@ export async function getAuth(): Promise<{ userId: string | null }> {
   }
 
   try {
-    const user = await currentUser();
+    const { userId } = await auth();
 
-    if (user && user.id) {
-      return { userId: user.id };
+    if (userId) {
+      return { userId };
     }
 
     // Guest user (no Clerk authentication)

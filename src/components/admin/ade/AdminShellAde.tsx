@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 // Removed sidebar related imports
 import { AdminTopHeader } from "./AdminTopHeader";
 import { SaaSLimitsModal } from "./SaaSLimitsModal";
+import { AuthSync } from "@/components/auth/AuthSync";
 import { useUIStore } from "@/lib/stores/uiStore";
 
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
@@ -50,6 +51,7 @@ export function AdminShellAde({
         color: appearance.textColor,
       }}
     >
+      <AuthSync />
       {/* Top Header */}
       <AdminTopHeader
         appearance={appearance}

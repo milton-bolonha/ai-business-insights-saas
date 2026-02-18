@@ -2,8 +2,8 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 
-// Nenhuma rota Stripe/usage protegida para permitir upgrade de guests
-const isProtectedRoute = createRouteMatcher([]);
+// Protect all admin routes and the generate API and workspace API and user API
+const isProtectedRoute = createRouteMatcher(["/admin(.*)", "/api/generate(.*)", "/api/workspace(.*)", "/api/user(.*)"]);
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   // Apply rate limiting to API routes
@@ -20,8 +20,8 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
             .rateLimitExceeded(
               req.nextUrl.pathname,
               req.headers.get("x-forwarded-for") ||
-                req.headers.get("x-real-ip") ||
-                "unknown",
+              req.headers.get("x-real-ip") ||
+              "unknown",
               req
             )
             .catch((err) => {
@@ -45,7 +45,10 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
   // Apply authentication protection
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
   }
 
   return NextResponse.next();

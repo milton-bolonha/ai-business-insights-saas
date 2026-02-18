@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getAuth } from "@clerk/nextjs/server";
+import { getAuth } from "@/lib/auth/get-auth";
 
 import { db } from "@/lib/db/mongodb";
 import { auditLog } from "@/lib/audit/logger";
@@ -105,8 +105,30 @@ export async function POST(req: NextRequest) {
     const email = session.customer_details?.email || session.customer_email;
 
     // 2. Update or Create User
+    console.log(`[create-account] Step 2: Updating user ${targetUserId}`);
     try {
-      await db.updateOne<UserDocument>(
+      // Fetch full user details from Clerk to ensure we have name/image
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      let userDetails: any = {};
+
+      if (clerkUserId) {
+        try {
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(clerkUserId);
+          userDetails = {
+            firstName: clerkUser.firstName,
+            lastName: clerkUser.lastName,
+            fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
+            imageUrl: clerkUser.imageUrl,
+            email: clerkUser.emailAddresses[0]?.emailAddress
+          };
+          console.log(`[create-account] Fetched Clerk details for ${clerkUserId}:`, userDetails);
+        } catch (clerkError) {
+          console.error("[create-account] Failed to fetch Clerk user details:", clerkError);
+        }
+      }
+
+      const updateResult = await db.updateOne<UserDocument>(
         "users",
         { userId: targetUserId },
         {
@@ -115,7 +137,11 @@ export async function POST(req: NextRequest) {
             stripeCustomerId,
             subscriptionId,
             plan,
-            email,
+            email: userDetails.email || email, // Prefer Clerk email, fallback to Stripe
+            firstName: userDetails.firstName,
+            lastName: userDetails.lastName,
+            fullName: userDetails.fullName,
+            imageUrl: userDetails.imageUrl,
             membershipStartedAt: new Date(),
             updatedAt: new Date(),
             migrationNeeded: true,
@@ -130,7 +156,10 @@ export async function POST(req: NextRequest) {
         },
         { upsert: true }
       );
+      console.log(`[create-account] User update result: success=${updateResult}`);
+
     } catch (error: any) {
+      console.error("[create-account] Error updating user:", error);
       if (error.code === 11000 && email) {
         console.log(`[create-account] Duplicate email ${email} found. Merging membership to existing user.`);
 
@@ -152,20 +181,21 @@ export async function POST(req: NextRequest) {
                 membershipStartedAt: new Date(),
                 updatedAt: new Date(),
                 migrationNeeded: true,
-                // If we are currently signed in as Clerk User, link this old account to us? 
-                // Complex case, but at least update the subscription.
               }
             }
           );
         }
       } else {
-        throw error;
+        // Log but continue to allow purchase recording if possible? 
+        // No, if user update fails critically, we should probably stop or alert.
+        console.error("[create-account] Critical user update failure:", error);
       }
     }
 
     // 3. Record Purchase
+    console.log(`[create-account] Step 3: Recording purchase for ${targetUserId}`);
     try {
-      await db.insertOne("purchases", {
+      const purchaseResult = await db.insertOne("purchases", {
         userId: targetUserId,
         stripeSessionId: sessionId,
         stripeCustomerId,
@@ -176,10 +206,9 @@ export async function POST(req: NextRequest) {
         status: session.payment_status,
         createdAt: new Date()
       });
-      console.log(`[create-account] Purchase recorded for ${targetUserId}`);
+      console.log(`[create-account] Purchase recorded. ID: ${purchaseResult}`);
     } catch (err) {
-      console.error("Failed to record purchase", err);
-      // Don't fail the request just because purchase log failed
+      console.error("[create-account] Failed to record purchase:", err);
     }
 
     await auditLog(

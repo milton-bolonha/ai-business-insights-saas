@@ -43,11 +43,11 @@ const planCache: Map<PlanId, { limits: UsageLimits; loadedAt: number }> =
   new Map();
 const PLAN_CACHE_TTL_MS = 60_000; // 1 minuto
 
-export const SAFE_DEFAULT_GUEST: UsageLimits = {
+export const FREE_LIMITS: UsageLimits = {
   companiesCount: 3,
   contactsCount: 5,
   notesCount: 20,
-  tilesCount: 30, // Updated from 3 to 30 as per saas.md real limits
+  tilesCount: 20, // Limit for Free Members
   tileChatsCount: 20,
   contactChatsCount: 20,
   regenerationsCount: 10,
@@ -298,7 +298,7 @@ export async function getPlanForUser(
       );
       return {
         plan: "guest",
-        limits: getCachedLimits("guest") ?? SAFE_DEFAULT_GUEST,
+        limits: getCachedLimits("guest") ?? FREE_LIMITS,
       };
     }
   }

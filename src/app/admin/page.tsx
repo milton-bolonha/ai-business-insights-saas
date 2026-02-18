@@ -11,9 +11,14 @@ function AdminFallback() {
   );
 }
 
+import { AdminOnboardingHandler } from "@/components/admin/AdminOnboardingHandler";
+
+// ... existing code ...
+
 export default function AdminPage() {
   return (
     <Suspense fallback={<AdminFallback />}>
+      <AdminOnboardingHandler />
       <AdminContainer />
     </Suspense>
   );

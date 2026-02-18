@@ -6,7 +6,7 @@ import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { useAuthStore, useUsage, useLimits } from "@/lib/stores/authStore";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SaaSLimitsModalProps {
     isOpen: boolean;
@@ -33,9 +33,51 @@ function UsageBar({ label, current, max, color }: { label: string, current: numb
     );
 }
 
+
+function PaymentHistoryList() {
+    const [payments, setPayments] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetch("/api/user/payments")
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to load");
+                return res.json();
+            })
+            .then((data) => setPayments(data.purchases || []))
+            .catch(() => setError("Failed to load history"))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) return <div className="text-center py-8 text-gray-500">Loading history...</div>;
+    if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
+    if (payments.length === 0) return <div className="text-center py-8 text-gray-500">No payment history found.</div>;
+
+    return (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+            {payments.map((p) => (
+                <div key={p._id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div>
+                        <div className="font-semibold capitalize">{p.plan || "Membership"} Plan</div>
+                        <div className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div className="text-right">
+                        <div className="font-bold">{(p.amount / 100).toLocaleString("en-US", { style: "currency", currency: p.currency || "USD" })}</div>
+                        <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${p.status === 'paid' || p.status === 'complete' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700'}`}>
+                            {p.status}
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: SaaSLimitsModalProps) {
     const usage = useUsage();
     const limits = useLimits();
+    const [tab, setTab] = useState<"usage" | "payments">("usage");
 
     if (!isOpen) return null;
 
@@ -60,55 +102,74 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                     </button>
                 </div>
 
+                <div className="flex border-b border-gray-200 dark:border-gray-800">
+                    <button
+                        onClick={() => setTab("usage")}
+                        className={`flex-1 py-3 text-sm font-medium ${tab === "usage" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
+                    >
+                        Usage Limits
+                    </button>
+                    <button
+                        onClick={() => setTab("payments")}
+                        className={`flex-1 py-3 text-sm font-medium ${tab === "payments" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
+                    >
+                        Payment History
+                    </button>
+                </div>
+
                 <div className="p-6">
-                    <div className="space-y-6">
+                    {tab === "usage" ? (
+                        <div className="space-y-6">
 
-                        {featureLocked ? (
-                            <div className="text-center py-4">
-                                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/30">
-                                    <span className="text-3xl">🔒</span>
+                            {featureLocked ? (
+                                <div className="text-center py-4">
+                                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/30">
+                                        <span className="text-3xl">🔒</span>
+                                    </div>
+                                    <h4 className="mb-2 text-xl font-bold">
+                                        {featureLocked}
+                                    </h4>
+                                    <p className="mb-6 text-gray-500 dark:text-gray-400">
+                                        This feature is available exclusively for <strong>Pro</strong> members.
+                                        Upgrade your plan to unlock it immediately.
+                                    </p>
                                 </div>
-                                <h4 className="mb-2 text-xl font-bold">
-                                    {featureLocked}
-                                </h4>
-                                <p className="mb-6 text-gray-500 dark:text-gray-400">
-                                    This feature is available exclusively for <strong>Pro</strong> members.
-                                    Upgrade your plan to unlock it immediately.
-                                </p>
+                            ) : (
+                                <>
+                                    {/* Arcs Usage */}
+                                    <UsageBar
+                                        label="Book Arcs"
+                                        current={usage.createTile || 0}
+                                        max={limits.createTile || 20}
+                                        color="bg-rose-500"
+                                    />
+
+                                    {/* Characters Usage */}
+                                    <UsageBar
+                                        label="Characters"
+                                        current={usage.createContact || 0}
+                                        max={limits.createContact || 5}
+                                        color="bg-orange-500"
+                                    />
+
+                                    {/* Workspaces Usage (Optional, good for visibility) */}
+                                    <UsageBar
+                                        label="Workspaces"
+                                        current={usage.createWorkspace || 0}
+                                        max={limits.createWorkspace || 3}
+                                        color="bg-blue-500"
+                                    />
+                                </>
+                            )}
+
+                            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 flex items-center justify-between">
+                                <span>Need more resources?</span>
+                                <UpgradeButton />
                             </div>
-                        ) : (
-                            <>
-                                {/* Arcs Usage */}
-                                <UsageBar
-                                    label="Book Arcs"
-                                    current={usage.createTile || 0}
-                                    max={limits.createTile || 20}
-                                    color="bg-rose-500"
-                                />
-
-                                {/* Characters Usage */}
-                                <UsageBar
-                                    label="Characters"
-                                    current={usage.createContact || 0}
-                                    max={limits.createContact || 5}
-                                    color="bg-orange-500"
-                                />
-
-                                {/* Workspaces Usage (Optional, good for visibility) */}
-                                <UsageBar
-                                    label="Workspaces"
-                                    current={usage.createWorkspace || 0}
-                                    max={limits.createWorkspace || 3}
-                                    color="bg-blue-500"
-                                />
-                            </>
-                        )}
-
-                        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 flex items-center justify-between">
-                            <span>Need more resources?</span>
-                            <UpgradeButton />
                         </div>
-                    </div>
+                    ) : (
+                        <PaymentHistoryList />
+                    )}
                 </div>
             </motion.div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 
 import { useToast } from "@/lib/state/toast-context";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -21,6 +21,7 @@ import { AppTagId, APP_ATTRIBUTES } from "@/lib/app-tags";
 export function HomeContainer() {
   const router = useRouter();
   const { push } = useToast();
+  const { isSignedIn } = useUser();
 
   // Usar Zustand stores ao invés de Context API
   const {
@@ -164,229 +165,67 @@ export function HomeContainer() {
     return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
   };
 
-  const handleSubmit = async ({
-    company,
-    companyWebsite,
-    solution,
-    researchTarget,
-    researchWebsite,
-    templateId,
-    model,
-    promptAgent,
-    responseLength,
-    promptVariables,
-    bulkPrompts,
-  }: ClassicHeroFormSubmission) => {
-
+  const handleSubmit = async (data: ClassicHeroFormSubmission) => {
     setIsSubmitting(true);
     try {
-      if (user?.role !== "member") {
-        const preview = evaluateUsage("createWorkspace");
-        if (!preview.allowed) {
-          payment.setUpgradeModalOpen(true);
-          push({
-            title: "Limit reached",
-            description: `You already created ${preview.used} workspaces. Upgrade to create more.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
+      // 1. Save data to Session Storage for post-signup processing
+      sessionStorage.setItem("onboarding_data", JSON.stringify({
+        type: "business_insights",
+        data: data
+      }));
 
+      // 2. Redirect to Sign Up
       push({
-        title: "Redirecting to dashboard...",
-        description: "Your insights are being generated in the background.",
+        title: "Almost there!",
+        description: "Create your free account to view your insights.",
         variant: "default",
       });
 
-      if (!isMember) {
-        const usageResult = consumeUsage("createWorkspace");
-        if (!usageResult.allowed) {
-          payment.setUpgradeModalOpen(true);
-          push({
-            title: "Limit reached",
-            description: `You already created ${usageResult.used} workspaces. Upgrade to create more.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
+      // Short delay for toast visibility
+      setTimeout(() => {
+        router.push("/sign-up?redirect_url=/admin");
+      }, 1000);
 
-      const generateInBackground = async () => {
-        const targetUrl = "/api/generate";
-        const payload = {
-          salesRepCompany: company,
-          salesRepWebsite: normalizeUrl(companyWebsite),
-          solution,
-          targetCompany: researchTarget,
-          targetWebsite: normalizeUrl(researchWebsite),
-          templateId,
-          model,
-          promptAgent,
-          responseLength,
-          promptVariables,
-          bulkPrompts,
-        };
-
-        try {
-          const response = await fetch(targetUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const data = await response.json().catch(() => null);
-
-          if (!response.ok) {
-            push({
-              title: "Generation failed",
-              description:
-                (data?.error as string) ?? "Failed to start insight generation.",
-              variant: "destructive",
-            });
-            return;
-          }
-
-          if (data?.workspace) {
-            // Initialize workspace in local store
-            const workspace = await initializeWorkspaceFromHome(data.workspace);
-
-            router.push(`/admin?workspaceId=${workspace.id}`);
-          } else {
-            router.push("/admin");
-          }
-
-          push({
-            title: "Book generated successfully!",
-            description:
-              "Your story has been crafted. Redirecting to the reader...",
-            variant: "success",
-          });
-        } catch (error) {
-          console.error("[HomeContainer] 🚨 Generation request threw", error);
-          push({
-            title: "Generation failed",
-            description:
-              error instanceof Error
-                ? error.message
-                : "Please try again in a few moments.",
-            variant: "destructive",
-          });
-        }
-      };
-
-      await generateInBackground();
-    } finally {
+    } catch (error) {
+      console.error("Failed to capture onboarding data:", error);
+      push({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
       setIsSubmitting(false);
     }
   };
 
   const handleBookSubmit = async (values?: Partial<ClassicHeroFormSubmission>) => {
     const currentValues = values || formValues;
-    const userName = currentValues.user_name || "Author";
-    const partnerName = currentValues.partner_name || "Partner";
-    const bookTitle = `${userName} & ${partnerName}`;
 
     setIsSubmitting(true);
     try {
-      // 1. Prepare Workspace Data
-      const templateId = "template_love_writers";
-      // Import necessary helpers dynamically to avoid server-only issues if any
-      const {
-        getGuestTemplate,
-        resolveTemplateTiles,
-        getPromptAgent,
-        processPromptVariables,
-      } = await import("@/lib/guest-templates");
-      const { randomUUID } = await import("crypto"); // Or use a uuid lib if crypto not available in browser
+      // 1. Save data to Session Storage
+      sessionStorage.setItem("onboarding_data", JSON.stringify({
+        type: "love_writers",
+        data: currentValues
+      }));
 
-      const template = getGuestTemplate(templateId);
-      const agent = getPromptAgent("publisher");
-
-      // 2. Resolve Tiles (Client-Side)
-      // Format promptVariables as ["key: value"] for internal logic
-      const promptVariablesList = Object.entries(currentValues).map(([key, value]) => `${key}: ${value}`);
-
-      const resolvedTiles = resolveTemplateTiles(template, {
-        templateId,
-        agentId: agent.id as any, // Cast to avoid literal type mismatch
-        responseLength: "long",
-        promptVariables: promptVariablesList as any, // Cast to avoid literal type mismatch
-      });
-
-      // 3. Create context for prompt processing (initial)
-      const context = {
-        user_name: userName,
-        partner_name: partnerName,
-        meeting_story: currentValues.meeting_story,
-      };
-
-      // 4. Construct Tile Objects (Empty Content)
-      const tiles = resolvedTiles.map((item, index) => {
-        // Pre-process prompt just for display/initial state if needed, 
-        // but sequential generator will likely re-process with injected context.
-        // Actually, let's keep the raw prompt or process what we can.
-        // Sequential generator will replace {previous_arc} dynamically.
-        // We need to allow `processPromptVariables` to handle missing keys gracefully or just process knowns.
-
-        const processedPrompt = processPromptVariables(item.prompt, context);
-
-        return {
-          id: `tile_${crypto.randomUUID()}`, // Use browser crypto
-          title: item.title,
-          content: null, // Critical: Content is null to indicate "Draft"
-          prompt: processedPrompt,
-          templateId,
-          templateTileId: item.id,
-          category: item.category,
-          model: "gpt-4o-mini",
-          orderIndex: index,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          agentId: item.agentId,
-          status: "pending", // Custom status for UI
-        };
-      });
-
-      // 5. Construct Workspace
-      const workspaceSnapshot = {
-        sessionId: `session_${crypto.randomUUID()}`,
-        name: bookTitle,
-        website: "https://lovewriters.com",
-        createdAt: new Date().toISOString(),
-        tiles,
-        // ... other fields matching WorkspaceSnapshot
-        salesRepCompany: "Love Writers",
-        salesRepWebsite: "https://lovewriters.com",
-        generatedAt: new Date().toISOString(),
-        tilesToGenerate: tiles.length,
-        promptSettings: {
-          templateId,
-          model: "gpt-4o",
-          promptAgent: "publisher",
-          responseLength: "long",
-          promptVariables: promptVariablesList,
-        }
-      };
-
-      // 6. Save to Store & Redirect
-      const workspace = await initializeWorkspaceFromHome(workspaceSnapshot as any);
-
-      router.push(`/admin?workspaceId=${workspace.id}`);
-
+      // 2. Redirect to Sign Up
       push({
-        title: "Book plan created!",
-        description: "Redirecting to the writer...",
-        variant: "success",
+        title: "Saving your story idea...",
+        description: "Create a free account to start writing.",
+        variant: "default",
       });
+
+      setTimeout(() => {
+        router.push("/sign-up?redirect_url=/admin");
+      }, 1000);
 
     } catch (error) {
-      console.error("Failed to create draft:", error);
+      console.error("Failed to capture onboarding data:", error);
       push({
-        title: "Error creating plan",
-        description: "Please try again.",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -395,23 +234,34 @@ export function HomeContainer() {
     try {
       const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
 
-      if (currentWorkspace) {
-        const response = await fetch(
-          `/api/workspace?workspaceId=${currentWorkspace.id}`,
-          {
+      // Only attempt server-side delete if user is a member/signed-in
+      if (currentWorkspace && currentWorkspace.id && isMember) {
+        // Construct URL explicitly using current window origin to avoid protocol mismatch
+        const url = new URL("/api/workspace", window.location.origin);
+        url.searchParams.set("workspaceId", currentWorkspace.id);
+
+        console.log("[Home] Resetting verified member workspace via:", url.toString());
+
+        try {
+          const response = await fetch(url.toString(), {
             method: "DELETE",
+          });
+
+          if (!response.ok) {
+            console.error("[Home] Reset failed:", response.status, response.statusText);
           }
-        );
-        if (!response.ok) {
-          throw new Error("Could not reset the workspace");
+        } catch (netError) {
+          console.warn("[Home] Network error during reset (ignoring):", netError);
         }
+      } else {
+        console.log("[Home] Guest reset: Skipping server-side delete, clearing local state only.");
       }
 
       // Try to reset server-side rate limits (Dev only)
       try {
         await fetch("/api/debug/reset-guest", { method: "POST" });
       } catch (e) {
-        console.warn("Failed to reset rate limits:", e);
+        console.warn("Failed to reset rate limits (might be expected in prod):", e);
       }
 
       // Limpar estado local do workspace
@@ -457,21 +307,31 @@ export function HomeContainer() {
             {messages.length > 0 && (
               <button
                 onClick={handleResetWorkspace}
-                className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors"
+                className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors cursor-pointer"
               >
                 Start Over
               </button>
             )}
-            <SignInButton mode="modal">
-              <button className="text-sm font-medium text-gray-600 hover:text-black">
-                Log in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors">
-                Sign up
-              </button>
-            </SignUpButton>
+            {isSignedIn ? (
+              <Link href="/admin">
+                <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
+                  Dashboard
+                </button>
+              </Link>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <button className="text-sm font-medium text-gray-600 hover:text-black cursor-pointer">
+                    Log in
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
+                    Sign up
+                  </button>
+                </SignUpButton>
+              </>
+            )}
           </div>
         </div>
       </header>

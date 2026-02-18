@@ -50,9 +50,19 @@ export default function CreateAccountClient({
           const data = await res.json().catch(() => ({}));
           throw new Error(data?.error || "Falha ao confirmar pagamento");
         }
+        const data = await res.json();
+
+        // Update local store to reflect new member status immediately
+        const { useAuthStore } = await import("@/lib/stores/authStore");
+        useAuthStore.getState().setUser({ role: "member", isPaid: true, plan: data.plan });
+
         setStatus("success");
         setMessage("Pagamento confirmado. Conta atualizada para member.");
-        setTimeout(() => router.push("/admin"), 1200);
+
+        // Force a hard refresh to ensure all server components re-render with new claims
+        setTimeout(() => {
+          window.location.href = "/admin";
+        }, 1200);
       } catch (err) {
         console.error("[create-account] error", err);
         setStatus("error");

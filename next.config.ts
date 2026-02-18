@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://unpkg.com",
               "img-src 'self' data: https: https://img.clerk.com",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.clerk.accounts.dev https://*.stripe.com https://api.openai.com https://unpkg.com https://*.cloudflare.com",
+              "connect-src 'self' https://*.clerk.accounts.dev https://*.stripe.com https://api.openai.com https://unpkg.com https://*.cloudflare.com https://clerk-telemetry.com",
               "worker-src 'self' blob:",
               "frame-src 'self' https://*.stripe.com https://*.clerk.accounts.dev https://identity.netlify.com https://challenges.cloudflare.com",
               "object-src 'none'",

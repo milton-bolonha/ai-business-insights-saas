@@ -14,73 +14,73 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
   }
 
-  // Members: Try MongoDB first (scoped by userId for security)
-  if (userId) {
-    try {
-      const { db } = await import("@/lib/db/mongodb");
-      const { workspaceDocumentToSnapshot } = await import("@/lib/db/models/Workspace");
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-      type WorkspaceDocument = import("@/lib/db/models/Workspace").WorkspaceDocument;
+  // Member-only route - Middleware guarantees auth
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-      const workspaceDoc = await db.findOne<WorkspaceDocument>("workspaces", {
-        _id: workspaceId,
-        userId, // Security: Filter by userId
+  try {
+    const { db } = await import("@/lib/db/mongodb");
+    const { workspaceDocumentToSnapshot } = await import("@/lib/db/models/Workspace");
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    type WorkspaceDocument = import("@/lib/db/models/Workspace").WorkspaceDocument;
+
+    const workspaceDoc = await db.findOne<WorkspaceDocument>("workspaces", {
+      _id: workspaceId,
+      userId, // Security: Filter by userId
+    });
+
+    if (workspaceDoc) {
+      const workspace = workspaceDocumentToSnapshot(workspaceDoc);
+      return NextResponse.json(workspace, {
+        headers: {
+          "Cache-Control": "no-store",
+        },
       });
-
-      if (workspaceDoc) {
-        const workspace = workspaceDocumentToSnapshot(workspaceDoc);
-        console.log("[api/workspace] ✅ Workspace carregado do MongoDB (member)");
-        return NextResponse.json(workspace, {
-          headers: {
-            "Cache-Control": "no-store",
-          },
-        });
-      }
-    } catch (error) {
-      // MongoDB unavailable or error - fallback to localStorage
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.warn("[api/workspace] ⚠️ Erro ao ler do MongoDB, usando fallback localStorage:", errorMessage);
     }
-  }
 
-  // Guests: Load from localStorage only
-  const workspace = getWorkspaceById(workspaceId);
-
-  if (!workspace) {
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
-  }
 
-  console.log("[api/workspace] ✅ Workspace carregado do localStorage", userId ? "(fallback member)" : "(guest)");
-  return NextResponse.json(workspace, {
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
+  } catch (error) {
+    console.error("[api/workspace] Error loading workspace:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const workspaceId = searchParams.get("workspaceId");
-  
+
   if (!workspaceId) {
     return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
   }
 
-  // Note: Actual deletion happens on client side for guests (localStorage)
-  // For members, we would delete from MongoDB here
-  
   const { userId } = await getAuth();
-  if (userId) {
-    try {
-      const { db } = await import("@/lib/db/mongodb");
-      const { ObjectId } = await import("mongodb");
-      await db.deleteOne("workspaces", { _id: new ObjectId(workspaceId), userId });
-      console.log("[api/workspace] ✅ Workspace deletado do MongoDB (member)");
-    } catch (error) {
-      console.error("[api/workspace] ❌ Erro ao deletar do MongoDB:", error);
-      return NextResponse.json({ error: "Failed to delete workspace" }, { status: 500 });
-    }
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true });
+  try {
+    const { db } = await import("@/lib/db/mongodb");
+    const { ObjectId } = await import("mongodb");
+    const { auditLog } = await import("@/lib/audit/logger");
+
+    // Verify ownership before delete (implicit in deleteOne filter, but good for audit)
+    const result = await db.deleteOne("workspaces", { _id: new ObjectId(workspaceId), userId });
+
+    if (result.deletedCount === 1) {
+      await auditLog("delete_workspace", "Workspace deleted via API", {
+        userId,
+        details: { workspaceId }
+      });
+      console.log("[api/workspace] ✅ Workspace deletado do MongoDB (member)");
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json({ error: "Workspace not found or not authorized" }, { status: 404 });
+    }
+
+  } catch (error) {
+    console.error("[api/workspace] ❌ Erro ao deletar do MongoDB:", error);
+    return NextResponse.json({ error: "Failed to delete workspace" }, { status: 500 });
+  }
 }

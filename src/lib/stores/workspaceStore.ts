@@ -317,9 +317,49 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               : [];
 
             set((state) => {
-              state.workspaces = workspacesFromServer;
+              // start of merge logic
+              if (workspacesFromServer.length === 0 && localWorkspaces.length > 0) {
+                console.log("[workspaceStore] Server empty, backfilling from local...");
+                // Trigger background sync
+                (async () => {
+                  for (const w of localWorkspaces) {
+                    // 1. Create Workspace
+                    try {
+                      await fetch("/api/workspace/create", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: w.id, name: w.name, website: w.website })
+                      });
+                      // 2. Create Dashboards
+                      for (const d of w.dashboards) {
+                        await fetch("/api/dashboard/create", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            workspaceId: w.id,
+                            dashboard: {
+                              ...d,
+                              createdAt: d.createdAt,
+                              updatedAt: d.updatedAt
+                            }
+                          })
+                        });
+                      }
+                    } catch (err) {
+                      console.error("[workspaceStore] Backfill failed for", w.id, err);
+                    }
+                  }
+                  console.log("[workspaceStore] Backfill complete.");
+                })();
 
-              if (workspacesFromServer.length === 0) {
+                // Keep local state for now until next refresh confirms sync
+                state.workspaces = localWorkspaces;
+              } else {
+                state.workspaces = workspacesFromServer;
+              }
+              // end of merge logic
+
+              if (state.workspaces.length === 0) {
                 state.currentWorkspace = null;
                 state.currentDashboard = null;
                 return;
@@ -327,8 +367,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
               const nextWorkspace =
                 (state.currentWorkspace &&
-                  workspacesFromServer.find((w) => w.id === state.currentWorkspace?.id)) ??
-                workspacesFromServer[0];
+                  state.workspaces.find((w) => w.id === state.currentWorkspace?.id)) ??
+                state.workspaces[0];
 
               state.currentWorkspace = nextWorkspace;
               state.currentDashboard =
@@ -445,6 +485,25 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           // Definir como atual
           get().setCurrentWorkspace(newWorkspace);
 
+          // Sync to Server (Member only)
+          const authState = useAuthStore.getState();
+          if (authState.user?.role === "member") {
+            try {
+              await fetch("/api/workspace/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: newWorkspace.id,
+                  name: newWorkspace.name,
+                  website: newWorkspace.website
+                })
+              });
+              console.log("[workspaceStore] Synced new workspace to DB (Member)");
+            } catch (err) {
+              console.error("[workspaceStore] Failed to sync new workspace to DB", err);
+            }
+          }
+
           return newWorkspace;
         },
 
@@ -469,6 +528,19 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           });
 
           persistWorkspacesSafely(get().workspaces);
+
+          // Sync to Server (Member only)
+          const authState = useAuthStore.getState();
+          if (authState.user?.role === "member") {
+            fetch("/api/workspace/update", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: workspaceId,
+                updates
+              })
+            }).catch(err => console.error("[workspaceStore] Failed to sync workspace update", err));
+          }
         },
 
         deleteWorkspace: (workspaceId) => {
@@ -485,6 +557,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           });
 
           persistWorkspacesSafely(get().workspaces);
+
+          // Sync to Server (Member only)
+          const authState = useAuthStore.getState();
+          if (authState.user?.role === "member") {
+            fetch(`/api/workspace?workspaceId=${workspaceId}`, {
+              method: "DELETE",
+            }).catch(err => console.error("[workspaceStore] Failed to sync workspace delete", err));
+          }
         },
 
         // CRUD Dashboards
@@ -520,6 +600,29 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           persistWorkspacesSafely(get().workspaces);
 
+          // Sync to Server (Member only)
+          const authState = useAuthStore.getState();
+          if (authState.user?.role === "member") {
+            try {
+              await fetch("/api/dashboard/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  workspaceId,
+                  dashboard: {
+                    ...dashboard,
+                    // Ensure dates are strings for JSON
+                    createdAt: dashboard.createdAt,
+                    updatedAt: dashboard.updatedAt
+                  }
+                })
+              });
+              console.log("[workspaceStore] Synced new dashboard to DB (Member)");
+            } catch (err) {
+              console.error("[workspaceStore] Failed to sync new dashboard to DB", err);
+            }
+          }
+
           // Definir como ativo se for o primeiro
           if (get().currentWorkspace?.dashboards.length === 1) {
             get().setActiveDashboard(dashboard.id);
@@ -527,6 +630,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           return dashboard;
         },
+
+        // Sync to Server (Member only) - MOVED OUTSIDE of return because return stops execution
+        // Actually, createDashboard is async so we can await or just let it run.
+        // But the previous implementation returned 'dashboard' synchronously-ish (async keyword but relied on store update).
+        // Let's modify the flow to call API.
+
 
         updateDashboard: (workspaceId, dashboardId, updates) => {
           console.log("[DEBUG] workspaceStore.updateDashboard called:", { workspaceId, dashboardId, updates });
@@ -583,6 +692,20 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           });
 
           persistWorkspacesSafely(updatedWorkspaces);
+
+          // Sync to Server (Member only)
+          const authState = useAuthStore.getState();
+          if (authState.user?.role === "member") {
+            fetch("/api/dashboard/update", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                workspaceId,
+                dashboardId,
+                updates
+              })
+            }).catch(err => console.error("[workspaceStore] Failed to sync dashboard update", err));
+          }
         },
 
         deleteDashboard: (workspaceId, dashboardId) => {
@@ -609,6 +732,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           });
 
           persistWorkspacesSafely(get().workspaces);
+
+          // Sync to Server (Member only)
+          const authState = useAuthStore.getState();
+          if (authState.user?.role === "member") {
+            fetch(`/api/dashboard/delete?workspaceId=${workspaceId}&dashboardId=${dashboardId}`, {
+              method: "DELETE",
+            }).catch(err => console.error("[workspaceStore] Failed to sync dashboard delete", err));
+          }
         },
 
         // Integração com home page
