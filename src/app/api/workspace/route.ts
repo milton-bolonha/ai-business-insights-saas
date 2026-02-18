@@ -68,7 +68,7 @@ export async function DELETE(request: NextRequest) {
     // Verify ownership before delete (implicit in deleteOne filter, but good for audit)
     const result = await db.deleteOne("workspaces", { _id: new ObjectId(workspaceId), userId });
 
-    if (result.deletedCount === 1) {
+    if (result) {
       await auditLog("delete_workspace", "Workspace deleted via API", {
         userId,
         details: { workspaceId }
