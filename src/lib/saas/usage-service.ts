@@ -67,6 +67,18 @@ export const SAFE_DEFAULT_MEMBER: UsageLimits = {
   tokensUsed: 10_000,
 };
 
+export const SAFE_DEFAULT_GUEST: UsageLimits = {
+  companiesCount: 0,
+  contactsCount: 0,
+  notesCount: 0,
+  tilesCount: Number(process.env.GUEST_TILES_LIMIT) || 0,
+  tileChatsCount: 0,
+  contactChatsCount: 0,
+  regenerationsCount: 0,
+  assetsCount: 0,
+  tokensUsed: 0,
+};
+
 function getCachedLimits(planId: PlanId): UsageLimits | null {
   const cached = planCache.get(planId);
   if (cached && Date.now() - cached.loadedAt < PLAN_CACHE_TTL_MS) {
