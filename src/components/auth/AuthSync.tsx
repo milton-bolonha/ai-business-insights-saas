@@ -13,19 +13,19 @@ export function AuthSync() {
 
   useEffect(() => {
     if (isLoaded) {
-      if (isSignedIn && user) {
-        // User is logged in
-        console.log("[AuthSync] User is signed in:", user.id);
-        setUser({
-          role: "member", // Assuming all authenticated users are members for now
-          isPaid: false, // You might want to fetch this from publicMetadata
-        });
-
-        // Removed aggressive cache clearing. 
-        // Migration logic (useGuestDataMigration) handles data movement and cleanup.
-        // Clearing here causes race conditions and data loss on reload if migration hasn't run.
+      if (isSignedIn) {
+        if (user) {
+          // User is logged in AND user object is ready
+          console.log("[AuthSync] User is signed in:", user.id);
+          setUser({
+            role: "member",
+            isPaid: false, // You might want to fetch this from publicMetadata
+          });
+        }
+        // If isSignedIn is true but user is null/undefined, DO NOTHING.
+        // Wait for the next render where user is populated.
       } else {
-        // User is guest
+        // User is strictly guest (not signed in)
         console.log("[AuthSync] User is guest");
         setUser({
           role: "guest",
