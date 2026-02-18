@@ -26,7 +26,7 @@ import {
     useWorkspaceActions,
     useUIStore
 } from "@/lib/stores";
-import { useUsage, useAuthStore } from "@/lib/stores/authStore";
+import { useUsage, useAuthStore, useUser } from "@/lib/stores/authStore";
 
 export interface AdminTopHeaderProps {
     appearance: AdeAppearanceTokens;
@@ -52,6 +52,7 @@ export function AdminTopHeader({
     const currentWorkspace = useCurrentWorkspace();
     const { switchWorkspace } = useWorkspaceActions();
     const usage = useUsage();
+    const user = useUser();
 
     // Determine context based on workspace template
     const isLoveWriters = currentWorkspace?.promptSettings?.templateId === "template_love_writers";
@@ -256,17 +257,17 @@ export function AdminTopHeader({
                         className={cn(
                             "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold transition-colors border",
                             // Style based on Plan
-                            (!usage.createTile && !useAuthStore.getState().user) ? "bg-gray-100 text-gray-500 border-gray-200" :
-                                (useAuthStore.getState().user?.role === "member" && useAuthStore.getState().user?.plan === "business")
+                            (!usage.createTile && !user) ? "bg-gray-100 text-gray-500 border-gray-200" :
+                                (user?.role === "member" && user?.plan === "business")
                                     ? "bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 border-yellow-400/50" // Premium
-                                    : (useAuthStore.getState().user?.role === "member")
+                                    : (user?.role === "member")
                                         ? "bg-blue-100 text-blue-700 border-blue-200" // Member Free
                                         : "bg-gray-100 text-gray-600 border-gray-200" // Guest
                         )}
                         title="Your Plan"
                     >
-                        {(!useAuthStore.getState().user || useAuthStore.getState().user?.role === "guest") ? "Guest" :
-                            (useAuthStore.getState().user?.plan === "business") ? "Member Premium" : "Member Free"}
+                        {(!user || user?.role === "guest") ? "Guest" :
+                            (user?.plan === "business") ? "Member Premium" : "Member Free"}
                     </button>
 
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />
