@@ -8,6 +8,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AI SaaS Platform",
   description: "Generate AI SaaS Insights.",
+  icons: {
+    icon: "/images/favicon-16x16.png",
+    shortcut: "/images/favicon-16x16.png",
+    apple: "/images/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
