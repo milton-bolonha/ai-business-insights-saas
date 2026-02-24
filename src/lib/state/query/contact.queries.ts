@@ -7,7 +7,7 @@ export function useCreateContact() {
   const queryClient = useQueryClient();
   const isMember = useAuthStore((state) => state.isMember);
   const addContactToDashboard = useWorkspaceStore(
-      (state) => state.addContactToDashboard
+    (state) => state.addContactToDashboard
   );
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
@@ -82,7 +82,10 @@ export function useCreateContact() {
     onSuccess: (data, { dashboardId, workspaceId }) => {
       console.log('[DEBUG] contact.queries.useCreateContact onSuccess:', { data, dashboardId, workspaceId });
       queryClient.invalidateQueries({ queryKey: ["contacts", dashboardId, workspaceId] });
-      
+
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + 1 });
+
       // Sincronizar workspaceStore (para members - atualiza store local após API)
       if (data.contact && workspaceId && dashboardId) {
         // Importar workspaceStore dinamicamente para evitar circular dependency
@@ -130,7 +133,7 @@ export function useUpdateContact() {
     onSuccess: (data, { contactId }) => {
       // Invalidate all contact queries (could be improved with more specific invalidation)
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      
+
       // Sincronizar workspaceStore se tiver dados necessários
       if (data.contact && data.contact.workspaceId && data.contact.dashboardId) {
         import('@/lib/stores/workspaceStore').then(({ useWorkspaceStore }) => {
@@ -166,7 +169,7 @@ export function useDeleteContact() {
     onSuccess: (_, contactId) => {
       // Invalidate all contact queries
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      
+
       // Nota: Para deletar, precisamos do workspaceId e dashboardId
       // Isso deve ser passado no mutationFn ou obtido de outra forma
       // Por enquanto, apenas invalidamos queries
@@ -199,6 +202,9 @@ export function useChatWithContact() {
     onSuccess: (data, { contactId }) => {
       // Invalidate contact queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
+
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + 2 });
     },
     onError: (error) => {
       console.error('[DEBUG] contact.queries.useChatWithContact onError:', error);

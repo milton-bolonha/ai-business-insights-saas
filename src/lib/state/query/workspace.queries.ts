@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 export function useWorkspace(sessionId?: string) {
   return useQuery({
@@ -32,10 +33,12 @@ export function useCreateWorkspace() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Invalidate and refetch workspace
       queryClient.invalidateQueries({ queryKey: ["workspace"] });
-      // Set current workspace in Zustand store se necessário
       console.log("Workspace created:", data);
+
+      const cost = 10 + ((data.tilesCount || 0) * 5);
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + cost });
     },
   });
 }

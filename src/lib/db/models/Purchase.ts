@@ -11,4 +11,5 @@ export interface PurchaseDocument {
     plan: string;
     status: string; // paid, open, etc
     createdAt: Date;
+    acquiredCredits?: number;
 }

@@ -86,13 +86,16 @@ export function UpgradeModal({
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <h3 className="font-semibold text-blue-900 mb-2">
-                Free Plan Limits
+                Your Wallet Buffer
               </h3>
               <div className="space-y-1 text-sm text-blue-800">
-                <div>Workspaces: {getUsageText("createWorkspace")}</div>
-                <div>Contacts: {getUsageText("createContact")}</div>
-                <div>Tile Chats: {getUsageText("tileChat")}</div>
-                <div>Regenerations: {getUsageText("regenerate")}</div>
+                <div className="flex justify-between font-medium">
+                  <span>Credits Used:</span>
+                  <span>{usage?.creditsUsed || 0} / {limits?.creditsTotal || 0}</span>
+                </div>
+                <div className="mt-2 text-xs text-blue-700/80">
+                  You need more credits to perform this action.
+                </div>
               </div>
             </div>
 

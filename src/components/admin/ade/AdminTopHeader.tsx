@@ -12,7 +12,8 @@ import {
     PieChart,
     Home,
     Droplet,
-    Info
+    Info,
+    Coins
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ export function AdminTopHeader({
     const { switchWorkspace } = useWorkspaceActions();
     const usage = useUsage();
     const user = useUser();
+    const limits = useAuthStore((state) => state.limits);
 
     // Determine context based on workspace template
     const isLoveWriters = currentWorkspace?.promptSettings?.templateId === "template_love_writers";
@@ -251,42 +253,18 @@ export function AdminTopHeader({
 
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />
 
-                    {/* Plan Indicator Badge */}
-                    <button
-                        onClick={onOpenSaaSLimits}
-                        className={cn(
-                            "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold transition-colors border",
-                            // Style based on Plan
-                            (!usage.createTile && !user) ? "bg-gray-100 text-gray-500 border-gray-200" :
-                                (user?.role === "member" && user?.plan === "business")
-                                    ? "bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 border-yellow-400/50" // Premium
-                                    : (user?.role === "member")
-                                        ? "bg-blue-100 text-blue-700 border-blue-200" // Member Free
-                                        : "bg-gray-100 text-gray-600 border-gray-200" // Guest
-                        )}
-                        title="Your Plan"
-                    >
-                        {(!user || user?.role === "guest") ? "Guest" :
-                            (user?.plan === "business") ? "Member Premium" : "Member Free"}
-                    </button>
-
-                    <div className="h-6 w-px bg-gray-200/20 mx-1" />
+                    {/* <UserMembershipBadge /> // commented out per user request - optional for dev to uncomment */}
 
                     {/* SaaS Limit Counter (Trigger) */}
                     <button
                         onClick={onOpenSaaSLimits}
-                        className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-white/5 transition-colors"
-                        title="Usage Limits"
+                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-white/5 transition-colors border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-700/30"
+                        title="Ver Saldo de Créditos"
                     >
-                        <div className="flex flex-col items-end leading-none">
-                            <span className="text-xs font-bold">{usage.createTile || 0}</span>
-                            <span className="text-[10px] opacity-70">Arcs</span>
-                        </div>
-                        <div className="h-8 w-px bg-gray-200/20 mx-1" />
-                        <div className="flex flex-col items-start leading-none">
-                            <span className="text-xs font-bold">{usage.createContact}</span>
-                            <span className="text-[10px] opacity-70">Chars</span>
-                        </div>
+                        <Coins className="h-4 w-4 text-amber-500" />
+                        <span className="font-bold text-amber-700 dark:text-amber-400">
+                            {Math.max(0, ((usage as any)?.creditsTotal || (limits as any)?.creditsTotal || 0) - ((usage as any)?.creditsUsed || 0))}
+                        </span>
                     </button>
 
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />

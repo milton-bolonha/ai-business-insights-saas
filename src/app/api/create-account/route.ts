@@ -81,28 +81,46 @@ export async function POST(req: NextRequest) {
     // Use Clerk ID if available (Account Linking), otherwise fallback to Stripe ID
     let targetUserId = clerkUserId || stripeUserId;
 
+    const stripeCustomerId =
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id;
+
+    let email = session.customer_details?.email || session.customer_email;
+
+    if (!email && stripeCustomerId) {
+      try {
+        const cust = await stripe.customers.retrieve(stripeCustomerId);
+        if (!cust.deleted && cust.email) {
+          email = cust.email;
+        }
+      } catch (e) { console.error("[create-account] customer fetch failed:", e); }
+    }
+
     if (!targetUserId) {
-      return NextResponse.json(
-        { error: "Missing userId in checkout session" },
-        { status: 400 }
-      );
+      if (email) {
+        const existingUser = await db.findOne<UserDocument>("users", { email });
+        if (existingUser) {
+          targetUserId = existingUser.userId || existingUser.clerkId;
+          console.log(`[create-account] Resolved TargetUser via email mapping: ${targetUserId}`);
+        }
+      }
+
+      if (!targetUserId) {
+        const { randomUUID } = await import("crypto");
+        targetUserId = `guest_${randomUUID()}`;
+        console.log(`[create-account] Generated anonymous TargetUser: ${targetUserId}`);
+      }
     }
 
     console.log(`[create-account] Processing for TargetUser: ${targetUserId} (Clerk: ${clerkUserId}, Stripe: ${stripeUserId})`);
 
     const plan = resolvePlanFromSession(session);
 
-    const stripeCustomerId =
-      typeof session.customer === "string"
-        ? session.customer
-        : session.customer?.id;
-
     const subscriptionId =
       typeof session.subscription === "string"
         ? session.subscription
         : session.subscription?.id;
-
-    const email = session.customer_details?.email || session.customer_email;
 
     // 2. Update or Create User
     console.log(`[create-account] Step 2: Updating user ${targetUserId}`);
@@ -166,14 +184,30 @@ export async function POST(req: NextRequest) {
         // Find the user by email to get their REAL ID
         const existingUser = await db.findOne<UserDocument>("users", { email });
         if (existingUser) {
-          console.log(`[create-account] Found existing user ${existingUser.userId}. Linking purchase to them.`);
-          targetUserId = existingUser.userId; // Update target for Purchase record
+          console.log(`[create-account] Found existing user ${existingUser.userId || existingUser.clerkId}. Linking purchase to them.`);
+
+          const oldUserId = existingUser.userId || existingUser.clerkId;
+
+          if (targetUserId && oldUserId && targetUserId !== oldUserId) {
+            console.log(`[create-account] Profound Merge: Migrating data from ${oldUserId} to active session ${targetUserId}`);
+
+            // Migrate all existing records so the active browser session inherits the historic resources
+            await db.updateMany("purchases", { userId: oldUserId }, { $set: { userId: targetUserId } });
+            await db.updateMany("credit_transactions", { userId: oldUserId }, { $set: { userId: targetUserId } });
+            await db.updateMany("workspaces", { userId: oldUserId }, { $set: { userId: targetUserId } });
+            await db.updateMany("guest_workspaces", { userId: oldUserId }, { $set: { userId: targetUserId } });
+
+          } else {
+            targetUserId = oldUserId || targetUserId;
+          }
 
           await db.updateOne<UserDocument>(
             "users",
             { email },
             {
               $set: {
+                userId: targetUserId, // Change their DB userId to the new active Clerk ID
+                clerkId: clerkUserId || targetUserId,
                 isMember: true,
                 stripeCustomerId,
                 subscriptionId,
@@ -192,23 +226,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Record Purchase
+    // 3. Record Purchase and Distribute Credits Idempotently
     console.log(`[create-account] Step 3: Recording purchase for ${targetUserId}`);
     try {
-      const purchaseResult = await db.insertOne("purchases", {
-        userId: targetUserId,
-        stripeSessionId: sessionId,
-        stripeCustomerId,
-        stripeSubscriptionId: subscriptionId,
-        amount: session.amount_total || 0,
-        currency: session.currency || 'usd',
-        plan,
-        status: session.payment_status,
-        createdAt: new Date()
-      });
-      console.log(`[create-account] Purchase recorded. ID: ${purchaseResult}`);
+      const existingPurchase = await db.findOne("purchases", { stripeSessionId: sessionId });
+      if (!existingPurchase) {
+        const acquiredCredits = plan === "business" ? 50000 : 10000;
+
+        await db.updateOne("users", { userId: targetUserId }, {
+          $inc: { creditsTotal: acquiredCredits }
+        });
+
+        const purchaseResult = await db.insertOne("purchases", {
+          userId: targetUserId,
+          stripeSessionId: sessionId,
+          stripeCustomerId,
+          stripeSubscriptionId: subscriptionId,
+          amount: session.amount_total || 0,
+          currency: session.currency || 'usd',
+          plan,
+          status: session.payment_status,
+          createdAt: new Date(),
+          acquiredCredits
+        });
+        console.log(`[create-account] Purchase recorded and credits distributed. ID: ${purchaseResult}`);
+      } else {
+        console.log(`[create-account] Purchase ${sessionId} already processed by webhook. Skipping credit distribution.`);
+      }
     } catch (err) {
-      console.error("[create-account] Failed to record purchase:", err);
+      console.error("[create-account] Failed to record purchase or credits:", err);
     }
 
     await auditLog(
@@ -229,11 +275,12 @@ export async function POST(req: NextRequest) {
 
     const planInfo = await getPlanForUser(targetUserId);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         plan,
         limits: planInfo.limits,
+        userId: targetUserId,
         redirect: "/admin",
       },
       {
@@ -241,6 +288,14 @@ export async function POST(req: NextRequest) {
         headers: { "Cache-Control": "no-store" },
       }
     );
+
+    response.cookies.set("guest_user_id", targetUserId, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (error) {
     console.error("[create-account] Error confirming membership:", error);
     // return detailed error in dev

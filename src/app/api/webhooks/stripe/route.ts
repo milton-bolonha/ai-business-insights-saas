@@ -99,8 +99,40 @@ function resolvePlanFromSubscription(subscription: Stripe.Subscription): "member
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const userId = session.client_reference_id || session.metadata?.userId;
-  
+  let userId = session.client_reference_id || session.metadata?.userId;
+
+  const stripeCustomerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : session.customer?.id;
+
+  let email = session.customer_details?.email || session.customer_email;
+
+  if (!userId) {
+    if (!email && stripeCustomerId) {
+      try {
+        const cust = await stripe.customers.retrieve(stripeCustomerId);
+        if (!cust.deleted && (cust as any).email) {
+          email = (cust as any).email;
+        }
+      } catch (e) { console.error("[Stripe Webhook] customer fetch failed:", e); }
+    }
+
+    if (email) {
+      const existingUser = await db.findOne("users", { email }) as any;
+      if (existingUser) {
+        userId = existingUser.userId || existingUser.clerkId;
+        console.log(`[Stripe Webhook] Resolved TargetUser via email mapping: ${userId}`);
+      }
+    }
+
+    if (!userId) {
+      const { randomUUID } = await import("crypto");
+      userId = `guest_${randomUUID()}`;
+      console.log(`[Stripe Webhook] Generated anonymous TargetUser: ${userId}`);
+    }
+  }
+
   // Audit log
   await auditLog("payment_success", "Payment completed successfully", {
     userId: userId || null,
@@ -120,45 +152,106 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const plan = resolvePlanFromSession(session);
 
+  const acquiredCredits = plan === "business" ? 50000 : 10000;
+
   try {
-    // Mark user as member in database
-    // Note: session.customer and session.subscription can be string | null
-    const stripeCustomerId =
-      typeof session.customer === "string"
-        ? session.customer
-        : session.customer?.id;
+    const existingPurchase = await db.findOne("purchases", { stripeSessionId: session.id });
 
-    const subscriptionId =
-      typeof session.subscription === "string"
-        ? session.subscription
-        : session.subscription?.id;
+    if (!existingPurchase) {
+      const subscriptionId =
+        typeof session.subscription === "string"
+          ? session.subscription
+          : session.subscription?.id;
 
-    await db.updateOne<UserDocument>(
-      "users",
-      { userId },
-      {
-        $set: {
-          isMember: true,
-          stripeCustomerId,
-          subscriptionId,
-          plan,
-          membershipStartedAt: new Date(),
-          updatedAt: new Date(),
-          // Flag to indicate migration is needed (client will check this)
-          migrationNeeded: true,
-        },
-        $setOnInsert: {
-          userId,
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
+      // 1. Mark user as member in database and give credits
+      try {
+        await db.updateOne<UserDocument>(
+          "users",
+          { userId },
+          {
+            $set: {
+              isMember: true,
+              stripeCustomerId,
+              subscriptionId,
+              plan,
+              membershipStartedAt: new Date(),
+              updatedAt: new Date(),
+              migrationNeeded: true,
+            },
+            $inc: {
+              creditsTotal: acquiredCredits
+            },
+            $setOnInsert: {
+              userId,
+              email: email || undefined,
+              createdAt: new Date(),
+              creditsUsed: 0
+            },
+          },
+          { upsert: true }
+        );
+      } catch (error: any) {
+        if (error.code === 11000 && email) {
+          console.log(`[Stripe Webhook] Duplicate email ${email} found. Merging membership to existing user.`);
+          const existingUser = await db.findOne<UserDocument>("users", { email });
+          if (existingUser) {
+            const oldUserId = existingUser.userId || (existingUser as any).clerkId;
+            if (userId && oldUserId && userId !== oldUserId) {
+              console.log(`[Stripe Webhook] Profound Merge: Migrating data from ${oldUserId} to ${userId}`);
+              await db.updateMany("purchases", { userId: oldUserId }, { $set: { userId } });
+              await db.updateMany("credit_transactions", { userId: oldUserId }, { $set: { userId } });
+              await db.updateMany("workspaces", { userId: oldUserId }, { $set: { userId } });
+              await db.updateMany("guest_workspaces", { userId: oldUserId }, { $set: { userId } });
+            } else {
+              userId = oldUserId || userId;
+            }
 
-    console.log(`[Stripe Webhook] ✅ User ${userId} marked as member`);
-    console.log(`[Stripe Webhook] 📝 Migration flag set - client should migrate localStorage data`);
+            await db.updateOne<UserDocument>(
+              "users",
+              { email },
+              {
+                $set: {
+                  userId,
+                  clerkId: userId,
+                  isMember: true,
+                  stripeCustomerId,
+                  subscriptionId,
+                  plan,
+                  membershipStartedAt: new Date(),
+                  updatedAt: new Date(),
+                  migrationNeeded: true,
+                },
+                $inc: { creditsTotal: acquiredCredits }
+              }
+            );
+          }
+        } else {
+          throw error;
+        }
+      }
+
+      // 2. Insert Purchase record for history and tracking
+      await db.insertOne("purchases", {
+        userId,
+        stripeSessionId: session.id,
+        stripeCustomerId,
+        stripeSubscriptionId: subscriptionId,
+        amount: session.amount_total || 0,
+        currency: session.currency || "brl",
+        plan,
+        status: session.payment_status || "paid",
+        createdAt: new Date(),
+        acquiredCredits
+      });
+
+      console.log(`[Stripe Webhook] ✅ User ${userId} marked as member`);
+      console.log(`[Stripe Webhook] 📝 Migration flag set - client should migrate localStorage data`);
+      console.log(`[Stripe Webhook] 💰 Purchase recorded, added ${acquiredCredits} credits.`);
+    } else {
+      console.log(`[Stripe Webhook] ⏩ Purchase ${session.id} already processed. Skipping duplicate user credit assignment.`);
+    }
   } catch (error) {
-    console.error("[Stripe Webhook] ❌ Failed to update user membership:", error);
+    console.error("[Stripe Webhook] ❌ Failed to update user membership or create purchase:", error);
   }
 }
 
@@ -267,7 +360,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     // Note: Invoice type may not have all error fields directly accessible
     // We'll use safe property access and fallback to status/attempt_count
     let errorMessage = "Payment failed";
-    
+
     // Check for error information - use type assertion for optional fields
     type InvoiceWithErrors = Stripe.Invoice & {
       last_finalization_error?: { message?: string };

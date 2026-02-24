@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 
 const clerkEnabled =
   Boolean(process.env.CLERK_SECRET_KEY) &&
@@ -21,11 +22,20 @@ export async function getAuth(): Promise<{ userId: string | null }> {
       return { userId };
     }
 
-    // Guest user (no Clerk authentication)
-    return { userId: null };
   } catch (error) {
     console.warn("[Auth] Authentication error:", error);
-    // Treat as guest on auth errors
-    return { userId: null };
   }
+
+  // Treat as guest on auth errors, but check for the synthetic anonymous token in cookies
+  try {
+    const cookieStore = await cookies();
+    const guestId = cookieStore.get("guest_user_id")?.value;
+    if (guestId) {
+      return { userId: guestId };
+    }
+  } catch (e) {
+    // Ignore cookie errors during weird edge case renders
+  }
+
+  return { userId: null };
 }

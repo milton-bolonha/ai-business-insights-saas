@@ -55,6 +55,10 @@ export default function CreateAccountClient({
         // Update local store to reflect new member status immediately
         const { useAuthStore } = await import("@/lib/stores/authStore");
         useAuthStore.getState().setUser({ role: "member", isPaid: true, plan: data.plan });
+        if (data.userId) {
+          localStorage.setItem("guest_checkout_user_id", data.userId);
+          document.cookie = `guest_user_id=${data.userId}; path=/; max-age=31536000; SameSite=Lax`;
+        }
 
         setStatus("success");
         setMessage("Pagamento confirmado. Conta atualizada para member.");

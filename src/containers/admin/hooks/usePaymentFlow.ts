@@ -43,18 +43,25 @@ export function usePaymentFlow() {
 
   const startCheckout = useCallback(async () => {
     try {
-      let stored = "";
-      if (typeof window !== "undefined") {
-        stored = localStorage.getItem("guest_checkout_user_id") || "";
-        if (!stored) {
-          stored = `guest_${crypto.randomUUID()}`;
-          localStorage.setItem("guest_checkout_user_id", stored);
+      let activeUserId = (auth.user as any)?.id;
+
+      if (!activeUserId) {
+        if (typeof window !== "undefined") {
+          let stored = localStorage.getItem("guest_checkout_user_id") || "";
+          if (!stored) {
+            stored = `guest_${crypto.randomUUID()}`;
+            localStorage.setItem("guest_checkout_user_id", stored);
+          }
+          activeUserId = stored;
+        } else {
+          activeUserId = "guest_temp";
         }
       }
+
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: stored || "guest_temp" }),
+        body: JSON.stringify({ userId: activeUserId }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.url) {
@@ -79,11 +86,14 @@ export function usePaymentFlow() {
   useEffect(() => {
     let cancelled = false;
     const loadServerUsage = async () => {
-      // Only fetch server usage for members
-      if (!auth.isMember) return;
-
       try {
-        const response = await fetch("/api/usage", { cache: "no-store" });
+        const targetUserId = (auth.user as any)?.id || (typeof window !== "undefined" ? localStorage.getItem("guest_checkout_user_id") : null) || "guest_temp";
+        const response = await fetch("/api/user/sync-usage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: targetUserId }),
+          cache: "no-store"
+        });
         if (!response.ok) return;
         const data = await response.json().catch(() => null);
         if (cancelled || !data) return;
@@ -106,12 +116,12 @@ export function usePaymentFlow() {
     return () => {
       cancelled = true;
     };
-  }, [auth.isMember]);
+  }, [auth.isMember, (auth.user as any)?.id]);
 
   // Move mapping functions outside or memoize them
   const mapLimits = useCallback((
     limits: Record<string, number> | null
-  ): Record<GuestAction | string, number> | null => {
+  ): Record<GuestAction | string, number> & { creditsTotal?: number } | null => {
     if (!limits) return null;
     return {
       createWorkspace: limits.companiesCount ?? limits.createWorkspace,
@@ -119,12 +129,13 @@ export function usePaymentFlow() {
       tileChat: limits.tileChatsCount ?? limits.tileChat,
       contactChat: limits.contactChatsCount ?? limits.contactChat,
       regenerate: limits.regenerationsCount ?? limits.regenerate,
+      creditsTotal: limits.creditsTotal,
     };
   }, []);
 
   const mapUsage = useCallback((
     usage: Record<string, number> | null
-  ): Record<GuestAction | string, number> | null => {
+  ): Record<GuestAction | string, number> & { creditsUsed?: number; creditsTotal?: number } | null => {
     if (!usage) return null;
     return {
       createWorkspace: usage.companiesCount ?? usage.createWorkspace,
@@ -133,16 +144,14 @@ export function usePaymentFlow() {
       contactChat: usage.contactChatsCount ?? usage.contactChat,
       regenerate: usage.regenerationsCount ?? usage.regenerate,
       createTile: usage.tilesCount ?? usage.createTile,
+      creditsUsed: usage.creditsUsed,
+      creditsTotal: usage.creditsTotal,
     };
   }, []);
 
-  const resolvedLimits = useMemo(() => auth.isGuest
-    ? auth.limits
-    : mapLimits(serverLimits) || auth.limits, [auth.isGuest, auth.limits, serverLimits, mapLimits]);
+  const resolvedLimits = useMemo(() => mapLimits(serverLimits) || auth.limits, [auth.limits, serverLimits, mapLimits]);
 
-  const resolvedUsage = useMemo(() => auth.isGuest
-    ? auth.usage
-    : mapUsage(serverUsage) || auth.usage, [auth.isGuest, auth.usage, serverUsage, mapUsage]);
+  const resolvedUsage = useMemo(() => mapUsage(serverUsage) || auth.usage, [auth.usage, serverUsage, mapUsage]);
 
   // Sync server usage to global auth store whenever it changes, merging with local inventory
   useEffect(() => {
@@ -160,7 +169,7 @@ export function usePaymentFlow() {
       };
 
       // Create a clean object with only GuestAction keys
-      const cleanUsage: Partial<Record<GuestAction, number>> = {};
+      const cleanUsage: Partial<Record<GuestAction, number> & { creditsUsed?: number; creditsTotal?: number }> = {};
 
       // Merge Strategy: Max(Server, Local)
       if (typeof resolvedUsage.createTile === 'number') {
@@ -178,6 +187,10 @@ export function usePaymentFlow() {
       if (typeof resolvedUsage.contactChat === 'number') cleanUsage.contactChat = resolvedUsage.contactChat;
       if (typeof resolvedUsage.regenerate === 'number') cleanUsage.regenerate = resolvedUsage.regenerate;
 
+      // Preserve dynamic credit balances from server
+      if (typeof resolvedUsage.creditsTotal === 'number') cleanUsage.creditsTotal = resolvedUsage.creditsTotal;
+      if (typeof resolvedUsage.creditsUsed === 'number') cleanUsage.creditsUsed = resolvedUsage.creditsUsed;
+
       // Deep equality check to prevent infinite loops
       const currentUsageStr = JSON.stringify({
         createTile: auth.usage.createTile,
@@ -185,7 +198,9 @@ export function usePaymentFlow() {
         createContact: auth.usage.createContact,
         tileChat: auth.usage.tileChat,
         contactChat: auth.usage.contactChat,
-        regenerate: auth.usage.regenerate
+        regenerate: auth.usage.regenerate,
+        creditsUsed: auth.usage.creditsUsed,
+        creditsTotal: auth.usage.creditsTotal
       });
       const newUsageStr = JSON.stringify({
         createTile: cleanUsage.createTile ?? auth.usage.createTile,
@@ -193,7 +208,9 @@ export function usePaymentFlow() {
         createContact: cleanUsage.createContact ?? auth.usage.createContact,
         tileChat: cleanUsage.tileChat ?? auth.usage.tileChat,
         contactChat: cleanUsage.contactChat ?? auth.usage.contactChat,
-        regenerate: cleanUsage.regenerate ?? auth.usage.regenerate
+        regenerate: cleanUsage.regenerate ?? auth.usage.regenerate,
+        creditsUsed: cleanUsage.creditsUsed ?? auth.usage.creditsUsed,
+        creditsTotal: cleanUsage.creditsTotal ?? auth.usage.creditsTotal
       });
 
       if (currentUsageStr !== newUsageStr) {

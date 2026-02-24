@@ -3,6 +3,7 @@
 import { Plus, User, UserPlus, Info, ChevronRight, RotateCcw } from "lucide-react";
 
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
+import { usePaymentFlow } from "@/containers/admin/hooks/usePaymentFlow";
 
 interface WorkspaceOption {
   sessionId: string;
@@ -39,6 +40,8 @@ export function AdminSidebar({
   onPreviewBook,
   onPublishBook,
 }: AdminSidebarProps) {
+  const { usage, limits } = usePaymentFlow();
+
   const activeWorkspace = workspaces.find((w) => w.isActive);
   const otherWorkspaces = workspaces.filter((w) => !w.isActive);
   const orderedWorkspaces = activeWorkspace
@@ -167,6 +170,7 @@ export function AdminSidebar({
           <span className="text-sm">Reset User</span>
         </button>
       </div>
+
 
       {/* User info / contagem */}
       <div

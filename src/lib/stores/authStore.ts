@@ -17,7 +17,10 @@ export interface UsageResult {
   limit: number;
 }
 
-type UsageCounts = Record<GuestAction, number>;
+type UsageCounts = Record<GuestAction, number> & {
+  creditsUsed?: number;
+  creditsTotal?: number;
+};
 
 interface AuthState {
   // Estado de usuário
@@ -25,7 +28,7 @@ interface AuthState {
   isAuthenticated: boolean;
 
   // Limites de uso (definidos por role)
-  limits: Record<GuestAction, number>;
+  limits: Record<GuestAction, number> & { creditsTotal?: number };
 
   // Contadores de uso atuais
   usage: UsageCounts;
@@ -187,24 +190,13 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-store',
       storage: createJSONStorage(() => localStorage),
-      // Partialize para persistir apenas dados de guest
+      // Partialize para persistir dados do Guest e também a FLAG de pagamento do Member
       partialize: (state) => {
-        // Só persistir dados se for guest
-        if (state.user?.role !== 'guest') {
-          return {
-            usage: {
-              tileChat: 0,
-              contactChat: 0,
-              regenerate: 0,
-              createContact: 0,
-              createWorkspace: 0,
-              createTile: 0,
-            }
-          };
-        }
-
+        // Se o member recarregou a página sem o Clerk, a claim de "member"
+        // que colocamos na "success" flag do Stripe DEVE ser mantida localmente.
         return {
           usage: state.usage,
+          user: state.user, // MANTÉM OS DADOS DE ACESSO DO USUÁRIO ENTRE REFRESHES
         };
       },
       // Usar versão customizada para controle de reset diário

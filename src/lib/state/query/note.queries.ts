@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 export function useCreateNote() {
   const queryClient = useQueryClient();
@@ -56,6 +57,9 @@ export function useCreateNote() {
     onSuccess: (data, { dashboardId, workspaceId }) => {
       console.log('[DEBUG] note.queries.useCreateNote onSuccess:', { data, dashboardId, workspaceId });
       queryClient.invalidateQueries({ queryKey: ["notes", dashboardId, workspaceId] });
+
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + 1 });
 
       // Sincronizar workspaceStore (para members - atualiza store local após API)
       if (data.note && workspaceId && dashboardId) {

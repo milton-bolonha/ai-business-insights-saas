@@ -34,7 +34,20 @@ export interface UsageLimits {
   regenerationsCount: number; // Max regenerations
   assetsCount: number; // Max assets/uploads
   tokensUsed: number; // Max tokens per month
+  creditsTotal: number; // Max available credits
 }
+
+export const CREDIT_COSTS: Record<UsageType, number> = {
+  companiesCount: 10,
+  contactsCount: 1,
+  notesCount: 1,
+  tilesCount: 5,
+  tileChatsCount: 2,
+  contactChatsCount: 2,
+  regenerationsCount: 5,
+  assetsCount: 1,
+  tokensUsed: 0,
+};
 
 /**
  * Plano cacheado em memória (process-local)
@@ -53,6 +66,7 @@ export const FREE_LIMITS: UsageLimits = {
   regenerationsCount: 10,
   assetsCount: 0,
   tokensUsed: 3000,
+  creditsTotal: 200, // Included initial credits
 };
 
 export const SAFE_DEFAULT_MEMBER: UsageLimits = {
@@ -65,6 +79,7 @@ export const SAFE_DEFAULT_MEMBER: UsageLimits = {
   regenerationsCount: 20,
   assetsCount: 10,
   tokensUsed: 10_000,
+  creditsTotal: 10000, // Default Pro credits
 };
 
 export const SAFE_DEFAULT_GUEST: UsageLimits = {
@@ -77,6 +92,7 @@ export const SAFE_DEFAULT_GUEST: UsageLimits = {
   regenerationsCount: 0,
   assetsCount: 0,
   tokensUsed: 0,
+  creditsTotal: 100, // Shadow Guests get 100 max equivalent
 };
 
 function getCachedLimits(planId: PlanId): UsageLimits | null {
@@ -131,27 +147,35 @@ export async function checkLimit(
   used?: number;
 }> {
   try {
-    let currentUsage = 0;
+    let creditsUsed = 0;
+    let creditsTotalConfig = 0;
     let planId: PlanId = "member";
 
+    const limits = await getPlanForUser(userId);
+    creditsTotalConfig = limits.limits.creditsTotal;
+    const actionCost = CREDIT_COSTS[usageType] || 0;
+
     if (userId) {
-      const userDoc = await db.findOne("users", { userId });
-      currentUsage = userDoc?.[usageType] || 0;
-      planId = resolvePlanId((userDoc as any)?.plan, userId);
+      const userDoc = await db.findOne("users", { userId }) as any;
+      // Fetch dynamic total credits balance or plan mapped config
+      creditsTotalConfig = userDoc?.creditsTotal || creditsTotalConfig;
+      creditsUsed = userDoc?.creditsUsed || 0;
+      planId = resolvePlanId(userDoc?.plan, userId);
     } else {
-      // Guest: client-side AuthStore controla; server não bloqueia por enquanto
+      // Guest: client-side AuthStore controls, skipping strict block unless implemented.
+      // But now we can apply shadow limits later. For now, pass Guest.
       return { allowed: true };
     }
 
-    const limits = await fetchPlanLimits(planId);
-    const limit = limits[usageType];
-    const allowed = currentUsage < limit;
+    const limit = creditsTotalConfig;
+    const used = creditsUsed;
+    const allowed = (used + actionCost) <= limit;
 
     return {
       allowed,
       limit,
-      used: currentUsage,
-      reason: !allowed ? `Limit exceeded: ${currentUsage}/${limit}` : undefined,
+      used,
+      reason: !allowed ? `Not enough credits: Action costs ${actionCost}, balance ${(limit - used)}` : undefined,
     };
   } catch (error) {
     console.error("[UsageService] Error checking limit:", error);
@@ -205,19 +229,33 @@ export async function incrementUsage(
   if (!userId) return; // Don't track guest usage in database
 
   try {
+    const actionCost = (CREDIT_COSTS[usageType] || 0) * amount;
+
     await db.updateOne(
       "users",
       { userId },
       {
-        $inc: { [usageType]: amount },
+        $inc: {
+          [usageType]: amount,
+          creditsUsed: actionCost
+        },
         $setOnInsert: { userId, createdAt: new Date() },
         $set: { updatedAt: new Date() },
       },
       { upsert: true }
     );
 
+    // [New feature] Log the transaction ledger in the DB
+    await db.insertOne("credit_transactions", {
+      userId,
+      usageType,
+      amount,
+      creditsCost: actionCost,
+      createdAt: new Date(),
+    });
+
     console.log(
-      `[UsageService] ✅ Incremented ${usageType} by ${amount} for user ${userId}`
+      `[UsageService] ✅ Incremented ${usageType} by ${amount} for user ${userId}. Cost: ${actionCost} credits`
     );
   } catch (error) {
     console.error("[UsageService] Error incrementing usage:", error);
@@ -230,7 +268,7 @@ export async function incrementUsage(
  */
 export async function getUsage(
   userId: string
-): Promise<Record<UsageType, number>> {
+): Promise<Record<string, number>> {
   if (!userId) {
     return {
       companiesCount: 0,
@@ -242,11 +280,15 @@ export async function getUsage(
       regenerationsCount: 0,
       assetsCount: 0,
       tokensUsed: 0,
+      creditsUsed: 0,
+      creditsTotal: 0,
     };
   }
 
   try {
-    const userDoc = await db.findOne("users", { userId });
+    const userDoc = await db.findOne("users", {
+      $or: [{ userId }, { clerkId: userId }]
+    }) as any;
     return {
       companiesCount: userDoc?.companiesCount || 0,
       contactsCount: userDoc?.contactsCount || 0,
@@ -257,6 +299,8 @@ export async function getUsage(
       regenerationsCount: userDoc?.regenerationsCount || 0,
       assetsCount: userDoc?.assetsCount || 0,
       tokensUsed: userDoc?.tokensUsed || 0,
+      creditsUsed: userDoc?.creditsUsed || 0,
+      creditsTotal: userDoc?.creditsTotal || 0,
     };
   } catch (error) {
     console.error("[UsageService] Error getting usage:", error);
@@ -270,6 +314,8 @@ export async function getUsage(
       regenerationsCount: 0,
       assetsCount: 0,
       tokensUsed: 0,
+      creditsUsed: 0,
+      creditsTotal: 0,
     };
   }
 }

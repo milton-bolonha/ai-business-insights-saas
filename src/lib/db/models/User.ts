@@ -22,6 +22,21 @@ export interface UserDocument {
     createdAt: Date;
     updatedAt: Date;
     migrationNeeded?: boolean;
+
+    // Limits / Usage Tracking (Legacy & New)
+    companiesCount?: number;
+    contactsCount?: number;
+    notesCount?: number;
+    tilesCount?: number;
+    tileChatsCount?: number;
+    contactChatsCount?: number;
+    regenerationsCount?: number;
+    assetsCount?: number;
+    tokensUsed?: number;
+
+    // Credits System
+    creditsTotal?: number;
+    creditsUsed?: number;
 }
 
 export function userDocumenttoSnapshot(doc: UserDocument) {

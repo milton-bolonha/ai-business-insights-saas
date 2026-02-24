@@ -23,7 +23,7 @@ export function useGuestDataMigration() {
   useEffect(() => {
     // Only run migration once per session
     if (hasMigratedRef.current) return;
-    
+
     // Only migrate if user is a member
     if (!isMember || !user) return;
 
@@ -48,7 +48,7 @@ export function useGuestDataMigration() {
     // Perform migration
     const performMigration = async () => {
       if (isMigrating) return;
-      
+
       setIsMigrating(true);
       hasMigratedRef.current = true;
 
@@ -94,7 +94,11 @@ export function useGuestDataMigration() {
 
         // Refresh usage info to ensure limits estão atualizados
         try {
-          const usageResponse = await fetch("/api/usage");
+          const usageResponse = await fetch("/api/user/sync-usage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: (user as any)?.id })
+          });
           if (usageResponse.ok) {
             const usageData = await usageResponse.json();
             console.log("[Migration] ✅ Usage refreshed after upgrade", usageData);

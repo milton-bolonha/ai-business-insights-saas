@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      mode: "subscription",
+      mode: "payment",
       client_reference_id: requestUserId,
       success_url: successUrl,
       cancel_url: cancelUrl,

@@ -183,6 +183,23 @@ export const db = {
     }
   },
 
+  async updateMany<T extends Document>(
+    collection: string,
+    filter: Filter<T>,
+    update: UpdateFilter<T>,
+    options?: UpdateOptions
+  ): Promise<number> {
+    try {
+      const coll = await getCollection<T>(collection);
+      const result = await coll.updateMany(filter, update, options);
+      console.log(`[MongoDB] ✏️ Updated ${result.modifiedCount} documents in ${collection}`);
+      return result.modifiedCount;
+    } catch (error) {
+      console.error(`[MongoDB] ❌ updateMany failed for ${collection}:`, error);
+      throw error;
+    }
+  },
+
   async deleteOne<T extends Document>(
     collection: string,
     filter: Filter<T>

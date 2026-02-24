@@ -139,8 +139,10 @@ export function useCreateTile() {
         data,
         dashboardId,
       });
-      // Invalidate tiles query
       queryClient.invalidateQueries({ queryKey: ["tiles", dashboardId] });
+
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + 5 });
 
       // Sincronizar workspaceStore (para members - atualiza store local após API)
       if (data.tile && data.workspaceId && dashboardId) {
@@ -190,6 +192,8 @@ export function useRegenerateTile() {
           tile.id === tileId ? { ...tile, ...data.tile } : tile
         );
       });
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + 5 });
     },
     onError: (error) => {
       console.error("[DEBUG] tile.queries.useRegenerateTile onError:", error);
@@ -349,6 +353,8 @@ export function useChatWithTile() {
           tile.id === tileId ? { ...tile, ...data.tile } : tile
         );
       });
+      const currentUsed = useAuthStore.getState().usage?.creditsUsed || 0;
+      useAuthStore.getState().setUsage({ creditsUsed: currentUsed + 2 });
     },
     onError: (error) => {
       console.error("[DEBUG] tile.queries.useChatWithTile onError:", error);

@@ -5,6 +5,7 @@ import { ChevronDown, Droplet, Plus, Settings } from "lucide-react";
 
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { useUIStore } from "@/lib/stores";
+import { usePaymentFlow } from "@/containers/admin/hooks/usePaymentFlow";
 
 interface AdminHeaderAdeProps {
   appearance: AdeAppearanceTokens;
@@ -34,6 +35,7 @@ export function AdminHeaderAde({
 
   const currentDashboard = dashboards.find(d => d.isActive);
   const otherDashboards = dashboards.filter(d => !d.isActive);
+  const { usage, limits, setUpgradeModalOpen } = usePaymentFlow();
 
   const handleColorChange = (color: string) => {
     // If a specific color handler is provided (which handles persistence), use it
@@ -157,6 +159,27 @@ export function AdminHeaderAde({
             className="h-6 w-6 rounded-full border-2 border-white bg-[#fef7ed] shadow-sm"
             title="Orange"
           />
+        </div>
+
+        {/* Wallet UI */}
+        <div
+          className="flex items-center ml-2 border rounded-full px-3 py-1 cursor-pointer hover:bg-black/5 transition"
+          style={{ borderColor: appearance.cardBorderColor, backgroundColor: appearance.surfaceColor }}
+          onClick={() => setUpgradeModalOpen(true)}
+          title="Click to upgrade or add credits"
+        >
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase mb-0.5" style={{ color: appearance.textColor }}>
+              <span>Wallet</span>
+              <span className="text-blue-500">{(usage as any)?.creditsUsed || 0} / {(limits as any)?.creditsTotal || 0}</span>
+            </div>
+            <div className="h-1.5 w-24 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, (((usage as any)?.creditsUsed || 0) / ((limits as any)?.creditsTotal || 1)) * 100))}%` }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Settings */}
