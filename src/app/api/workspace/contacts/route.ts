@@ -83,14 +83,22 @@ export async function POST(request: NextRequest) {
 
     if (userId) {
       // 🟢 MEMBER: Salvar no MongoDB
-      if (!workspaceId) {
-        return NextResponse.json(
-          { error: "workspaceId is required for members" },
-          { status: 400 }
-        );
+      const { db } = await import("@/lib/db/mongodb");
+
+      let finalWorkspaceId = workspaceId;
+      if (!finalWorkspaceId) {
+        console.log("[API] /api/workspace/contacts - Resolving missing workspaceId via dashboard mapping");
+        const dashboardRecord = await db.findOne("dashboards", { id: dashboardId }) as any;
+        if (dashboardRecord?.workspaceId) {
+          finalWorkspaceId = dashboardRecord.workspaceId;
+        } else {
+          return NextResponse.json(
+            { error: "workspaceId is required for members and could not be resolved" },
+            { status: 400 }
+          );
+        }
       }
 
-      const { db } = await import("@/lib/db/mongodb");
       const { contactToDocument } = await import("@/lib/db/models/Contact");
       const { invalidateResourceCache } = await import(
         "@/lib/cache/invalidation"
@@ -99,7 +107,7 @@ export async function POST(request: NextRequest) {
       const contactDoc = contactToDocument(
         contactData,
         userId,
-        workspaceId,
+        finalWorkspaceId,
         dashboardId
       );
       const insertedId = await db.insertOne("contacts", {
@@ -109,7 +117,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Invalidate cache
-      await invalidateResourceCache("contacts", dashboardId, workspaceId);
+      await invalidateResourceCache("contacts", dashboardId, finalWorkspaceId);
 
       // Audit log
       await audit.createContact(insertedId, dashboardId, userId, request);
@@ -121,7 +129,7 @@ export async function POST(request: NextRequest) {
       console.log("[API] /api/workspace/contacts - Contact saved to MongoDB", {
         contactId: insertedId,
         userId,
-        workspaceId,
+        workspaceId: finalWorkspaceId,
         dashboardId,
       });
 

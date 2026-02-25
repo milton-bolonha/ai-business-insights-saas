@@ -66,18 +66,26 @@ export async function POST(request: NextRequest) {
 
     if (userId) {
       // 🟢 MEMBER: Salvar no MongoDB
-      if (!workspaceId) {
-        return NextResponse.json(
-          { error: "workspaceId is required for members" },
-          { status: 400 }
-        );
+      const { db } = await import("@/lib/db/mongodb");
+
+      let finalWorkspaceId = workspaceId;
+      if (!finalWorkspaceId) {
+        console.log("[API] /api/workspace/notes - Resolving missing workspaceId via dashboard mapping");
+        const dashboardRecord = await db.findOne("dashboards", { id: dashboardId }) as any;
+        if (dashboardRecord?.workspaceId) {
+          finalWorkspaceId = dashboardRecord.workspaceId;
+        } else {
+          return NextResponse.json(
+            { error: "workspaceId is required for members and could not be resolved" },
+            { status: 400 }
+          );
+        }
       }
 
-      const { db } = await import("@/lib/db/mongodb");
       const { noteToDocument } = await import("@/lib/db/models/Note");
       const { invalidateResourceCache } = await import("@/lib/cache/invalidation");
 
-      const noteDoc = noteToDocument(noteData, userId, workspaceId, dashboardId);
+      const noteDoc = noteToDocument(noteData, userId, finalWorkspaceId, dashboardId);
       const insertedId = await db.insertOne("notes", {
         ...noteDoc,
         createdAt: new Date(),
@@ -85,7 +93,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Invalidate cache
-      await invalidateResourceCache("notes", dashboardId, workspaceId);
+      await invalidateResourceCache("notes", dashboardId, finalWorkspaceId);
 
       // Audit log
       await audit.createNote(insertedId, dashboardId, userId, request);
@@ -97,7 +105,7 @@ export async function POST(request: NextRequest) {
       console.log("[API] /api/workspace/notes - Note saved to MongoDB", {
         noteId: insertedId,
         userId,
-        workspaceId,
+        workspaceId: finalWorkspaceId,
         dashboardId,
       });
 
@@ -122,7 +130,7 @@ export async function POST(request: NextRequest) {
           dashboardId,
         });
       } else {
-        return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+        console.warn("[API] /api/workspace/notes - Workspace not found for Guest storage, proceeding optimistically");
       }
 
       return NextResponse.json({

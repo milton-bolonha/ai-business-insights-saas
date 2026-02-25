@@ -97,11 +97,26 @@ export async function POST(request: NextRequest) {
     (request as any)._guestId = guestLimitData.guestId;
   }
 
-  if (!workspaceId) {
-    return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+  let finalWorkspaceId = workspaceId;
+  const { db } = await import("@/lib/db/mongodb");
+
+  if (!dashboardId) {
+    return NextResponse.json({ error: "dashboardId is required" }, { status: 400 });
   }
 
-  const workspaceInfo = await resolveWorkspaceName(workspaceId, userId);
+  if (!finalWorkspaceId) {
+    const dashboardRecord = await db.findOne("dashboards", { id: dashboardId }) as any;
+    if (dashboardRecord?.workspaceId) {
+      finalWorkspaceId = dashboardRecord.workspaceId;
+    } else {
+      return NextResponse.json(
+        { error: "workspaceId is required and could not be resolved from dashboard" },
+        { status: 400 }
+      );
+    }
+  }
+
+  const workspaceInfo = await resolveWorkspaceName(finalWorkspaceId as string, userId);
   if (!workspaceInfo) {
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   }
@@ -173,7 +188,7 @@ export async function POST(request: NextRequest) {
       success: true,
       tile: newTile,
       dashboardId,
-      workspaceId,
+      workspaceId: finalWorkspaceId,
     });
 
     // Set cookie if needed

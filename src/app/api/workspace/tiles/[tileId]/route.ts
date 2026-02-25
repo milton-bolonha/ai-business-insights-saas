@@ -18,7 +18,7 @@ export async function DELETE(
     const { userId } = await getAuth();
     const body = await request.json().catch(() => ({}));
     const dashboardId = typeof body?.dashboardId === "string" ? body.dashboardId : "";
-    const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId : "";
+    let finalWorkspaceId = typeof body?.workspaceId === "string" ? body.workspaceId : "";
 
     if (!dashboardId) {
       return NextResponse.json(
@@ -27,16 +27,28 @@ export async function DELETE(
       );
     }
 
+    if (!finalWorkspaceId) {
+      const dashboardRecord = await db.findOne("dashboards", { id: dashboardId }) as any;
+      if (dashboardRecord?.workspaceId) {
+        finalWorkspaceId = dashboardRecord.workspaceId;
+      } else {
+        return NextResponse.json(
+          { error: "workspaceId is required and could not be resolved from dashboard" },
+          { status: 400 }
+        );
+      }
+    }
+
     console.log("[API] /api/workspace/tiles/[tileId] DELETE - Deleting tile", {
       tileId,
       dashboardId,
-      workspaceId,
+      workspaceId: finalWorkspaceId,
       isMember: !!userId,
     });
 
     // Security: Authorize access to resource
     const auth = await authorizeResourceAccess(
-      workspaceId,
+      finalWorkspaceId,
       dashboardId,
       tileId,
       "tiles",
@@ -52,18 +64,12 @@ export async function DELETE(
 
     if (userId) {
       // 🟢 MEMBER: Deletar do MongoDB
-      if (!workspaceId) {
-        return NextResponse.json(
-          { error: "workspaceId is required for members" },
-          { status: 400 }
-        );
-      }
 
       // Deletar tile do MongoDB
       const deleted = await db.deleteOne("tiles", {
         id: tileId,
         userId,
-        workspaceId,
+        workspaceId: finalWorkspaceId,
         dashboardId,
       });
 
@@ -75,7 +81,7 @@ export async function DELETE(
       }
 
       // Invalidar cache
-      await invalidateResourceCache("tiles", dashboardId, workspaceId);
+      await invalidateResourceCache("tiles", dashboardId, finalWorkspaceId);
 
       // Audit log
       await audit.deleteTile(tileId, dashboardId, userId, request);
@@ -90,7 +96,7 @@ export async function DELETE(
       // 🟡 GUEST: Deletar do localStorage
       const workspaces = loadWorkspacesWithDashboards();
       const workspace = workspaces.find(
-        (w) => w.id === workspaceId || w.dashboards.some((d) => d.id === dashboardId)
+        (w) => w.id === finalWorkspaceId || w.dashboards.some((d) => d.id === dashboardId)
       );
 
       if (!workspace) {

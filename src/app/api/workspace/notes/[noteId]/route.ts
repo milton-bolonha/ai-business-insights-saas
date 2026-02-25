@@ -20,20 +20,32 @@ export async function PATCH(
     const { noteId } = await params;
     const { userId } = await getAuth();
     const body = await request.json().catch(() => null);
-    
-    const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId : "";
+
+    let finalWorkspaceId = typeof body?.workspaceId === "string" ? body.workspaceId : "";
     const dashboardId = typeof body?.dashboardId === "string" ? body.dashboardId : "";
 
-    if (!workspaceId || !dashboardId) {
+    if (!dashboardId) {
       return NextResponse.json(
-        { error: "workspaceId and dashboardId are required" },
+        { error: "dashboardId is required" },
         { status: 400 }
       );
     }
 
+    if (!finalWorkspaceId) {
+      const dashboardRecord = await db.findOne("dashboards", { id: dashboardId }) as any;
+      if (dashboardRecord?.workspaceId) {
+        finalWorkspaceId = dashboardRecord.workspaceId;
+      } else {
+        return NextResponse.json(
+          { error: "workspaceId is required and could not be resolved" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Security: Authorize access to resource
     const auth = await authorizeResourceAccess(
-      workspaceId,
+      finalWorkspaceId,
       dashboardId,
       noteId,
       "notes",
@@ -54,7 +66,7 @@ export async function PATCH(
       // 🟢 MEMBER: Update in MongoDB
       await db.updateOne<NoteDocument>(
         "notes",
-        { id: noteId, userId, workspaceId, dashboardId },
+        { id: noteId, userId, workspaceId: finalWorkspaceId, dashboardId },
         {
           $set: {
             title: title || undefined,
@@ -65,7 +77,7 @@ export async function PATCH(
       );
 
       // Invalidate cache
-      await invalidateResourceCache("notes", dashboardId, workspaceId);
+      await invalidateResourceCache("notes", dashboardId, finalWorkspaceId);
 
       // Audit log (update is logged as create for simplicity)
       await audit.createNote(noteId, dashboardId, userId, request);
@@ -81,8 +93,8 @@ export async function PATCH(
     } else {
       // 🟡 GUEST: Update in localStorage
       const workspaces = loadWorkspacesWithDashboards();
-      const workspace = workspaces.find((w) => w.id === workspaceId);
-      
+      const workspace = workspaces.find((w) => w.id === finalWorkspaceId);
+
       if (!workspace) {
         return NextResponse.json(
           { error: "Workspace not found" },
@@ -91,7 +103,7 @@ export async function PATCH(
       }
 
       const dashboard = workspace.dashboards.find((d) => d.id === dashboardId);
-      
+
       if (!dashboard) {
         return NextResponse.json(
           { error: "Dashboard not found" },
@@ -119,7 +131,7 @@ export async function PATCH(
         n.id === noteId ? updatedNote : n
       );
 
-      updateDashboard(workspaceId, dashboardId, {
+      updateDashboard(finalWorkspaceId, dashboardId, {
         notes: updatedNotes,
       });
 
@@ -148,20 +160,32 @@ export async function DELETE(
     const { noteId } = await params;
     const { userId } = await getAuth();
     const body = await request.json().catch(() => ({}));
-    
-    const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId : "";
+
+    let finalWorkspaceId = typeof body?.workspaceId === "string" ? body.workspaceId : "";
     const dashboardId = typeof body?.dashboardId === "string" ? body.dashboardId : "";
 
-    if (!workspaceId || !dashboardId) {
+    if (!dashboardId) {
       return NextResponse.json(
-        { error: "workspaceId and dashboardId are required" },
+        { error: "dashboardId is required" },
         { status: 400 }
       );
     }
 
+    if (!finalWorkspaceId) {
+      const dashboardRecord = await db.findOne("dashboards", { id: dashboardId }) as any;
+      if (dashboardRecord?.workspaceId) {
+        finalWorkspaceId = dashboardRecord.workspaceId;
+      } else {
+        return NextResponse.json(
+          { error: "workspaceId is required and could not be resolved" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Security: Authorize access to resource
     const auth = await authorizeResourceAccess(
-      workspaceId,
+      finalWorkspaceId,
       dashboardId,
       noteId,
       "notes",
@@ -180,7 +204,7 @@ export async function DELETE(
       const deleted = await db.deleteOne<NoteDocument>("notes", {
         id: noteId,
         userId,
-        workspaceId,
+        workspaceId: finalWorkspaceId,
         dashboardId,
       });
 
@@ -192,7 +216,7 @@ export async function DELETE(
       }
 
       // Invalidate cache
-      await invalidateResourceCache("notes", dashboardId, workspaceId);
+      await invalidateResourceCache("notes", dashboardId, finalWorkspaceId);
 
       // Audit log
       await audit.deleteNote(noteId, dashboardId, userId, request);
@@ -204,7 +228,7 @@ export async function DELETE(
     } else {
       // 🟡 GUEST: Delete from localStorage
       const workspaces = loadWorkspacesWithDashboards();
-      const workspace = workspaces.find((w) => w.id === workspaceId);
+      const workspace = workspaces.find((w) => w.id === finalWorkspaceId);
       const dashboard = workspace?.dashboards.find((d) => d.id === dashboardId);
 
       if (!dashboard) {
@@ -216,7 +240,7 @@ export async function DELETE(
 
       const updatedNotes = dashboard.notes?.filter((n: Note) => n.id !== noteId) || [];
 
-      updateDashboard(workspaceId, dashboardId, {
+      updateDashboard(finalWorkspaceId, dashboardId, {
         notes: updatedNotes,
       });
 

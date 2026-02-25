@@ -18,7 +18,7 @@ interface SaaSLimitsModalProps {
 // Removed UsageBar as it is obsolete
 
 
-function TransactionLedgerList() {
+function TransactionLedgerList({ filterType }: { filterType: "purchases" | "usage" | "all" }) {
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -63,7 +63,7 @@ function TransactionLedgerList() {
 
     return (
         <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
-            {transactions.map((t) => {
+            {transactions.filter(t => filterType === "all" ? true : filterType === "purchases" ? t.type === "purchase" : t.type === "usage").map((t) => {
                 const isPurchase = t.type === "purchase";
                 return (
                     <div key={t.id} className="flex justify-between items-center p-3 border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -91,7 +91,7 @@ function TransactionLedgerList() {
 export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: SaaSLimitsModalProps) {
     const usage = useUsage();
     const limits = useLimits();
-    const [tab, setTab] = useState<"usage" | "ledger">("usage");
+    const [tab, setTab] = useState<"usage" | "ledger" | "history">("usage");
 
     if (!isOpen) return null;
 
@@ -128,6 +128,12 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                         className={`flex-1 py-3 text-sm font-medium ${tab === "ledger" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
                     >
                         Payment History
+                    </button>
+                    <button
+                        onClick={() => setTab("history")}
+                        className={`flex-1 py-3 text-sm font-medium ${tab === "history" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
+                    >
+                        Usage History
                     </button>
                 </div>
 
@@ -207,8 +213,10 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                                 <UpgradeButton />
                             </div>
                         </div>
+                    ) : tab === "ledger" ? (
+                        <TransactionLedgerList filterType="purchases" />
                     ) : (
-                        <TransactionLedgerList />
+                        <TransactionLedgerList filterType="usage" />
                     )}
                 </div>
             </motion.div>
