@@ -12,6 +12,7 @@ export interface Tile {
   title: string;
   content: string;
   prompt: string;
+  status?: "pending" | "processing" | "completed" | "error";
   templateId?: string;
   templateTileId?: string;
   category?: string;

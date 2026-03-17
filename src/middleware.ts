@@ -2,8 +2,8 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 
-// Protect all admin routes and the generate API and workspace API and user API
-const isProtectedRoute = createRouteMatcher(["/admin(.*)", "/api/generate(.*)", "/api/workspace(.*)", "/api/user(.*)"]);
+// Protect all admin routes. API routes handle their own authorization.
+const isProtectedRoute = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   // Apply rate limiting to API routes
@@ -43,12 +43,16 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     }
   }
 
-  // Apply authentication protection
-  if (isProtectedRoute(req)) {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+  // CRITICAL: Always call auth() so Clerk propagates user context to all routes.
+  // Without this call, getAuth() inside API handlers returns { userId: null }.
+  const { userId } = await auth();
+  const guestId = req.cookies.get("guest_user_id")?.value;
+
+
+  // Apply authentication protection for protected page routes
+  if (isProtectedRoute(req) && !userId && !guestId) {
+    // For page routes: redirect to home
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();

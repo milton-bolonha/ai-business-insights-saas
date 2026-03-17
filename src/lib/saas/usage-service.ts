@@ -22,7 +22,8 @@ export type UsageType =
   | "tileChatsCount"
   | "contactChatsCount"
   | "regenerationsCount"
-  | "assetsCount";
+  | "assetsCount"
+  | "bookGenerationsCount";
 
 export interface UsageLimits {
   companiesCount: number; // Max workspaces per user
@@ -33,6 +34,7 @@ export interface UsageLimits {
   contactChatsCount: number; // Max contact chats
   regenerationsCount: number; // Max regenerations
   assetsCount: number; // Max assets/uploads
+  bookGenerationsCount?: number; // Max book generations
   tokensUsed: number; // Max tokens per month
   creditsTotal: number; // Max available credits
 }
@@ -46,6 +48,7 @@ export const CREDIT_COSTS: Record<UsageType, number> = {
   contactChatsCount: 2,
   regenerationsCount: 5,
   assetsCount: 1,
+  bookGenerationsCount: 20, // generating a portion of a book costs 20 credits
   tokensUsed: 0,
 };
 
@@ -346,7 +349,9 @@ export async function enforceAssetLimit(
 export async function getPlanForUser(
   userId?: string | null
 ): Promise<{ plan: PlanId; limits: UsageLimits }> {
-  if (!userId) {
+  const isGuest = !userId || userId === "guest_temp" || userId.startsWith("guest_");
+
+  if (isGuest) {
     try {
       return { plan: "guest", limits: await fetchPlanLimits("guest") };
     } catch (err) {

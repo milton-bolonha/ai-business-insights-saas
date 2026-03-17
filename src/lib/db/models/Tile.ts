@@ -13,6 +13,7 @@ export interface TileDocument extends Document {
   title: string;
   content: string;
   prompt: string;
+  status?: string;
   templateId?: string;
   category?: string;
   model: string;
@@ -40,6 +41,7 @@ export function tileToDocument(
     title: tile.title,
     content: tile.content,
     prompt: tile.prompt,
+    status: tile.status,
     templateId: tile.templateId,
     category: tile.category,
     model: tile.model,
@@ -57,10 +59,11 @@ export function tileDocumentToTile(
   doc: TileDocument
 ): Tile {
   return {
-    id: doc._id?.toString() || doc.id || `tile_${Date.now()}`,
+    id: doc.id || doc._id?.toString() || `tile_${Date.now()}`,
     title: doc.title,
     content: doc.content,
     prompt: doc.prompt,
+    status: doc.status as any,
     templateId: doc.templateId,
     category: doc.category,
     model: doc.model,

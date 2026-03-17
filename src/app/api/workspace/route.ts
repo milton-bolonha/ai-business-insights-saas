@@ -65,19 +65,33 @@ export async function DELETE(request: NextRequest) {
     const { ObjectId } = await import("mongodb");
     const { auditLog } = await import("@/lib/audit/logger");
 
-    // Verify ownership before delete (implicit in deleteOne filter, but good for audit)
-    const result = await db.deleteOne("workspaces", { _id: new ObjectId(workspaceId), userId });
+    // Workspace id from client is typically sessionId (e.g. session_xxx)
+    const workspaceFilter = workspaceId.startsWith("session_")
+      ? { sessionId: workspaceId, userId }
+      : { _id: new ObjectId(workspaceId), userId };
 
-    if (result) {
-      await auditLog("delete_workspace", "Workspace deleted via API", {
-        userId,
-        details: { workspaceId }
-      });
-      console.log("[api/workspace] ✅ Workspace deletado do MongoDB (member)");
-      return NextResponse.json({ success: true });
-    } else {
+    const workspaceDoc = await db.findOne("workspaces", workspaceFilter);
+    if (!workspaceDoc) {
       return NextResponse.json({ error: "Workspace not found or not authorized" }, { status: 404 });
     }
+
+    const effectiveWorkspaceId = (workspaceDoc as { sessionId?: string }).sessionId ?? workspaceId;
+
+    // Cascade delete: books, tiles, contacts, notes, dashboards, workspace
+    const delFilter = { workspaceId: effectiveWorkspaceId, userId };
+    await db.deleteMany("books", delFilter);
+    await db.deleteMany("tiles", delFilter);
+    await db.deleteMany("contacts", delFilter);
+    await db.deleteMany("notes", delFilter);
+    await db.deleteMany("dashboards", delFilter);
+    await db.deleteOne("workspaces", workspaceFilter);
+
+    await auditLog("delete_workspace", "Workspace and related data deleted via API", {
+      userId,
+      details: { workspaceId: effectiveWorkspaceId }
+    });
+    console.log("[api/workspace] ✅ Workspace e dados relacionados deletados do MongoDB");
+    return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error("[api/workspace] ❌ Erro ao deletar do MongoDB:", error);

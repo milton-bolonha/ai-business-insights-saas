@@ -30,6 +30,13 @@ interface RegenerateTileVariables {
   model?: string;
 }
 
+interface UpdateTileVariables {
+  tileId: string;
+  dashboardId: string;
+  workspaceId: string;
+  updates: Partial<Tile>;
+}
+
 interface RegenerateTileResponse {
   success: boolean;
   tile: Tile;
@@ -358,6 +365,45 @@ export function useChatWithTile() {
     },
     onError: (error) => {
       console.error("[DEBUG] tile.queries.useChatWithTile onError:", error);
+    },
+  });
+}
+
+export function useUpdateTile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tileId,
+      dashboardId,
+      workspaceId,
+      updates,
+    }: UpdateTileVariables): Promise<{ success: boolean; tile: Partial<Tile> }> => {
+      const response = await fetch(`/api/workspace/tiles/${tileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dashboardId,
+          workspaceId,
+          ...updates,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update tile");
+      }
+      return response.json();
+    },
+    onSuccess: (_, { dashboardId, tileId, updates }) => {
+      // Optimistically update the cache
+      queryClient.setQueryData<Tile[] | undefined>(["tiles", dashboardId], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map((tile) =>
+          tile.id === tileId ? { ...tile, ...updates } : tile
+        );
+      });
+    },
+    onError: (error) => {
+      console.error("[DEBUG] tile.queries.useUpdateTile onError:", error);
     },
   });
 }

@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
         );
     } catch (error) {
         console.error("[API Usage] Error:", error);
-        return NextResponse.json({ error: "Failed to get usage" }, { status: 500 });
+        // Do not crash the app for guests on plan errors, gracefully return local limits
+        return NextResponse.json({
+            usage: null,
+            limits: null,
+            plan: "guest",
+            isMember: false,
+        }, { status: 200 });
     }
 }

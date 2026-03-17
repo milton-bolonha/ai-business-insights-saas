@@ -26,50 +26,50 @@ const tileSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
   content: z.string().min(1),
-  prompt: z.string().optional().default(""),
-  templateId: z.string().optional(),
-  templateTileId: z.string().optional(),
-  category: z.string().optional(),
-  model: z.string().optional().default("gpt-4o-mini"),
-  orderIndex: z.number().int().optional().default(0),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-  totalTokens: z.number().optional(),
-  attempts: z.number().optional().default(0),
-  history: z.array(z.any()).optional().default([]),
-  agentId: z.string().optional(),
-  responseLength: z.string().optional(),
-  promptVariables: z.array(z.string()).optional(),
+  prompt: z.string().nullable().optional().default(""),
+  templateId: z.string().nullable().optional(),
+  templateTileId: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
+  model: z.string().nullable().optional().default("gpt-4o-mini"),
+  orderIndex: z.number().nullable().optional().default(0),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+  totalTokens: z.number().nullable().optional(),
+  attempts: z.number().nullable().optional().default(0),
+  history: z.array(z.any()).nullable().optional().default([]),
+  agentId: z.string().nullable().optional(),
+  responseLength: z.string().nullable().optional(),
+  promptVariables: z.array(z.string()).nullable().optional(),
 });
 
 const contactSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  jobTitle: z.string().optional(),
-  linkedinUrl: z.string().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  company: z.string().optional(),
-  notes: z.string().optional(),
-  createdAt: z.string().optional(),
+  jobTitle: z.string().nullable().optional(),
+  linkedinUrl: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
 });
 
 const noteSchema = z.object({
   id: z.string().min(1),
-  title: z.string().min(1),
+  title: z.string().nullable().optional(),
   content: z.string().min(1),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
 });
 
 const dashboardSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   workspaceId: z.string().min(1),
-  bgColor: z.string().optional(),
-  templateId: z.string().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  bgColor: z.string().nullable().optional(),
+  templateId: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
   tiles: z
     .array(tileSchema)
     .max(MAX_TILES_PER_DASHBOARD)
@@ -90,9 +90,9 @@ const dashboardSchema = z.object({
 const workspaceSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  website: z.string().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  website: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
   dashboards: z
     .array(dashboardSchema)
     .max(MAX_DASHBOARDS_PER_WORKSPACE)

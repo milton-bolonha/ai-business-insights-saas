@@ -3,6 +3,7 @@ import {
   workspaceSnapshotToDocument,
   type WorkspaceDocument,
 } from "./models/Workspace";
+import { tileToDocument } from "./models/Tile";
 import type { WorkspaceSnapshot } from "@/lib/types";
 
 const MAX_WORKSPACES = 10;
@@ -45,14 +46,13 @@ export async function migrateWorkspaceToMongo(
       updatedAt: new Date(),
     };
 
-    // Check if workspace already exists
+    // 1. Upsert Workspace
     const existing = await db.findOne<WorkspaceDocument>("workspaces", {
       sessionId: workspace.sessionId,
       userId,
     });
 
     if (existing) {
-      // Update existing workspace
       await db.updateOne(
         "workspaces",
         { sessionId: workspace.sessionId, userId },
@@ -65,16 +65,69 @@ export async function migrateWorkspaceToMongo(
       );
       console.log("[Migration] ✅ Workspace updated in MongoDB");
     } else {
-      // Insert new workspace
       await db.insertOne("workspaces", document);
       console.log("[Migration] ✅ Workspace saved to MongoDB");
+    }
+
+    // 2. Initialize Default Dashboard
+    const dashboardId = `dashboard_${workspace.sessionId}_default`;
+    const existingDashboard = await db.findOne("dashboards", {
+      id: dashboardId,
+      userId,
+    });
+
+    if (!existingDashboard) {
+      await db.insertOne("dashboards", {
+        id: dashboardId,
+        workspaceId: workspace.sessionId,
+        userId,
+        name: "Default Dashboard",
+        templateId: workspace.promptSettings?.templateId || null,
+        bgColor: workspace.appearance?.baseColor || "#f7f7f7",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log(`[Migration] ✅ Default dashboard created: ${dashboardId}`);
+    }
+
+    // 3. Migrate Tiles
+    if (workspace.tiles && workspace.tiles.length > 0) {
+      console.log(`[Migration] 📦 Migrating ${workspace.tiles.length} initial tiles...`);
+      for (const tile of workspace.tiles) {
+        const tileDoc = tileToDocument(
+          tile,
+          userId,
+          workspace.sessionId,
+          dashboardId
+        );
+        
+        // Use tile.id if available, otherwise generated one
+        const internalId = tile.id || `tile_${Math.random().toString(36).substring(2, 11)}`;
+
+        await db.updateOne(
+          "tiles",
+          { id: internalId, userId, workspaceId: workspace.sessionId },
+          { 
+            $set: {
+              ...tileDoc,
+              id: internalId,
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+            }
+          },
+          { upsert: true }
+        );
+      }
+      console.log("[Migration] ✅ Initial tiles migrated");
     }
   } catch (error) {
     console.error(
       "[Migration] ❌ Failed to migrate workspace to MongoDB:",
       error
     );
-    // Don't throw - MongoDB failures shouldn't break the app
   }
 }
 
@@ -87,40 +140,40 @@ type GuestTilePayload = {
   id: string;
   title: string;
   content: string;
-  prompt?: string;
-  templateId?: string;
-  templateTileId?: string;
-  category?: string;
-  model?: string;
-  orderIndex?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  totalTokens?: number;
-  attempts?: number;
-  history?: unknown[];
-  agentId?: string;
-  responseLength?: string;
-  promptVariables?: string[];
+  prompt?: string | null;
+  templateId?: string | null;
+  templateTileId?: string | null;
+  category?: string | null;
+  model?: string | null;
+  orderIndex?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  totalTokens?: number | null;
+  attempts?: number | null;
+  history?: unknown[] | null;
+  agentId?: string | null;
+  responseLength?: string | null;
+  promptVariables?: string[] | null;
 };
 
 type GuestContactPayload = {
   id: string;
   name: string;
-  jobTitle?: string;
-  linkedinUrl?: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  notes?: string;
-  createdAt?: string;
+  jobTitle?: string | null;
+  linkedinUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  notes?: string | null;
+  createdAt?: string | null;
 };
 
 type GuestNotePayload = {
   id: string;
   content: string;
-  title?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  title?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 type GuestDashboardPayload = {
@@ -130,19 +183,19 @@ type GuestDashboardPayload = {
   tiles?: GuestTilePayload[];
   contacts?: GuestContactPayload[];
   notes?: GuestNotePayload[];
-  bgColor?: string;
-  templateId?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  bgColor?: string | null;
+  templateId?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 type GuestWorkspacePayload = {
   id: string;
   name: string;
-  website?: string;
+  website?: string | null;
   dashboards: GuestDashboardPayload[];
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export async function syncWorkspaceTilesToMongo(
@@ -364,7 +417,7 @@ export async function migrateWorkspaceDataToMongo(
         const workspaceSnapshot: WorkspaceSnapshot = {
           sessionId: workspace.id,
           name: workspace.name,
-          website: workspace.website,
+          website: workspace.website ?? undefined,
           generatedAt: workspaceCreatedAt,
           tilesToGenerate: 0,
         };
@@ -448,9 +501,9 @@ export async function migrateWorkspaceDataToMongo(
 
             if (tiles.length > 0) {
               for (const tile of tiles) {
-                if (!tile.id || !tile.title || !tile.content) {
+                if (!tile.id || !tile.title) {
                   stats.errors.push(
-                    `Tile missing required fields in dashboard ${dashboard.id}`
+                    `Tile missing required fields (id, title) in dashboard ${dashboard.id}`
                   );
                   continue;
                 }
@@ -467,42 +520,42 @@ export async function migrateWorkspaceDataToMongo(
                   const normalizedHistory =
                     Array.isArray(tile.history) && tile.history.length > 0
                       ? tile.history
-                          .map((entry) => {
-                            if (
-                              entry &&
-                              typeof entry === "object" &&
-                              typeof (entry as { role?: string }).role ===
-                                "string" &&
-                              typeof (entry as { content?: string }).content ===
-                                "string"
-                            ) {
-                              return {
-                                id:
-                                  typeof (entry as { id?: string }).id ===
+                        .map((entry) => {
+                          if (
+                            entry &&
+                            typeof entry === "object" &&
+                            typeof (entry as { role?: string }).role ===
+                            "string" &&
+                            typeof (entry as { content?: string }).content ===
+                            "string"
+                          ) {
+                            return {
+                              id:
+                                typeof (entry as { id?: string }).id ===
                                   "string"
-                                    ? (entry as { id?: string }).id!
-                                    : `history_${Date.now().toString(36)}`,
-                                role:
-                                  (entry as { role: string }).role ===
-                                    "assistant" ||
+                                  ? (entry as { id?: string }).id!
+                                  : `history_${Date.now().toString(36)}`,
+                              role:
+                                (entry as { role: string }).role ===
+                                  "assistant" ||
                                   (entry as { role: string }).role === "system"
-                                    ? (entry as { role: TileMessage["role"] })
-                                        .role
-                                    : "user",
-                                content: (entry as { content: string }).content,
-                                createdAt:
-                                  typeof (entry as { createdAt?: string })
-                                    .createdAt === "string"
-                                    ? (entry as { createdAt?: string })
-                                        .createdAt!
-                                    : new Date().toISOString(),
-                              } satisfies TileMessage;
-                            }
-                            return null;
-                          })
-                          .filter((entry): entry is TileMessage =>
-                            Boolean(entry)
-                          )
+                                  ? (entry as { role: TileMessage["role"] })
+                                    .role
+                                  : "user",
+                              content: (entry as { content: string }).content,
+                              createdAt:
+                                typeof (entry as { createdAt?: string })
+                                  .createdAt === "string"
+                                  ? (entry as { createdAt?: string })
+                                    .createdAt!
+                                  : new Date().toISOString(),
+                            } satisfies TileMessage;
+                          }
+                          return null;
+                        })
+                        .filter((entry): entry is TileMessage =>
+                          Boolean(entry)
+                        )
                       : [];
 
                   const normalizedTile: Tile = {
@@ -510,9 +563,9 @@ export async function migrateWorkspaceDataToMongo(
                     title: tile.title,
                     content: tile.content,
                     prompt: tile.prompt ?? "",
-                    templateId: tile.templateId,
-                    templateTileId: tile.templateTileId,
-                    category: tile.category,
+                    templateId: tile.templateId ?? undefined,
+                    templateTileId: tile.templateTileId ?? undefined,
+                    category: tile.category ?? undefined,
                     model: tile.model ?? "gpt-4o-mini",
                     orderIndex:
                       typeof tile.orderIndex === "number"
@@ -532,11 +585,11 @@ export async function migrateWorkspaceDataToMongo(
                         : null,
                     attempts: tile.attempts ?? 0,
                     history: normalizedHistory,
-                    agentId: tile.agentId,
+                    agentId: tile.agentId ?? undefined,
                     responseLength: normalizeResponseLength(
-                      tile.responseLength
+                      tile.responseLength ?? undefined
                     ),
-                    promptVariables: tile.promptVariables,
+                    promptVariables: tile.promptVariables ?? undefined,
                   };
 
                   const tileDoc = tileToDocument(
@@ -579,11 +632,10 @@ export async function migrateWorkspaceDataToMongo(
 
                   stats.tilesMigrated++;
                 } catch (tileError) {
-                  const errorMsg = `Failed to migrate tile ${tile.id}: ${
-                    tileError instanceof Error
-                      ? tileError.message
-                      : String(tileError)
-                  }`;
+                  const errorMsg = `Failed to migrate tile ${tile.id}: ${tileError instanceof Error
+                    ? tileError.message
+                    : String(tileError)
+                    }`;
                   stats.errors.push(errorMsg);
                   console.error(`[Migration] ❌ ${errorMsg}`);
                 }
@@ -624,12 +676,12 @@ export async function migrateWorkspaceDataToMongo(
                   const normalizedContact: Contact = {
                     id: contact.id,
                     name: contact.name,
-                    jobTitle: contact.jobTitle,
-                    linkedinUrl: contact.linkedinUrl,
-                    email: contact.email,
-                    phone: contact.phone,
-                    company: contact.company,
-                    notes: contact.notes,
+                    jobTitle: contact.jobTitle ?? undefined,
+                    linkedinUrl: contact.linkedinUrl ?? undefined,
+                    email: contact.email ?? undefined,
+                    phone: contact.phone ?? undefined,
+                    company: contact.company ?? undefined,
+                    notes: contact.notes ?? undefined,
                     createdAt:
                       contact.createdAt ||
                       dashboardCreatedAt ||
@@ -678,11 +730,10 @@ export async function migrateWorkspaceDataToMongo(
 
                   stats.contactsMigrated++;
                 } catch (contactError) {
-                  const errorMsg = `Failed to migrate contact ${contact.id}: ${
-                    contactError instanceof Error
-                      ? contactError.message
-                      : String(contactError)
-                  }`;
+                  const errorMsg = `Failed to migrate contact ${contact.id}: ${contactError instanceof Error
+                    ? contactError.message
+                    : String(contactError)
+                    }`;
                   stats.errors.push(errorMsg);
                   console.error(`[Migration] ❌ ${errorMsg}`);
                 }
@@ -778,11 +829,10 @@ export async function migrateWorkspaceDataToMongo(
 
                   stats.notesMigrated++;
                 } catch (noteError) {
-                  const errorMsg = `Failed to migrate note ${note.id}: ${
-                    noteError instanceof Error
-                      ? noteError.message
-                      : String(noteError)
-                  }`;
+                  const errorMsg = `Failed to migrate note ${note.id}: ${noteError instanceof Error
+                    ? noteError.message
+                    : String(noteError)
+                    }`;
                   stats.errors.push(errorMsg);
                   console.error(`[Migration] ❌ ${errorMsg}`);
                 }
@@ -792,21 +842,19 @@ export async function migrateWorkspaceDataToMongo(
             stats.dashboardsMigrated++;
             console.log(`[Migration] ✅ Dashboard ${dashboard.id} migrated`);
           } catch (dashboardError) {
-            const errorMsg = `Failed to migrate dashboard ${dashboard.id}: ${
-              dashboardError instanceof Error
-                ? dashboardError.message
-                : String(dashboardError)
-            }`;
+            const errorMsg = `Failed to migrate dashboard ${dashboard.id}: ${dashboardError instanceof Error
+              ? dashboardError.message
+              : String(dashboardError)
+              }`;
             stats.errors.push(errorMsg);
             console.error(`[Migration] ❌ ${errorMsg}`);
           }
         }
       } catch (workspaceError) {
-        const errorMsg = `Failed to migrate workspace ${workspace.id}: ${
-          workspaceError instanceof Error
-            ? workspaceError.message
-            : String(workspaceError)
-        }`;
+        const errorMsg = `Failed to migrate workspace ${workspace.id}: ${workspaceError instanceof Error
+          ? workspaceError.message
+          : String(workspaceError)
+          }`;
         stats.errors.push(errorMsg);
         console.error(`[Migration] ❌ ${errorMsg}`);
       }

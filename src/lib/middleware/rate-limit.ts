@@ -9,7 +9,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { cache } from "@/lib/cache/redis";
-import { getAuth } from "@/lib/auth/get-auth";
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -44,21 +43,13 @@ const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
  * Uses IP address for guests, userId for members
  */
 export async function getClientId(request: NextRequest): Promise<string> {
-  // Try to get authenticated user first
-  try {
-    const { userId } = await getAuth();
-    if (userId) {
-      return `user:${userId}`;
-    }
-  } catch (error) {
-    // If auth fails, fall back to IP
-  }
-
-  // Fallback to IP address
+  // Inside Next.js Middleware, we cannot reliably call Clerk's auth() directly 
+  // before clerkMiddleware wraps the context. 
+  // We fall back exclusively to IP address for Middleware rate limiting.
   const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || 
-             request.headers.get("x-real-ip") || 
-             "unknown";
+  const ip = forwarded?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
 
   return `ip:${ip}`;
 }
@@ -86,7 +77,7 @@ async function checkRateLimit(
   }
 
   const key = getRateLimitKey(clientId, endpoint, config.windowMs);
-  
+
   try {
     // Get current count
     const current = await cache.get<number>(key) || 0;
@@ -122,7 +113,7 @@ async function checkRateLimit(
 /**
  * Determine rate limit config based on endpoint
  */
-function getRateLimitConfig(pathname: string, isAuthenticated: boolean): RateLimitConfig {
+function getRateLimitConfig(pathname: string): RateLimitConfig {
   // Critical endpoints (AI generation, payments)
   if (
     pathname.startsWith("/api/generate") ||
@@ -132,12 +123,8 @@ function getRateLimitConfig(pathname: string, isAuthenticated: boolean): RateLim
     return DEFAULT_LIMITS.critical;
   }
 
-  // Authenticated endpoints
-  if (isAuthenticated) {
-    return DEFAULT_LIMITS.authenticated;
-  }
-
-  // Public endpoints (default)
+  // NOTE: Rate Limiting in Middleware treats everyone as "public" 
+  // to avoid Clerk auth() context crashes.
   return DEFAULT_LIMITS.public;
 }
 
@@ -164,16 +151,7 @@ export async function checkRateLimitMiddleware(
     const pathname = request.nextUrl.pathname;
     const finalEndpoint = endpoint || pathname;
 
-    // Check if user is authenticated
-    let isAuthenticated = false;
-    try {
-      const { userId } = await getAuth();
-      isAuthenticated = !!userId;
-    } catch {
-      // Not authenticated
-    }
-
-    const config = getRateLimitConfig(finalEndpoint, isAuthenticated);
+    const config = getRateLimitConfig(finalEndpoint);
     const result = await checkRateLimit(clientId, finalEndpoint, config);
 
     if (!result.allowed) {
@@ -222,17 +200,9 @@ export async function getRateLimitInfo(
   const pathname = request.nextUrl.pathname;
   const finalEndpoint = endpoint || pathname;
 
-  let isAuthenticated = false;
-  try {
-    const { userId } = await getAuth();
-    isAuthenticated = !!userId;
-  } catch {
-    // Not authenticated
-  }
-
-  const config = getRateLimitConfig(finalEndpoint, isAuthenticated);
+  const config = getRateLimitConfig(finalEndpoint);
   const key = getRateLimitKey(clientId, finalEndpoint, config.windowMs);
-  
+
   try {
     const current = (await cache.get<number>(key)) || 0;
     const windowId = Math.floor(Date.now() / config.windowMs);

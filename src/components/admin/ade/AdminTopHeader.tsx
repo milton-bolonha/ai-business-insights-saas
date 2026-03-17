@@ -13,13 +13,15 @@ import {
     Home,
     Droplet,
     Info,
-    Coins
+    Coins,
+    Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { BookWriterView } from "@/components/love-writers/BookWriterView";
 
 import {
     useWorkspaceStore,
@@ -33,7 +35,7 @@ export interface AdminTopHeaderProps {
     appearance: AdeAppearanceTokens;
     onOpenSaaSLimits?: () => void;
     onOpenWorkspaceDetail?: () => void;
-
+    onDeleteWorkspace?: (workspaceId: string) => void;
     onSetSpecificColor?: (color: string) => void;
 }
 
@@ -41,12 +43,14 @@ export function AdminTopHeader({
     appearance,
     onOpenSaaSLimits,
     onOpenWorkspaceDetail,
-
+    onDeleteWorkspace,
     onSetSpecificColor
 }: AdminTopHeaderProps) {
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const [isBookWriterOpen, setIsBookWriterOpen] = useState(false);
+    const [isBookLibraryOpen, setIsBookLibraryOpen] = useState(false);
     const pathname = usePathname();
 
     const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -165,8 +169,8 @@ export function AdminTopHeader({
                 </div>
 
                 {/* Center: Workspace Chooser - Hidden on mobile if needed, or adjusted */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-200">
-                    <div className="relative">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-200 group/ws">
+                    <div className="relative flex items-center gap-1">
                         <button
                             onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
                             className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium hover:bg-white/10 transition-colors cursor-pointer border border-transparent hover:border-white/10"
@@ -179,7 +183,6 @@ export function AdminTopHeader({
                             <span className="hidden md:block max-w-[150px] truncate">{activeWorkspaceDisplay.name}</span>
                             <ChevronDown className="h-4 w-4 text-gray-500" />
                         </button>
-
                         <AnimatePresence>
                             {isWorkspaceOpen && (
                                 <>
@@ -198,29 +201,48 @@ export function AdminTopHeader({
                                                 Switch Workspace
                                             </div>
                                             {availableWorkspaces.map((ws) => (
-                                                <button
-                                                    key={ws.id}
-                                                    onClick={() => {
-                                                        switchWorkspace(ws.id);
-                                                        setIsWorkspaceOpen(false);
-                                                    }}
-                                                    className={cn(
-                                                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                                                        currentWorkspace?.id === ws.id
-                                                            ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-                                                            : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+                                                <div key={ws.id} className="group/item relative">
+                                                    <button
+                                                        onClick={() => {
+                                                            switchWorkspace(ws.id);
+                                                            setIsWorkspaceOpen(false);
+                                                        }}
+                                                        className={cn(
+                                                            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors pr-10",
+                                                            currentWorkspace?.id === ws.id
+                                                                ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+                                                                : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+                                                        )}
+                                                    >
+                                                        {ws.type === 'love_writers' ? (
+                                                            <BookOpen className="h-4 w-4 text-rose-500" />
+                                                        ) : (
+                                                            <PieChart className="h-4 w-4 text-blue-500" />
+                                                        )}
+                                                        <span className="flex-1 text-left truncate">{ws.name}</span>
+                                                        {currentWorkspace?.id === ws.id && (
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                                                        )}
+                                                    </button>
+                                                    
+                                                    {onDeleteWorkspace && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm(`Deletar workspace "${ws.name}" e todos os dashboards, cards, contatos e notas?`)) {
+                                                                    onDeleteWorkspace(ws.id);
+                                                                    if (currentWorkspace?.id === ws.id) {
+                                                                        setIsWorkspaceOpen(false);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 transition-all"
+                                                            title="Deletar workspace"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
                                                     )}
-                                                >
-                                                    {ws.type === 'love_writers' ? (
-                                                        <BookOpen className="h-4 w-4 text-rose-500" />
-                                                    ) : (
-                                                        <PieChart className="h-4 w-4 text-blue-500" />
-                                                    )}
-                                                    <span className="flex-1 text-left truncate">{ws.name}</span>
-                                                    {currentWorkspace?.id === ws.id && (
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                                                    )}
-                                                </button>
+                                                </div>
                                             ))}
 
                                             <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
@@ -246,16 +268,9 @@ export function AdminTopHeader({
                 </div>
 
 
-                {/* Right: Dashboard, Color, Actions */}
+                {/* Right: Actions & User */}
                 <div className="flex items-center gap-3 z-20">
-
-
-
-                    <div className="h-6 w-px bg-gray-200/20 mx-1" />
-
-                    {/* <UserMembershipBadge /> // commented out per user request - optional for dev to uncomment */}
-
-                    {/* SaaS Limit Counter (Trigger) */}
+                    {/* SaaS Limit Counter (Credits) */}
                     <button
                         onClick={onOpenSaaSLimits}
                         className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-white/5 transition-colors border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-700/30"
@@ -269,25 +284,31 @@ export function AdminTopHeader({
 
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />
 
-                    {/* Love Writers Specific Actions */}
-                    {isLoveWriters && (
-                        <>
-
-                            <button className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-gray-500">
-                                <MonitorPlay className="h-5 w-5" />
-                            </button>
-
-                            <button className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-gray-500">
-                                <Share2 className="h-5 w-5" />
-                            </button>
-                        </>
-                    )}
                     {/* Clerk User Button */}
-                    <div className="ml-2">
-                        <UserButton afterSignOutUrl="/" />
+                    <div className="ml-1">
+                        <UserButton />
                     </div>
                 </div>
             </div>
+
+            {/* Book Writer Overlay Rendered within Layout Constraint */}
+            {isLoveWriters && isBookLibraryOpen && currentWorkspace?.id && (
+                <BookWriterView
+                    workspaceId={currentWorkspace.id}
+                    bookId=""
+                    onClose={() => setIsBookLibraryOpen(false)}
+                    initialMode="library"
+                />
+            )}
+
+            {isLoveWriters && isBookWriterOpen && currentWorkspace?.id && (
+                <BookWriterView
+                    workspaceId={currentWorkspace.id}
+                    bookId=""
+                    onClose={() => setIsBookWriterOpen(false)}
+                    initialMode="create"
+                />
+            )}
         </header >
     );
 }

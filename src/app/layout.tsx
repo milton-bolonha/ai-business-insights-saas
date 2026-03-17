@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Providers } from "@/lib/providers";
 
 import "@fontsource-variable/inter";
+import "@fontsource-variable/montserrat";
+import "@fontsource-variable/oswald";
 import "./globals.css";
 
 export const metadata: Metadata = {

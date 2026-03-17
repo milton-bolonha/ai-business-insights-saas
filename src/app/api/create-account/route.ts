@@ -7,7 +7,7 @@ import { auditLog } from "@/lib/audit/logger";
 import { getPlanForUser } from "@/lib/saas/usage-service";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-11-17.clover",
+  apiVersion: "2026-02-25.clover",
 });
 
 type PlanId = "guest" | "member" | "business";

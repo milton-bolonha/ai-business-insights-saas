@@ -189,28 +189,45 @@ export async function POST(request: NextRequest) {
       let previousArcContent = "";
 
       for (const [index, item] of prompts.entries()) {
-        // Inject previous context into the prompt
-        const contextualizedPrompt = item.prompt.replace(
-          "{previous_arc}",
-          previousArcContent || "This is the beginning of the story."
-        );
-
-        const generation = await generateTileContent({
-          client: openai,
-          prompt: contextualizedPrompt,
-          title: item.title,
-          orderIndex: index,
-          model: model || "gpt-4o-mini",
-          templateId,
-          templateTileId: item.templateTileId ?? item.id,
-          category: item.category,
-          maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+        // Robust variable replacement (handles {user_name}, {partner_name}, {meeting_story}, and {previous_arc})
+        const variableMap: Record<string, string> = {
+          "{previous_arc}": previousArcContent || "This is the beginning of the story.",
+        };
+        Object.entries(parsedVariables).forEach(([key, value]) => {
+          variableMap[`{${key}}`] = value;
         });
+
+        let contextualizedPrompt = item.prompt;
+        Object.entries(variableMap).forEach(([placeholder, value]) => {
+          contextualizedPrompt = contextualizedPrompt.replaceAll(placeholder, value);
+        });
+
+        let content = "";
+        let generation: any = { model, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), totalTokens: 0, attempts: 1, history: [] };
+
+        // For sequential projects (like Books), only generate the FIRST tile in the main API call
+        // to avoid timeouts. The UI Administrating loop will handle the rest.
+        if (index === 0) {
+          const gen = await generateTileContent({
+            client: openai,
+            prompt: contextualizedPrompt,
+            title: item.title,
+            orderIndex: index,
+            model: model || "gpt-4o-mini",
+            templateId,
+            templateTileId: item.templateTileId ?? item.id,
+            category: item.category,
+            maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+          });
+          content = gen.content;
+          generation = gen;
+          previousArcContent = content;
+        }
 
         const tile = {
           id: `tile_${randomUUID()}`,
           title: item.title,
-          content: generation.content,
+          content: content,
           prompt: contextualizedPrompt,
           templateId,
           templateTileId: item.templateTileId,
@@ -228,11 +245,9 @@ export async function POST(request: NextRequest) {
         };
 
         tiles.push(tile);
-
-        // Update context for next iteration
-        previousArcContent = generation.content;
       }
-    } else {
+    }
+   else {
       // Parallel Generation (Default)
       const tilePromises = prompts.map(async (item, orderIndex) => {
         const generation = await generateTileContent({
@@ -318,12 +333,15 @@ export async function POST(request: NextRequest) {
     const { audit } = await import("@/lib/audit/logger");
     await audit.createWorkspace(workspace.sessionId, userId, request);
 
+    console.log(`[api/generate] Auth status: userId=${userId ?? 'null (guest mode - MongoDB save will be skipped)'}`);
+
     if (userId) {
       // Member: Save to MongoDB (non-blocking)
       try {
         const { migrateWorkspaceToMongo } = await import(
           "@/lib/db/migration-helpers"
         );
+        console.log(`[api/generate] Saving workspace ${workspace.sessionId} to MongoDB for user ${userId}...`);
         await migrateWorkspaceToMongo(workspace, userId);
 
         // Increment workspace count (stored as companiesCount in usage-service for legacy compatibility)

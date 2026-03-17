@@ -17,10 +17,13 @@ export async function authorizeWorkspaceAccess(
 
   if (userId) {
     // 🟢 MEMBER: Verify workspace belongs to user in MongoDB
+    // Note: The frontend uses 'id' which maps to 'sessionId' in the Workspace schema
+    console.log(`[authorizeWorkspaceAccess] Querying DB for workspaceId: ${workspaceId}, userId: ${userId}`);
     const workspace = await db.findOne("workspaces", {
-      id: workspaceId,
+      $or: [{ sessionId: workspaceId }, { _id: workspaceId as any }],
       userId,
     });
+    console.log(`[authorizeWorkspaceAccess] DB result:`, workspace ? `Found workspace with ID: ${workspace._id}` : `Not found`);
 
     if (!workspace) {
       // Security monitoring
@@ -78,8 +81,9 @@ export async function authorizeDashboardAccess(
 
   if (userId) {
     // 🟢 MEMBER: Verify dashboard belongs to workspace in MongoDB
+    // Dashboards might store their ID in either _id or id depending on creation method
     const dashboard = await db.findOne("dashboards", {
-      id: dashboardId,
+      $or: [{ _id: dashboardId as any }, { id: dashboardId }],
       workspaceId,
       userId,
     });
@@ -154,12 +158,19 @@ export async function authorizeResourceAccess(
 
   if (userId) {
     // 🟢 MEMBER: Verify resource belongs to dashboard in MongoDB
-    const resource = await db.findOne(resourceType, {
-      id: resourceId,
+    // Resources might store their ID in either _id or id depending on creation method
+    const query = {
+      $or: [{ _id: resourceId as any }, { id: resourceId }],
       workspaceId,
       dashboardId,
       userId,
-    });
+    };
+    
+    console.log(`[authorizeResourceAccess] Querying ${resourceType}:`, JSON.stringify(query, null, 2));
+    
+    const resource = await db.findOne(resourceType, query);
+    
+    console.log(`[authorizeResourceAccess] Result:`, resource ? "Found" : "Not found");
 
     if (!resource) {
       // Security monitoring

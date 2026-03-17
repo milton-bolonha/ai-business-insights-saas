@@ -51,7 +51,7 @@ export function contactDocumentToContact(
   doc: ContactDocument
 ): Contact {
   return {
-    id: doc._id?.toString() || doc.id || `contact_${Date.now()}`,
+    id: doc.id || doc._id?.toString() || `contact_${Date.now()}`,
     name: doc.name,
     jobTitle: doc.jobTitle,
     linkedinUrl: doc.linkedinUrl,

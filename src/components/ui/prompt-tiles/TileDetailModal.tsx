@@ -29,25 +29,17 @@ export function TileDetailModal({
 }: TileDetailModalProps) {
   const [chatMessage, setChatMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
-  const contentHtml = marked.parse(
-    (() => {
+  const contentRaw = (() => {
       const separator = "[EXCERPT]";
       const parts = tile?.content?.split(separator);
       return parts ? parts[0].trim() : tile?.content || "";
-    })(),
-    {
-      breaks: true,
-    }
-  );
-  const promptHtml = tile?.prompt
-    ? marked.parse(tile.prompt, {
-      breaks: true,
-    })
-    : "";
-  const renderMessage = (value: string) =>
-    marked.parse(value || "", {
-      breaks: true,
-    });
+  })();
+  
+  const contentHtml = marked.parse(contentRaw, { breaks: true }) as string;
+  const promptHtml = tile?.prompt ? (marked.parse(tile.prompt, { breaks: true }) as string) : "";
+  const renderMessage = (value: string) => {
+    return marked.parse(value || "", { breaks: true }) as string;
+  };
 
   console.log("[DEBUG] TileDetailModal rendering for:", tile?.id);
 

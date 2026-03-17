@@ -41,7 +41,7 @@ export function noteDocumentToNote(
   doc: NoteDocument
 ): Note {
   return {
-    id: doc._id?.toString() || doc.id || `note_${Date.now()}`,
+    id: doc.id || doc._id?.toString() || `note_${Date.now()}`,
     title: doc.title,
     content: doc.content,
     createdAt: doc.createdAt instanceof Date 

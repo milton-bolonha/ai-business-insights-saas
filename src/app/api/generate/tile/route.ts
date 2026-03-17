@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import OpenAI from "openai";
-import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
+import { getAuth } from "@/lib/auth/get-auth";
+import { checkLimit, incrementUsage } from "@/lib/saas/usage-service";
 
 // Standard runtime
 export const runtime = "nodejs";
@@ -12,21 +13,12 @@ const tileRequestSchema = z.object({
   model: z.string().min(2).optional(),
   maxTokens: z.number().int().positive().optional(),
   temperature: z.number().min(0).max(2).optional(),
-  // For context, we can accept previous content or other variables
-  // But tile-generation usually constructs the full prompt beforehand
-  // In our case, the client will construct the FULL prompt with injected context
+  workspaceId: z.string().optional(), // for authorization context
 });
 
 const DEFAULT_MAX_OUTPUT_TOKENS = 4000;
 
 export async function POST(request: NextRequest) {
-  // 1. Rate Limit
-  const rate = await checkRateLimitMiddleware(request, "/api/generate/tile");
-  if (!rate.allowed && rate.response) return rate.response;
-
-  // 2. Auth (Session) - skipping for now as Guest mode is priority, but we should secure it
-  // In a real app, we'd verify the session or some token
-
   try {
     const payload = await request.json().catch(() => null);
     const parseResult = tileRequestSchema.safeParse(payload);
@@ -39,6 +31,23 @@ export async function POST(request: NextRequest) {
     }
 
     const { prompt, title, model, maxTokens, temperature } = parseResult.data;
+
+    // Auth: get userId (null for guests)
+    const { userId } = await getAuth();
+
+    // For members: check and enforce credit limits before generating
+    if (userId) {
+      const limitCheck = await checkLimit(userId, "tilesCount");
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: limitCheck.reason || "Credit limit reached. Please upgrade your plan.",
+            code: "credit_limit_exceeded",
+          },
+          { status: 402 }
+        );
+      }
+    }
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
@@ -54,7 +63,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are an expert ${title}. Provide high-quality, actionable content.`, // Simplified system prompt
+          content: `You are an expert ${title}. Provide high-quality, actionable content.`,
         },
         { role: "user", content: prompt },
       ],
@@ -70,6 +79,15 @@ export async function POST(request: NextRequest) {
       prompt_tokens: 0,
       completion_tokens: 0,
     };
+
+    // Deduct credits for member usage AFTER successful generation
+    if (userId) {
+      await incrementUsage(userId, "tilesCount", 1);
+      if (usage.total_tokens > 0) {
+        await incrementUsage(userId, "tokensUsed", usage.total_tokens);
+      }
+      console.log(`[api/generate/tile] ✅ Charged 5 credits (tilesCount) to user ${userId}. Tokens: ${usage.total_tokens}`);
+    }
 
     return NextResponse.json({
       success: true,

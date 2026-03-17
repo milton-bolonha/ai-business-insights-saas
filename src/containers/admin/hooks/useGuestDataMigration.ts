@@ -77,6 +77,30 @@ export function useGuestDataMigration() {
 
         console.log("[Migration] ✅ Migration completed:", stats);
 
+        // Verify workspace is actually in MongoDB before clearing localStorage
+        let serverConfirmed = false;
+        try {
+          const verifyResp = await fetch("/api/workspace/list", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+          });
+          if (verifyResp.ok) {
+            const verifyData = await verifyResp.json();
+            const serverWorkspaces = verifyData?.workspaces ?? [];
+            serverConfirmed = serverWorkspaces.length > 0;
+            console.log(`[Migration] 🔍 Server verification: ${serverWorkspaces.length} workspace(s) in MongoDB`);
+          }
+        } catch (verifyErr) {
+          console.warn("[Migration] ⚠️ Could not verify server state, keeping local data safe", verifyErr);
+        }
+
+        if (!serverConfirmed) {
+          console.warn("[Migration] ⚠️ MongoDB has 0 workspaces after migration - NOT clearing localStorage to prevent data loss");
+          hasMigratedRef.current = false; // allow retry
+          return;
+        }
+
         // Set migration flag
         localStorage.setItem("guest_data_migrated", "true");
 
@@ -122,6 +146,13 @@ export function useGuestDataMigration() {
           description: error instanceof Error ? error.message : "Failed to migrate your data. Please try again later.",
           variant: "destructive",
         });
+
+        // Remova a flag caso o servidor rejeite a payload, para permitir retry automático:
+        try {
+          localStorage.removeItem("guest_data_migrated");
+        } catch {
+          // Ignorar
+        }
       } finally {
         setIsMigrating(false);
       }

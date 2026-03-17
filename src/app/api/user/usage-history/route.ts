@@ -13,10 +13,10 @@ export async function POST(request: NextRequest) {
         console.log(`[usage-history] Request Auth: ${authUserId}, Body: ${body?.userId}, Final UserID: ${userId}`);
 
         if (!userId) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
+            return NextResponse.json({
+                history: [],
+                creditsTotal: 0
+            }, { status: 200 });
         }
 
         // If the user has a stripeCustomerId stored, we should query purchases by it too

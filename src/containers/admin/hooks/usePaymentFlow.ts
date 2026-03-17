@@ -92,6 +92,7 @@ export function usePaymentFlow() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: targetUserId }),
+          credentials: "include",
           cache: "no-store"
         });
         if (!response.ok) return;

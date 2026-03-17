@@ -119,7 +119,11 @@ export const db = {
     try {
       const coll = await getCollection<T>(collection);
       const result = await coll.findOne(filter);
-      console.log(`[MongoDB] 📖 Found document in ${collection}`);
+      if (result) {
+        console.log(`[MongoDB] 📖 Found document in ${collection}`);
+      } else {
+        console.log(`[MongoDB] 🔍 Document not found in ${collection}`);
+      }
       return result as T | null;
     } catch (error) {
       console.error(`[MongoDB] ❌ findOne failed for ${collection}:`, error);
@@ -212,6 +216,21 @@ export const db = {
       return deleted;
     } catch (error) {
       console.error(`[MongoDB] ❌ deleteOne failed for ${collection}:`, error);
+      throw error;
+    }
+  },
+
+  async deleteMany<T extends Document>(
+    collection: string,
+    filter: Filter<T>
+  ): Promise<number> {
+    try {
+      const coll = await getCollection<T>(collection);
+      const result = await coll.deleteMany(filter);
+      console.log(`[MongoDB] 🗑️ Deleted ${result.deletedCount} documents in ${collection}`);
+      return result.deletedCount;
+    } catch (error) {
+      console.error(`[MongoDB] ❌ deleteMany failed for ${collection}:`, error);
       throw error;
     }
   },

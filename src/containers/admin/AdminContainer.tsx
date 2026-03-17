@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useToast } from "@/lib/state/toast-context";
 import { AdminShellAde } from "@/components/admin/ade/AdminShellAde";
@@ -22,6 +22,8 @@ import { TileDetailModal } from "@/components/ui/prompt-tiles/TileDetailModal";
 import { ContactDetailModal } from "@/components/admin/ade/ContactDetailModal";
 import { WorkspaceDetailModal } from "@/components/admin/ade/WorkspaceDetailModal";
 import { BookReaderModal } from "@/components/admin/ade/BookReaderModal";
+import { BookWriterView } from "@/components/love-writers/BookWriterView";
+import { BookLibrarySection } from "@/components/love-writers/BookLibrarySection";
 
 // Zustand stores
 import {
@@ -43,10 +45,14 @@ import {
   useGuestDataMigration,
 } from "@/containers/admin/hooks";
 
+import { useUpdateTile } from "@/lib/state/query/tile.queries";
+
 export function AdminContainer() {
   // SSR-safe hydration
   const hydrated = useIsHydrated();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlWorkspaceId = searchParams?.get("workspaceId") || null;
   const { push } = useToast();
 
   // Zustand stores
@@ -57,6 +63,17 @@ export function AdminContainer() {
   const currentDashboard = useCurrentDashboard();
   const workspaceActions = useWorkspaceActions();
   const content = useContent();
+  const workspaces = useWorkspaceStore((state) => state.workspaces);
+
+  // When URL workspaceId param changes (e.g. after onboarding redirect), switch to that workspace
+  useEffect(() => {
+    if (!hydrated || !urlWorkspaceId) return;
+    const targetWorkspace = useWorkspaceStore.getState().workspaces.find(w => w.id === urlWorkspaceId);
+    if (targetWorkspace && currentWorkspace?.id !== urlWorkspaceId) {
+      console.log(`[AdminContainer] URL workspaceId changed, switching to: ${urlWorkspaceId}`);
+      workspaceActions.switchWorkspace(urlWorkspaceId);
+    }
+  }, [urlWorkspaceId, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // UI Store actions (declaradas abaixo com todas as outras)
 
@@ -65,12 +82,29 @@ export function AdminContainer() {
   const { handleCustomizeBackground, handleSetBackground } =
     useAppearanceManagement(currentDashboard || undefined);
 
+  const updateTileMutation = useUpdateTile();
+
   // Sequential Writer Logic (Client-Side Orchestration)
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Book Writer State
+  const [openBookId, setOpenBookId] = useState<string | null>(null);
+  const [openBookMode, setOpenBookMode] = useState<"create" | "library">("library");
+
+  // Count of tiles with content — used to re-trigger sequential generation after each completion
+  const tilesWithContentCount = currentDashboard?.tiles?.filter(t => t.content && t.content.trim().length > 0).length ?? 0;
 
   useEffect(() => {
 
     const generateNextTile = async () => {
+      console.log("[SequentialWriter] 🔍 Check cycle started", {
+          isGenerating,
+          workspaceId: currentWorkspace?.id,
+          dashboardId: currentDashboard?.id,
+          tilesCount: currentDashboard?.tiles?.length,
+          tilesWithContentCount
+      });
+
       // 1. Validate Context
       if (
         !currentWorkspace ||
@@ -80,76 +114,153 @@ export function AdminContainer() {
         return;
       }
 
-      // 1b. Safety: Ensure workspace exists in store to prevent "Workspace not found" errors
-      const workspaceExists = workspaces.some(w => w.id === currentWorkspace.id);
-      if (!workspaceExists) {
-        console.warn("[SequentialWriter] Workspace not found in store, skipping cycle");
-        return;
+      // 2. Find next empty tile (Draft)
+      // Fallback: If currentDashboard.tiles is suspiciously empty, log it and wait
+      const dashboardTiles = currentDashboard.tiles || [];
+      if (dashboardTiles.length <= 1 && currentWorkspace.promptSettings?.templateId === "template_love_writers") {
+          console.log("[SequentialWriter] ⚠️ Dashboard tiles count is low (1 or 0). Waiting for store/DB sync...", { tilesCount: dashboardTiles.length });
+          return;
       }
 
-      // 2. Find next empty tile (Draft)
-      // Sort by orderIndex to ensure sequence
-      const tiles = [...currentDashboard.tiles].sort((a, b) => a.orderIndex - b.orderIndex);
-      const nextTile = tiles.find(t => t.content === null || t.content === "");
+      const tiles = [...dashboardTiles].sort((a, b) => a.orderIndex - b.orderIndex);
+      const nextTile = tiles.find(t => !t.content || t.content.trim().length === 0);
 
-      if (!nextTile) return; // All done
+      if (!nextTile) {
+          console.log("[SequentialWriter] ✅ All tiles have content. Loop finished or waiting for next arcs.");
+          return;
+      }
+      
+      if (isGenerating) {
+          console.log("[SequentialWriter] ⏳ Already generating, skipping this check.");
+          return;
+      }
 
-      if (isGenerating) return; // Already busy
+      // Capture stable IDs before any async work
+      const capturedWorkspaceId = currentWorkspace.id;
+      const capturedDashboardId = currentDashboard.id;
 
       // 2b. Check Usage Limits
       if (!auth.canPerformAction("createTile")) {
-        console.warn("[SequentialWriter] Limit reached for createTile");
-        // Optionally trigger limit modal if this was a user interaction, 
-        // but for auto-generation we might just stop or show a subtle indicator.
-        // For now, let's stop.
-        return;
+          console.warn("[SequentialWriter] 🚫 Limit reached for createTile");
+          return;
       }
 
+      console.log(`[SequentialWriter] 🚀 Preparing to generate next arc: "${nextTile.title}" (Arc ${nextTile.orderIndex + 1})`);
       setIsGenerating(true);
 
       try {
         console.log(`[SequentialWriter] Starting generation for tile: ${nextTile.title}`);
 
-        // 3. Prepare Prompt with Context (Previous Arc)
+        // 3. Prepare Prompt with Context (All Workspace Variables + Previous Arc)
         const previousTile = tiles.find(t => t.orderIndex === nextTile.orderIndex - 1);
         const previousContent = previousTile?.content || "This is the beginning of the story.";
 
-        // Inject context locally
-        const contextualizedPrompt = nextTile.prompt.replace(
-          "{previous_arc}",
-          previousContent
-        );
+        // Robust variable replacement (handles {user_name}, {partner_name}, {meeting_story}, and {previous_arc})
+        const workspaceVariables = currentWorkspace.promptSettings?.promptVariables || [];
+        const variableMap: Record<string, string> = {
+          "{previous_arc}": previousContent,
+        };
 
-        // 5. Call API
-        const response = await fetch("/api/generate/tile", {
+        workspaceVariables.forEach(v => {
+          const [key, ...valParts] = v.split(":");
+          if (key && valParts.length > 0) {
+            variableMap[`{${key.trim()}}`] = valParts.join(":").trim();
+          }
+        });
+
+        let contextualizedPrompt = nextTile.prompt;
+        Object.entries(variableMap).forEach(([placeholder, value]) => {
+          contextualizedPrompt = contextualizedPrompt.replaceAll(placeholder, value);
+        });
+
+        // 4. Call streaming API (SSE) — shows progress and keeps connection alive
+        const response = await fetch("/api/generate/tile-stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: contextualizedPrompt,
             title: nextTile.title,
-            model: "gpt-4o-mini", // Or from settings
-            maxTokens: 1000, // Adjust as needed
+            model: "gpt-4o-mini",
+            maxTokens: 2000, // Increased for books
           }),
         });
 
-        const data = await response.json();
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `API error ${response.status}`);
+        }
 
-        if (data.success && data.content) {
-          // 6. Save Content
-          await content.updateTile(nextTile.id, {
-            content: data.content,
-            // Remove 'pending' status if we added it
-          });
+        if (!response.body) throw new Error("No response body");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let accumulated = "";
+        let done = false;
+
+        while (!done) {
+          const { value, done: streamDone } = await reader.read();
+          done = streamDone;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n");
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const dataStr = line.replace("data: ", "").trim();
+                if (dataStr === "[DONE]") continue;
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  if (parsed.text) {
+                    accumulated += parsed.text;
+                    // Update tile progressively so user sees content appearing
+                    useWorkspaceStore.getState().updateTileInDashboard(
+                      capturedWorkspaceId,
+                      capturedDashboardId,
+                      nextTile.id,
+                      { content: accumulated },
+                      nextTile
+                    );
+                  }
+                  if (parsed.done) done = true;
+                } catch {}
+              }
+            }
+          }
+        }
+
+        if (accumulated) {
+          // 5. Final store update (ensures complete content in local store)
+          useWorkspaceStore.getState().updateTileInDashboard(
+            capturedWorkspaceId,
+            capturedDashboardId,
+            nextTile.id,
+            { content: accumulated, status: "completed" },
+            nextTile
+          );
+
+          // 6. DB Persistence (Server-side update)
+          if (auth.user?.id) {
+            console.log(`[SequentialWriter] 💾 Persisting tile ${nextTile.id} to database...`);
+            try {
+              await updateTileMutation.mutateAsync({
+                tileId: nextTile.id,
+                workspaceId: capturedWorkspaceId,
+                dashboardId: capturedDashboardId,
+                updates: {
+                  content: accumulated,
+                  status: "completed",
+                  updatedAt: new Date().toISOString()
+                }
+              });
+              console.log("[SequentialWriter] ✅ Tile persisted successfully");
+            } catch (persistError) {
+              console.error("[SequentialWriter] ❌ Failed to persist tile:", persistError);
+            }
+          }
 
           // 7. Consume Usage
           auth.consumeUsage("createTile");
 
           console.log(`[SequentialWriter] Completed tile: ${nextTile.title}`);
-
-          // Trigger next iteration automatically via dependency change? 
-          // Updating the store triggers re-render, which triggers useEffect again.
-        } else {
-          console.error("[SequentialWriter] API Error:", data.error);
         }
 
       } catch (e) {
@@ -159,11 +270,12 @@ export function AdminContainer() {
       }
     };
 
-    // Run the loop
-    const timer = setTimeout(generateNextTile, 1000); // Small delay to allow UI to settle
+    // Run the loop (delay allows store to settle after updates)
+    const timeoutDuration = isGenerating ? 8000 : 1000; 
+    const timer = setTimeout(generateNextTile, timeoutDuration);
     return () => clearTimeout(timer);
 
-  }, [currentWorkspace, currentDashboard, content]); // Dependencies trigger re-run on updates
+  }, [currentWorkspace?.id, currentDashboard?.id, tilesWithContentCount, isGenerating, workspaces.length]); // Added workspaces.length to track new creations
 
   // Auto-migrate guest data when user becomes a member
   useGuestDataMigration();
@@ -256,9 +368,6 @@ export function AdminContainer() {
       }
     }
   }, []);
-
-  // Get data from stores
-  const workspaces = useWorkspaceStore((state) => state.workspaces);
 
   // Debug current state
   console.log("[DEBUG] AdminContainer state:", {
@@ -462,10 +571,12 @@ export function AdminContainer() {
 
 
   // Filter tiles for sequential writer (Love Writers)
-  // Hide empty tiles to prevent clutter until they are generated
+  // Show empty tiles during generation so user sees progress; otherwise only show completed
   const displayedTiles =
     currentWorkspace?.promptSettings?.templateId === "template_love_writers"
-      ? allTiles.filter(t => t.content && t.content.trim().length > 0)
+      ? isGenerating
+        ? allTiles
+        : allTiles.filter(t => t.content && t.content.trim().length > 0)
       : allTiles;
 
   return (
@@ -473,6 +584,10 @@ export function AdminContainer() {
       appearance={appearance}
       // Top Header Props
       onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
+      onDeleteWorkspace={(workspaceId) => {
+        workspaceActions.deleteWorkspace(workspaceId);
+        push({ title: "Workspace deletado", description: "O workspace e todos os dados foram removidos.", variant: "default" });
+      }}
       onSetSpecificColor={handleSetBackground}
     >
       {!hasWorkspace ? (
@@ -502,9 +617,24 @@ export function AdminContainer() {
           {/* AdminHeaderAde moved to Top Header */}
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-h-0 relative z-0">
+          <div className="flex-1 flex flex-col min-h-0">
 
             <main className="flex-1 overflow-y-auto px-6 pb-6 pt-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+
+              {/* Insert Book Library explicitly above the grid for Love Writers users */}
+              {currentWorkspace?.promptSettings?.templateId === "template_love_writers" && (
+                <BookLibrarySection
+                  workspaceId={currentWorkspace.id}
+                  dashboardId={currentDashboard?.id}
+                  dashboardName={currentDashboard?.name}
+                  workspaceName={currentWorkspace.name}
+                  onOpenBook={(id, mode) => {
+                    setOpenBookId(id);
+                    setOpenBookMode(mode);
+                  }}
+                />
+              )}
+
               {/* Main content area */}
               <div className="flex-1 overflow-auto">
                 <TileGridAde
@@ -646,6 +776,17 @@ export function AdminContainer() {
               </div>
             </main>
           </div>
+
+          {/* Render Book Editor Modal right at AdminContainer top layer */}
+          {openBookId && currentWorkspace && (
+            <BookWriterView
+              workspaceId={currentWorkspace.id}
+              bookId={openBookId}
+              initialMode={openBookMode}
+              onClose={() => setOpenBookId(null)}
+            />
+          )}
+
         </>
       )}
 

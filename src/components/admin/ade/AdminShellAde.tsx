@@ -16,8 +16,8 @@ interface AdminShellAdeProps {
   children: ReactNode;
   appearance: AdeAppearanceTokens;
   // New props for Top Header
-  // New props for Top Header
   onOpenWorkspaceDetail?: () => void;
+  onDeleteWorkspace?: (workspaceId: string) => void;
   onSetSpecificColor?: (color: string) => void;
 }
 
@@ -27,6 +27,7 @@ export function AdminShellAde({
   children,
   appearance,
   onOpenWorkspaceDetail,
+  onDeleteWorkspace,
   onSetSpecificColor
 }: AdminShellAdeProps) {
   // Use lazy initialization to avoid self-reference or hydration issues
@@ -57,6 +58,7 @@ export function AdminShellAde({
         appearance={appearance}
         onOpenSaaSLimits={openSaaSLimits}
         onOpenWorkspaceDetail={onOpenWorkspaceDetail}
+        onDeleteWorkspace={onDeleteWorkspace}
         onSetSpecificColor={onSetSpecificColor}
       />
 

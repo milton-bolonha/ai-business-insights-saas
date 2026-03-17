@@ -37,6 +37,11 @@ export function AddWorkspaceModal({
   const [researchTarget, setResearchTarget] = useState("");
   const [researchWebsite, setResearchWebsite] = useState("");
 
+  // Book Specific Fields
+  const [userName, setUserName] = useState("");
+  const [partnerName, setPartnerName] = useState("");
+  const [meetingStory, setMeetingStory] = useState("");
+
   // Book Fields (mapped to business fields for API compatibility)
   // company -> Author Name
   // companyWebsite -> Portfolio/Social (optional)
@@ -90,7 +95,11 @@ export function AddWorkspaceModal({
         model,
         promptAgent: "publisher", // Force agent
         responseLength: "long",
-        promptVariables: [],
+        promptVariables: [
+          `user_name: ${userName.trim()}`,
+          `partner_name: ${partnerName.trim()}`,
+          `meeting_story: ${meetingStory.trim()}`
+        ],
         bulkPrompts: [],
       });
     }
@@ -104,6 +113,9 @@ export function AddWorkspaceModal({
     setSolution("");
     setResearchTarget("");
     setResearchWebsite("");
+    setUserName("");
+    setPartnerName("");
+    setMeetingStory("");
     setTemplateId("template_1");
     setProjectType("business");
     onClose();
@@ -197,6 +209,26 @@ export function AddWorkspaceModal({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Genre & Theme *</label>
                   <input type="text" value={solution} onChange={(e) => setSolution(e.target.value)} placeholder="e.g., Romance, Enemies to Lovers" className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-rose-500" required />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Main Character 1 (User) *</label>
+                    <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="e.g., John" className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-rose-500" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Main Character 2 (Partner) *</label>
+                    <input type="text" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} placeholder="e.g., Jane" className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-rose-500" required />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">How did you meet? (The Spark) *</label>
+                  <textarea 
+                    value={meetingStory} 
+                    onChange={(e) => setMeetingStory(e.target.value)} 
+                    placeholder="Describe the moment you first met..." 
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-rose-500 min-h-[100px]" 
+                    required 
+                  />
                 </div>
               </>
             )}

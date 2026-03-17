@@ -37,7 +37,8 @@ export async function GET() {
     const { userId } = await getAuth();
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // Return empty array for guests (who manage their workspaces in localStorage)
+      return NextResponse.json({ workspaces: [] });
     }
 
     const [workspaceDocs, dashboardDocs, tileDocs, contactDocs, noteDocs] =
@@ -126,6 +127,7 @@ export async function GET() {
         website: snapshot.website,
         salesRepCompany: snapshot.salesRepCompany,
         salesRepWebsite: snapshot.salesRepWebsite,
+        promptSettings: snapshot.promptSettings,
         dashboards,
         createdAt: toIso(doc.createdAt ?? snapshot.generatedAt ?? new Date()),
         updatedAt: toIso(doc.updatedAt ?? snapshot.generatedAt ?? new Date()),

@@ -17,13 +17,25 @@ export function AdminOnboardingHandler() {
 
     useEffect(() => {
         const processOnboarding = async () => {
+            // Atomically read AND clear onboarding_data before any async work
+            // Prevents two simultaneous renders / tabs from processing the same data
             const storedData = sessionStorage.getItem("onboarding_data");
-            if (!storedData || isProcessing) return;
+            if (!storedData) return;
+            sessionStorage.removeItem("onboarding_data"); // consume immediately
 
             setIsProcessing(true);
             try {
                 const { type, data } = JSON.parse(storedData);
                 console.log("[Onboarding] Found data:", type, data);
+
+                // Duplicate guard: if we already have a workspace with this name, skip
+                const existingWorkspaces = useWorkspaceStore.getState().workspaces;
+                const workspaceName = data.coupleName || data.company || "";
+                if (workspaceName && existingWorkspaces.some(w => w.name === workspaceName)) {
+                    console.log(`[Onboarding] Workspace "${workspaceName}" already exists, skipping duplicate creation.`);
+                    setIsProcessing(false);
+                    return;
+                }
 
                 push({
                     title: "Setting up your workspace...",
@@ -36,9 +48,6 @@ export function AdminOnboardingHandler() {
                 } else if (type === "love_writers") {
                     await handleLoveWritersCreation(data);
                 }
-
-                // Clear after success
-                sessionStorage.removeItem("onboarding_data");
 
                 push({
                     title: "Success!",
@@ -195,8 +204,42 @@ export function AdminOnboardingHandler() {
         const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(workspaceSnapshot as any);
         useWorkspaceStore.getState().setCurrentWorkspace(ws);
 
-        // Trigger Sync immediately if possible? 
-        // For now, redirect.
+        // Always save to MongoDB directly (don't rely on authStore being synced in initializeWorkspaceFromHome)
+        try {
+            console.log(`[Onboarding] Saving workspace ${ws.id} to MongoDB...`);
+            const createRes = await fetch("/api/workspace/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: ws.id,
+                    name: ws.name,
+                    website: ws.website || "https://lovewriters.com",
+                    salesRepCompany: ws.salesRepCompany,
+                    salesRepWebsite: ws.salesRepWebsite,
+                    templateId: ws.promptSettings?.templateId,
+                    promptSettings: ws.promptSettings,
+                    tiles: workspaceSnapshot.tiles,
+                }),
+            });
+            if (createRes.ok) {
+                console.log(`[Onboarding] ✅ Workspace ${ws.id} saved to MongoDB`);
+                // Re-sync store with MongoDB now that workspace+dashboard are created
+                await useWorkspaceStore.getState().refreshWorkspaces();
+                // Re-select the current workspace so dashboard is set
+                const freshWorkspace = useWorkspaceStore.getState().workspaces.find(w => w.id === ws.id);
+                if (freshWorkspace) {
+                    useWorkspaceStore.getState().setCurrentWorkspace(freshWorkspace);
+                    console.log(`[Onboarding] ✅ Workspace ${ws.id} set as current with dashboard`);
+                }
+            } else {
+                const errBody = await createRes.text().catch(() => "");
+                console.warn(`[Onboarding] ⚠️ Could not save workspace to MongoDB: ${createRes.status} ${errBody}`);
+            }
+        } catch (createErr) {
+            console.error("[Onboarding] Error saving workspace to MongoDB:", createErr);
+        }
+
+        // Redirect to admin
         router.replace(`/admin?workspaceId=${ws.id}`);
     };
 
