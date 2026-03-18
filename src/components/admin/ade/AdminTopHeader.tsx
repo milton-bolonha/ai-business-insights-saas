@@ -94,7 +94,7 @@ export function AdminTopHeader({
         >
             <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between relative">
 
-                {/* Left: Brand & Info */}
+                {/* Left: Brand */}
                 <div className="flex items-center gap-3">
                     {/* Brand Logo / Name */}
                     <div className="text-xl font-bold tracking-tight text-black flex items-center gap-2">
@@ -103,68 +103,6 @@ export function AdminTopHeader({
                         ) : (
                             <span className="hidden md:block">Business Insights</span>
                         )}
-
-                        {/* Workspace Info Icon */}
-                        {currentWorkspace && (
-                            <button
-                                onClick={onOpenWorkspaceDetail}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                                title="Workspace Details"
-                            >
-                                <Info className="h-4 w-4" />
-                            </button>
-                        )}
-
-                        {/* Color Picker (Droplet) - Moved to Left */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-black/5 text-gray-500 transition-colors"
-                                title="Customize Theme"
-                            >
-                                <Droplet className="h-4 w-4" />
-                            </button>
-                            <AnimatePresence>
-                                {isColorPickerOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setIsColorPickerOpen(false)} />
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
-                                            className="absolute left-0 top-full z-50 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-200 w-48"
-                                        >
-                                            <div className="grid grid-cols-4 gap-2 mb-3">
-                                                {[
-                                                    { color: "#f7f7f7", name: "Beige" },
-                                                    { color: "#e8f4fd", name: "Blue" },
-                                                    { color: "#f0f9e8", name: "Green" },
-                                                    { color: "#fef7ed", name: "Orange" }
-                                                ].map((preset) => (
-                                                    <button
-                                                        key={preset.color}
-                                                        onClick={() => handleColorChange(preset.color)}
-                                                        className="w-8 h-8 rounded-full border border-gray-200 shadow-sm hover:scale-110 transition-transform"
-                                                        style={{ backgroundColor: preset.color }}
-                                                        title={preset.name}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="relative">
-                                                <label className="block text-xs font-medium text-black mb-1 w-fit">Custom Color</label>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="color"
-                                                        className="h-8 w-full cursor-pointer rounded border border-gray-200 p-0.5"
-                                                        onChange={(e) => handleColorChange(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    </>
-                                )}
-                            </AnimatePresence>
-                        </div>
                     </div>
                 </div>
 
@@ -229,7 +167,7 @@ export function AdminTopHeader({
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (window.confirm(`Deletar workspace "${ws.name}" e todos os dashboards, cards, contatos e notas?`)) {
+                                                                if (window.confirm(`Delete workspace "${ws.name}" and all dashboards, cards, contacts, and notes?`)) {
                                                                     onDeleteWorkspace(ws.id);
                                                                     if (currentWorkspace?.id === ws.id) {
                                                                         setIsWorkspaceOpen(false);
@@ -237,7 +175,7 @@ export function AdminTopHeader({
                                                                 }
                                                             }}
                                                             className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 transition-all"
-                                                            title="Deletar workspace"
+                                                            title="Delete workspace"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
                                                         </button>
@@ -269,15 +207,83 @@ export function AdminTopHeader({
 
 
                 {/* Right: Actions & User */}
-                <div className="flex items-center gap-3 z-20">
+                <div className="flex items-center gap-2 z-20">
+                    {/* Workspace Info Icon */}
+                    {currentWorkspace && (
+                        <button
+                            onClick={onOpenWorkspaceDetail}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-black/5 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                            title="Workspace Details"
+                        >
+                            <Info className="h-5 w-5 cursor-pointer" />
+                        </button>
+                    )}
+
+                    <div className="h-6 w-px bg-gray-200/20 mx-1" />
+
+                    {/* Quick color presets */}
+                    <div className="flex items-center space-x-1">
+                        {[
+                            { color: "#f7f7f7", name: "Beige" },
+                            { color: "#e8f4fd", name: "Blue" },
+                            { color: "#f0f9e8", name: "Green" },
+                            { color: "#fef7ed", name: "Orange" }
+                        ].map((preset) => (
+                            <button
+                                key={preset.color}
+                                onClick={() => handleColorChange(preset.color)}
+                                className="h-6 w-6 rounded-full border-2 border-white bg-opacity-100 shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                                style={{ backgroundColor: preset.color }}
+                                title={preset.name}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Color Picker (Droplet) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-black/5 text-gray-500 transition-colors cursor-pointer"
+                            title="More background colors"
+                        >
+                            <Droplet className="h-4 w-4 cursor-pointer" />
+                        </button>
+                        <AnimatePresence>
+                            {isColorPickerOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setIsColorPickerOpen(false)} />
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        className="absolute right-0 top-full z-50 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-200 w-48"
+                                    >
+                                        <div className="relative">
+                                            <label className="block text-xs font-medium text-black mb-1 w-fit">Custom Color</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="color"
+                                                    className="h-8 w-full cursor-pointer rounded border border-gray-200 p-0.5"
+                                                    onChange={(e) => handleColorChange(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    <div className="h-6 w-px bg-gray-200/20 mx-1" />
+
                     {/* SaaS Limit Counter (Credits) */}
                     <button
                         onClick={onOpenSaaSLimits}
-                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-white/5 transition-colors border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-700/30"
-                        title="Ver Saldo de Créditos"
+                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-white/5 transition-colors border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-700/30 cursor-pointer"
+                        title="View Credit Balance"
                     >
-                        <Coins className="h-4 w-4 text-amber-500" />
-                        <span className="font-bold text-amber-700 dark:text-amber-400">
+                        <Coins className="h-4 w-4 text-amber-500 cursor-pointer" />
+                        <span className="font-bold text-amber-700 dark:text-amber-400 cursor-pointer">
                             {Math.max(0, ((usage as any)?.creditsTotal || (limits as any)?.creditsTotal || 0) - ((usage as any)?.creditsUsed || 0))}
                         </span>
                     </button>
@@ -285,7 +291,7 @@ export function AdminTopHeader({
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />
 
                     {/* Clerk User Button */}
-                    <div className="ml-1">
+                    <div className="ml-1 cursor-pointer">
                         <UserButton />
                     </div>
                 </div>

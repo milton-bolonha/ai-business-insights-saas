@@ -6,12 +6,15 @@ import { resolveWorkspaceName } from "@/lib/workspace-resolver";
 import { resolveModel } from "@/lib/ai/settings";
 import { generateTileContent } from "@/lib/ai/tile-generation";
 import type { Tile } from "@/lib/types";
+import type { WorkspaceWithDashboards } from "@/lib/types/dashboard";
 import { DEFAULT_MAX_OUTPUT_TOKENS } from "@/lib/ai/settings";
 import { getAuth } from "@/lib/auth/get-auth";
 import { authorizeResourceAccess } from "@/lib/auth/authorize";
 import { invalidateResourceCache } from "@/lib/cache/invalidation";
 import { checkLimit, incrementUsage } from "@/lib/saas/usage-service";
 import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
+import { db } from "@/lib/db/mongodb";
+import { loadWorkspacesWithDashboards } from "@/lib/storage/dashboards-store";
 
 // Runtime: Node.js (required for file system operations)
 export const runtime = "nodejs";
@@ -119,6 +122,22 @@ export async function POST(
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    let existingHistory: any[] = [];
+    if (userId) {
+        const existingTile = await db.findOne("tiles", { id: tileId, userId, workspaceId, dashboardId }) as any;
+        if (existingTile?.history) {
+            existingHistory = existingTile.history;
+        }
+    } else {
+        const workspaces = loadWorkspacesWithDashboards();
+        const workspace = workspaces.find((w: WorkspaceWithDashboards) => w.id === workspaceId);
+        const dashboard = workspace?.dashboards.find((d: any) => d.id === dashboardId);
+        const tile = dashboard?.tiles.find((t: any) => t.id === tileId);
+        if (tile?.history) {
+            existingHistory = tile.history;
+        }
+    }
+
     const generationResult = await generateTileContent({
       client: openai,
       prompt: message,
@@ -127,6 +146,7 @@ export async function POST(
       model: resolveModel("gpt-4o-mini"),
       orderIndex: 0,
       maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+      history: existingHistory,
     });
 
     const chatTile: Tile = {

@@ -389,7 +389,8 @@ export function useUpdateTile() {
         }),
       });
       if (!response.ok) {
-        throw new Error("Failed to update tile");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || "Failed to update tile");
       }
       return response.json();
     },

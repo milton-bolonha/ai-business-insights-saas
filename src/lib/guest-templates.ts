@@ -264,8 +264,18 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
       {
         id: "arc_destiny",
         title: "I. The Before (Destiny)",
-        prompt:
-          "Write a complete emotional arc about the lives of {user_name} and {partner_name} before they met. This is your opening scene—make it count.\n\nStructure the arc with:\n- A hook: Begin with a vivid, immediate moment that captures attention—not exposition, but a snapshot in motion (a specific morning, a recurring ritual, a breaking point, a small victory).\n- Character through values: Reveal each person individually through what they care about, what they prioritize, what they're chasing or avoiding. Show this through choices and routines, not description.\n- Their emotional gap: What was missing, consciously or unconsciously. Demonstrate this through contrast—what they do versus what they need, what they have versus what they're searching for.\n- A symbolic element: Introduce a recurring object, place, song, or ritual for each person that will gain new meaning once they meet. This is their emotional MacGuffin.\n- Invisible momentum: Create a sense that change is coming without naming it. Patterns breaking, routines shifting, small disruptions in their separate worlds.\n- Seamless transition: End with a beat that naturally propels us toward their meeting: '{meeting_story}'. The closing image should make the meeting feel inevitable.\n\nTone and execution:\n- Establish the emotional register for the entire story in these opening moments.\n- Avoid summarizing or explaining destiny—imply it through pattern, repetition, and symbolic detail.\n- Build a coherent dramatic progression: setup, mounting tension, transition.\n- Each person's 'before' should feel complete yet incomplete—whole lives that are somehow waiting.\n\nThis is your most valuable real estate. Hook the reader immediately and lay the foundation for everything that follows.",
+        prompt: `Write the opening of a romance story about {user_name} and {partner_name}.
+### OUTPUT CONTRACT:
+1. Use ONLY plain text.
+2. Use EXACTLY \\n\\n for paragraphs.
+3. Dialogue MUST start with "— " (em-dash followed by a space).
+4. NEVER use quotation marks.
+5. NO HTML.
+6. Write between 250 and 350 words.
+
+CONTENT:
+Focus on their life just BEFORE they met. Show {user_name}'s routine and {partner_name}'s routine separately, or a moment of synchronicity just before the encounter.
+Seamless transition: End the arc just before the meeting happens. DO NOT describe the meeting.`,
         category: "arc",
         orderIndex: 0,
         agentId: "publisher",
@@ -274,8 +284,18 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
       {
         id: "arc_meeting",
         title: "II. The Spark (Meeting)",
-        prompt:
-          "Using '{meeting_story}', write a cinematic emotional arc of how {user_name} and {partner_name} met. This is your First Plot Point—the threshold of no return.\n\nInternally determine the Meet-Cute dynamic:\n1) Pull/Pull (mutual instant attraction)\n2) Push/Push (mutual resistance/friction)\n3) Push/Pull (one pursues, one resists)\n4) Neutral/Nervous (uncertain, tentative)\n\nStructure the arc with:\n- Rich sensory setting and atmosphere (sounds, light, temperature, spatial details).\n- Emotional tension expressed through physical action, body language, and what remains unspoken.\n- At least one exchange of dialogue (2-4 lines each) that reveals character through distinct voice. Each character should speak with syntax, rhythm, and word choices only they would use. The dialogue must serve multiple purposes: characterization, revealing what they want, and creating subtext—what they say versus what they mean.\n- Conflicting perspectives: Even in attraction, they should see the world differently. Let this contrast create texture and depth in the conversation.\n- A precise turning moment—a look, a gesture, a pause, or a line of dialogue—where something irreversible shifts. After this moment, they cannot return to who they were. Their perspective has fundamentally changed.\n- An ending that shows they are now fully committed to discovering what this is, even if unconsciously.\n\nMaintain continuity with the tone and emotional context from the previous arc: {previous_arc}.\n\nDialogue rules:\n- Each character must have a distinct voice. If names were removed, we should know who's speaking.\n- Dialogue should sound natural, like compressed real conversation—a highlight reel, not transcription.\n- Focus on subtext: what characters avoid saying is as important as what they say.\n- Rhythm matters: are they talking over each other? Long pauses? Quick wit? Let the rhythm reveal the dynamic.\n\nThis is the culmination of Act 1—the climax of everything set up in 'The Before.' From this point forward, they are in motion toward each other. This is a full narrative arc with dramatic progression, not an analysis or summary.",
+        prompt: `Continue the story of {user_name} and {partner_name}.
+### OUTPUT CONTRACT:
+1. Use ONLY plain text.
+2. Use EXACTLY \\n\\n for paragraphs.
+3. Dialogue MUST start with "— " (em-dash followed by a space).
+4. NEVER use quotation marks.
+5. NO HTML.
+6. Write between 250 and 350 words.
+
+### CRITICAL CONTINUITY:
+DO NOT summarize {previous_arc}. Start immediately at the MOMENT of the encounter. Focus entirely on the meeting, the 'spark', and the immediate aftermath of that first conversation.
+`,
         category: "arc",
         orderIndex: 1,
         agentId: "publisher",
@@ -283,8 +303,19 @@ export const GUEST_DASHBOARD_TEMPLATES: Record<string, GuestTemplate> = {
       }, {
         id: "arc_realization",
         title: "III. The Realization",
-        prompt:
-          "Write a complete emotional arc describing the specific moment {user_name} realized {partner_name} was 'the one.' This is your First Pinch Point—emphasizing what is truly at stake.\n\nThe arc must:\n- Begin in normalcy, routine, or emotional uncertainty as they navigate the early stages of their connection.\n- Present a concrete, observable triggering moment: a specific gesture, phrase, silence, unexpected crisis, or shared moment of joy that reveals what they stand to lose if this doesn't work. This can be a line of dialogue that lands differently than intended, or a meaningful silence that speaks volumes.\n- Contrast the depth of this realization with the initial spark of their first meeting: '{meeting_story}'. What has deepened? What's now at risk?\n- Show emotional maturation compared to the previous arc: {previous_arc}. They're no longer just reacting—they're beginning to understand the true stakes.\n- End with quiet internal certainty, even if unspoken. This realization changes how they move forward.\n\nIf using dialogue:\n- Keep it character-specific and true to their established voices.\n- The words matter less than what they represent—the beat, the shift.\n- Subtext is key: the realization may come from what isn't said, or from hearing familiar words in a new context.\n\nAvoid theatrical epiphanies or abstract declarations. Ground the realization in precise sensory detail and visible emotional shift. This moment should subtly set up the coming challenge they'll face together. The reader should feel the weight of what's now possible—and what could be lost.",
+        prompt: `Continue the story of {user_name} and {partner_name}.
+### OUTPUT CONTRACT:
+1. Use ONLY plain text.
+2. Use EXACTLY \\n\\n for paragraphs.
+3. Dialogue MUST start with "— " (em-dash followed by a space).
+4. NEVER use quotation marks.
+5. NO HTML.
+6. Write between 250 and 350 words.
+
+### STERN RULE:
+DO NOT REPEAT any part of the meeting story described in: {previous_arc}.
+The meeting is OVER. This arc starts AFTER they have parted ways or a day later. Focus on the 'Realization' — {user_name} thinking about {partner_name} and the feeling that something has changed forever.
+`,
         category: "arc",
         orderIndex: 2,
         agentId: "publisher",

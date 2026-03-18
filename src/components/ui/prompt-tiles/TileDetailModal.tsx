@@ -16,6 +16,7 @@ interface TileDetailModalProps {
   onSubmit?: (payload: TileChatPayload) => void;
   isSubmitting?: boolean;
   isGuest?: boolean;
+  canChat?: boolean;
   allowAttachments?: boolean;
 }
 
@@ -25,6 +26,7 @@ export function TileDetailModal({
   onSubmit,
   isSubmitting = false,
   isGuest = false,
+  canChat = true,
   allowAttachments = true,
 }: TileDetailModalProps) {
   const [chatMessage, setChatMessage] = useState("");
@@ -279,12 +281,12 @@ export function TileDetailModal({
                   onChange={(e) => setChatMessage(e.target.value)}
                   placeholder="Ask a follow-up question..."
                   className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2.5 px-1 min-h-[44px] max-h-32"
-                  disabled={isSubmitting || isGuest}
+                  disabled={isSubmitting || !canChat}
                 />
 
                 <button
                   type="submit"
-                  disabled={!chatMessage.trim() || isSubmitting || isGuest}
+                  disabled={!chatMessage.trim() || isSubmitting || !canChat}
                   className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all hover:shadow-md shrink-0"
                 >
                   <MessageCircle
@@ -293,7 +295,7 @@ export function TileDetailModal({
                 </button>
               </div>
 
-              {isGuest && (
+              {!canChat && isGuest && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-2xl border border-gray-100">
                   <p className="text-xs font-medium text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
                     Upgrade to Pro to chat

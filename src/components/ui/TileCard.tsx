@@ -74,10 +74,10 @@ export function TileCard({
           <>
             <button
               onClick={handleCopy}
-              className="flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+              className="flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer"
               title="Copy content"
             >
-              <Copy className="h-3.5 w-3.5" />
+              <Copy className="h-3.5 w-3.5 cursor-pointer" />
             </button>
 
             {onDelete && (
@@ -86,10 +86,10 @@ export function TileCard({
                   e.stopPropagation();
                   setIsDeleting(true);
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-red-50 text-gray-400 hover:text-red-500"
+                className="flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-red-50 text-gray-400 hover:text-red-500 cursor-pointer"
                 title="Delete"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5 cursor-pointer" />
               </button>
             )}
           </>

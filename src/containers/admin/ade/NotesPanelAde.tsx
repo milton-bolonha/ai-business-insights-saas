@@ -145,14 +145,14 @@ export function NotesPanelAde({
                   onClick={() => setIsAddingNote(false)}
                   className="rounded px-2 py-1 hover:bg-white/10"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   onClick={handleSaveNewNote}
                   disabled={!newNoteTitle.trim() || !newNoteContent.trim()}
                   className="rounded bg-white/20 px-2 py-1 font-semibold text-white hover:bg-white/30 disabled:opacity-50"
                 >
-                  Salvar
+                  Save
                 </button>
               </div>
             </div>
@@ -197,7 +197,7 @@ export function NotesPanelAde({
             >
               <div className="flex items-center justify-between bg-[#E87C2A] px-4 py-3 text-white">
                 <h4 className="text-sm font-semibold truncate">
-                  {isEditing ? "Editando note" : note.title}
+                  {isEditing ? "Editing note" : note.title}
                 </h4>
                 <div className="flex space-x-2 text-xs">
                   {!isEditing ? (
@@ -205,7 +205,7 @@ export function NotesPanelAde({
                       onClick={() => handleEditNote(note)}
                       className="rounded px-2 py-1 hover:bg-white/10"
                     >
-                      Editar
+                      Edit
                     </button>
                   ) : (
                     <>
@@ -213,7 +213,7 @@ export function NotesPanelAde({
                         onClick={() => setEditingNoteId(null)}
                         className="rounded px-2 py-1 hover:bg-white/10"
                       >
-                        Cancelar
+                        Cancel
                       </button>
                       <button
                         onClick={handleSaveEdit}
@@ -222,7 +222,7 @@ export function NotesPanelAde({
                         }
                         className="rounded bg-white/20 px-2 py-1 font-semibold text-white hover:bg-white/30 disabled:opacity-50"
                       >
-                        Salvar
+                        Save
                       </button>
                     </>
                   )}

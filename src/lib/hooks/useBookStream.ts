@@ -18,6 +18,7 @@ export function useBookStream({ onSuccess, onError }: UseBookStreamProps = {}) {
             bookContext: string;
             workspaceId: string;
             instruction?: string;
+            language?: string;
         }, onChunk: (text: string) => void) => {
             setIsGenerating(true);
             setError(null);

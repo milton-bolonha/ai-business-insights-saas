@@ -102,13 +102,13 @@ export function ContactsPanelAde({
                   {contact.outreach.emailPitch && (
                     <div className="flex items-center space-x-2 text-gray-700">
                       <MessageCircle className="h-3 w-3" />
-                      <span>Email pitch disponível</span>
+                      <span>Email pitch available</span>
                     </div>
                   )}
                   {contact.outreach.coldCallScript && (
                     <div className="flex items-center space-x-2 text-gray-700">
                       <MessageCircle className="h-3 w-3" />
-                      <span>Call script disponível</span>
+                      <span>Call script available</span>
                     </div>
                   )}
                 </div>
@@ -117,7 +117,7 @@ export function ContactsPanelAde({
               {contact.chatHistory && contact.chatHistory.length > 0 && (
                 <div className="flex items-center space-x-1 text-xs text-gray-500">
                   <MessageCircle className="h-3 w-3" />
-                  <span>{contact.chatHistory.length} mensagens</span>
+                  <span>{contact.chatHistory.length} messages</span>
                 </div>
               )}
             </button>

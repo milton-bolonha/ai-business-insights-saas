@@ -18,6 +18,7 @@ export interface TileGenerationOptions {
   model: string;
   orderIndex: number;
   maxTokens?: number;
+  history?: TileMessage[];
 }
 
 export interface TileGenerationResult {
@@ -49,21 +50,31 @@ function coerceToText(value: unknown): string {
   return "";
 }
 
-function buildResponsesInput(prompt: string) {
+function buildResponsesInput(prompt: string, history: TileMessage[] = []) {
   const responseLanguage = process.env.NEXT_PUBLIC_AI_RESPONSE_LANGUAGE || "English";
   const languageInstruction = `\n\nIMPORTANT: Respond ONLY in ${responseLanguage}. Do not use any other language.`;
   
-  return [
-    {
-      role: "user" as const,
-      content: [
-        {
-          type: "input_text" as const,
-          text: prompt + languageInstruction,
-        },
-      ],
-    },
-  ];
+  const messages = history.map(msg => ({
+    role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+    content: [
+      {
+        type: "input_text" as const,
+        text: msg.content,
+      },
+    ],
+  }));
+
+  messages.push({
+    role: "user" as const,
+    content: [
+      {
+        type: "input_text" as const,
+        text: prompt + languageInstruction,
+      },
+    ],
+  });
+
+  return messages;
 }
 
 function createHistoryEntry(
@@ -120,7 +131,7 @@ export async function generateTileContent(
 
   const requestPayload: Record<string, unknown> = {
     model: normalizedModel,
-    input: buildResponsesInput(prompt),
+    input: buildResponsesInput(prompt, options.history || []),
     max_output_tokens: maxTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
     metadata: {
       templateId,
@@ -138,6 +149,7 @@ export async function generateTileContent(
   let lastError: Error | null = null;
   const createdAt = new Date().toISOString();
   const history: TileMessage[] = [
+    ...(options.history || []),
     createHistoryEntry("user", prompt, createdAt),
   ];
 
