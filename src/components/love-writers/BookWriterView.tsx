@@ -3,7 +3,7 @@
 import { useBooks } from "@/lib/state/query/book.queries";
 import { BookPDFDocument } from "./BookPDFDocument";
 import { BookCoverDocument } from "./BookCoverDocument";
-import { PDFViewer, PDFDownloadLink, pdf } from "@react-pdf/renderer";
+import { PDFViewer, PDFDownloadLink, pdf, Document, Page } from "@react-pdf/renderer";
 import { Loader2, Download, X, Eye, EyeOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -61,11 +61,13 @@ export function BookWriterView({
     let cancelled = false;
 
     const buildDocument = () => {
-      if (viewMode === "cover" && selectedBook?.coverImageUrl) {
+      if (!selectedBook) return <Document><Page></Page></Document>;
+
+      if (viewMode === "cover") {
         return (
           <BookCoverDocument
             title={selectedBook.title || "Book"}
-            author="Autores Apaixonados"
+            author={selectedBook.publisher || "Autores Apaixonados"}
             description={
               selectedBook.inspiration || "Uma história de amor apaixonante"
             }
@@ -79,13 +81,13 @@ export function BookWriterView({
         );
       }
 
-      return (
-        <BookPDFDocument
-          title={selectedBook?.title || "Book"}
-          contentHTML={initialContentProcessed}
-          names={contactNames}
-        />
-      );
+        return (
+          <BookPDFDocument
+            title={selectedBook?.title || "Book"}
+            contentHTML={initialContentProcessed}
+            names={contactNames}
+          />
+        );
     };
 
     const createPreview = async () => {
@@ -173,25 +175,27 @@ export function BookWriterView({
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() =>
-              setViewMode(viewMode === "content" ? "cover" : "content")
-            }
-            className="flex items-center border-2 border-gray-100 bg-white px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-all text-sm font-bold cursor-pointer hover:shadow-sm"
-          >
-            {viewMode === "content" ? (
-              <Eye className="w-4 h-4 mr-2" />
-            ) : (
-              <EyeOff className="w-4 h-4 mr-2" />
-            )}
-            {viewMode === "content" ? "Ver Capa" : "Ver Conteúdo"}
-          </button>
+          {selectedBook.generateCover && (
+            <button
+              onClick={() =>
+                setViewMode(viewMode === "content" ? "cover" : "content")
+              }
+              className="flex items-center border-2 border-gray-100 bg-white px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-all text-sm font-bold cursor-pointer hover:shadow-sm"
+            >
+              {viewMode === "content" ? (
+                <Eye className="w-4 h-4 mr-2" />
+              ) : (
+                <EyeOff className="w-4 h-4 mr-2" />
+              )}
+              {viewMode === "content" ? "Ver Capa" : "Ver Conteúdo"}
+            </button>
+          )}
           <PDFDownloadLink
             document={
-              viewMode === "cover" && selectedBook?.coverImageUrl ? (
+              viewMode === "cover" ? (
                 <BookCoverDocument
                   title={selectedBook.title || "Book"}
-                  author="Autores Apaixonados"
+                  author={selectedBook.publisher || "Autores Apaixonados"}
                   description={
                     selectedBook.inspiration ||
                     "Uma história de amor apaixonante"

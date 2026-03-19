@@ -67,7 +67,7 @@ export function useCreateBook() {
                 throw new Error(msg);
             }
 
-            return res.json() as Promise<{ bookId: string; success: boolean }>;
+            return res.json() as Promise<{ bookId: string; success: boolean; book: BookWithId }>;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["books"] });

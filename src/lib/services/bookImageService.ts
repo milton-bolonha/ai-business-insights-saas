@@ -206,54 +206,43 @@ CRITICAL: The cover MUST show an intimate, emotionally charged moment between th
     ? `\nSETTING & CONTEXT: ${context.setting}${context.timeOfDay ? ` at ${context.timeOfDay}` : ""}`
     : "";
 
-  return `Create a professional, emotionally compelling book cover for a ROMANCE NOVEL.
+  console.log("[generateCoverPrompt] Generating with version V2.6-NARRATIVE-DRIVEN. Title:", context.bookTitle);
+  console.log("[generateCoverPrompt] Synopsis length:", context.bookDescription.length);
 
-CRITICAL LAYOUT:
-- Full cover dimensions: 12.62" × 9.25" with three sections:
-  * RIGHT (56%): FRONT COVER - Main visual area (PRIMARY FOCUS)
-  * LEFT (36%): BACK COVER - Background/continuation
-  * CENTER (8%): SPINE - Text overlay area
-- Design primarily for the RIGHT/FRONT section
-- Characters must be PROMINENTLY visible and emotionally engaging
-- Artwork extends to all edges (full bleed)
-- Leave room at bottom-right for title/author overlay
+  const coupleInfo = context.mainCouple ? `
+### CHARACTERS ###
+- ${context.mainCouple.character1.name}: ${context.mainCouple.character1.physicalDescription || "vivid romantic protagonist"}, ${context.mainCouple.character1.personality || "emotional and deep"}
+- ${context.mainCouple.character2.name}: ${context.mainCouple.character2.physicalDescription || "stunning romantic counterpart"}, ${context.mainCouple.character2.personality || "intriguing and passionate"}
+` : "";
 
-BOOK INFORMATION:
-Title: "${context.bookTitle}"
-Author: "${context.authorName}"
-Genre: CONTEMPORARY ROMANCE
-Synopsis: ${context.bookDescription}
-Theme: ${context.bookTheme}
-Tone: ${context.tone}${settingSection}${moodSection}
+  return `[PROMPT_V2.6-NARRATIVE-DRIVEN] Create a professional, high-resolution FULL-WRAP book cover background for a ROMANCE NOVEL.
 
-ALL CHARACTERS IN THIS STORY:
-${characterDescriptions}${coupleContext}
+### STORY DETAILS & INSPIRATION ###
+- BOOK TITLE: "${context.bookTitle}"
+- SYNOPSIS: "${context.bookDescription}"
+${coupleInfo}
 
-VISUAL AESTHETIC:
+CRITICAL INSTRUCTIONS:
+- ONE CONTINUOUS SEAMLESS IMAGE. This must be a single, flowing artistic scene that covers the entire 1536x1024 area without any artificial lines, divisions, or solid-colored blocks. 
+- NO SPINE BLOCK. Do NOT render a vertical strip or any different color in the middle. The art must flow naturally from the back, across the spine area, to the front.
+- THIS IS NOT A MOCKUP. Do NOT render a physical book, 3D objects, or angled perspectives. 
+- ABSOLUTELY NO TEXT. NO letters, no numbers, no words, no signs, no typography, no watermarks. PURE ARTI STRY ONLY.
+
+CANVAS COMPOSITION (Mandatory):
+The image is a single 2D digital painting. While it will be wrapped, the AI must treat it as one unified canvas:
+- RIGHT SIDE: Main focal point (romantic couple or atmospheric scenery) inspired by the story context. Leave natural breathing room (negative space) at the bottom for typography.
+- CENTER & LEFT: A beautiful, organic continuation of the right-side scene. Atmospheric, dreamy, and less busy than the main focal point.
+
+STYLE:
 ${styleDescription}
 
-WHAT THIS COVER IMAGE MUST SHOW:
-✓ An emotionally charged, intimate moment between the main couple
-✓ Both characters' physical features and personalities clearly visible
-✓ Professional, polished visual composition
-✓ Romantic color palette and atmospheric lighting
-✓ Print-ready quality (300 DPI equivalent)
-✓ Strong visual focal point with magnetic appeal
-✓ Sensual tension and emotional depth appropriate to the story
-✓ Marketable, compelling appearance
-✓ Consistency with the book's theme and emotional tone
-✓ Visual representation of the couple's unique connection
+QUALITY & EXECUTION:
+✓ FULL CANVAS FILL: The background imagery must touch all four edges. No white borders, no black bars.
+✓ NO LOGOS/BARCODES: Do not include barcode placeholders or publisher logos.
+✓ SEAMLESS FLOW: The transition between Back, Spine, and Front areas must be purely artistic and invisible.
+✓ Sharp, best-selling-novel quality digital illustration.
 
-WHAT THIS IMAGE MUST NOT CONTAIN:
-✗ ANY text, words, titles, or watermarks
-✗ Copyright-infringing character likenesses or copyrighted images
-✗ Pricing information, promotional text, or sale offers
-✗ Generic stock photo appearance
-✗ Unclear, blurred, pixelated, or cut-off character faces or bodies
-✗ Content contradicting the book's tone, theme, or synopsis
-✗ Anything violating content policies
-
-Generate a stunning, emotionally resonant book cover that captures the heart and passion of this romance story and will immediately captivate potential readers.`;
+Generate a stunning, seamless, TEXT-FREE book cover background that provides a perfect continuous artistic canvas based on the story theme.`;
 }
 
 /**
@@ -445,15 +434,32 @@ export function buildImagePromptContext(options: {
   bookDescription: string;
   authorName: string;
   imageStyle: ImageStyle;
+  originalStory?: string;
   contacts?: Array<{ name: string; notes?: string }>;
   notes?: Array<{ title?: string; content?: string }>;
-  tiles?: Array<{ name?: string; description?: string }>;
+  tiles?: Array<{ name?: string; description?: string; content?: string; orderIndex?: number }>;
 }): ImagePromptContext {
+  let finalDescription = options.originalStory 
+    ? `${options.originalStory}\n\n${options.bookDescription}`
+    : options.bookDescription;
+
+  // EXTRACTION: If we have tiles, try to find the one with the core story (usually longest or starting with <h2>)
+  if (options.tiles && options.tiles.length > 0) {
+    const sortedTiles = [...options.tiles].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    const firstLongTile = sortedTiles.find(t => (t.content || "").length > 200);
+    
+    if (firstLongTile && firstLongTile.content) {
+      // Clean HTML tags and limit to a reasonable amount (e.g. first 1500 chars)
+      const cleanContent = firstLongTile.content.replace(/<[^>]*>?/gm, '').trim();
+      if (cleanContent.length > 100) {
+        finalDescription = `NARRATIVE SUMMARY: ${cleanContent.substring(0, 1500)}...\n\nCONTEXT: ${finalDescription}`;
+      }
+    }
+  }
   // Extract character information from contacts
   const characters: CharacterDetail[] = (options.contacts || [])
     .slice(0, 5) // Limit to first 5 for clarity
     .map((contact) => {
-      // Try to parse character details from contact notes
       const notes = contact.notes || "";
       const ageMatch = notes.match(/age[:=]?\s*(\d+)/i);
       const personalityMatch = notes.match(/personality[:=]?\s*([^,\n]+)/i);
@@ -469,13 +475,21 @@ export function buildImagePromptContext(options: {
       };
     });
 
-  // Try to identify main couple (first two unique characters)
+  // If characters is empty but we have an original story, try a basic fallback for names
+  if (characters.length === 0 && options.originalStory) {
+    const names = options.bookTitle.split("&").map(n => n.trim());
+    if (names.length >= 2) {
+      characters.push({ name: names[0] }, { name: names[1] });
+    }
+  }
+
+  // Try to identify main couple (first two characters)
   let mainCouple: ImagePromptContext["mainCouple"] = undefined;
-  if (characters.length >= 2) {
+  if (characters.length >= 1) {
     mainCouple = {
       character1: characters[0],
-      character2: characters[1],
-      relationship: "romantic connection",
+      character2: characters[1] || { name: "love interest", physicalDescription: "stunning romantic counterpart" },
+      relationship: "deep romantic connection",
     };
   }
 
@@ -504,7 +518,7 @@ export function buildImagePromptContext(options: {
 
   return {
     bookTitle: options.bookTitle,
-    bookDescription: options.bookDescription,
+    bookDescription: finalDescription,
     authorName: options.authorName,
     imageStyle: options.imageStyle,
     characters,

@@ -28,6 +28,29 @@ import { useRouter } from "next/navigation";
 import { useBookStream } from "@/lib/hooks/useBookStream";
 import { useWorkspaceStore } from "@/lib/stores/workspaceStore";
 import { toast } from "sonner";
+import { 
+  generateImageSchedule, 
+  buildImagePromptContext,
+  calculateImageCosts
+} from "@/lib/services/bookImageService";
+
+// Helper to call the image generation API
+async function generateImage(payload: { prompt: string; workspaceId: string; imageStyle: string; size?: string }) {
+  console.log("[generateImage] Requesting image with prompt:", payload.prompt);
+  const res = await fetch("/api/generate/book-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to generate image");
+  }
+
+  const data = await res.json();
+  return data.url as string;
+}
 
 interface BookLibrarySectionProps {
   workspaceId: string;
@@ -65,15 +88,18 @@ export function BookLibrarySection({
         totalArcs: number;
         paused: boolean;
         stopped: boolean;
+        status?: string; 
         synopsis?: string;
-        pauseFn?: () => void;
-        stopFn?: () => void;
+        pauseFn: () => void;
+        stopFn: () => void;
+        elapsedTime: number;
       }
     >
   >({});
 
   // Unified dashboard context for generation
   const currentDashboard = useWorkspaceStore((state) => state.currentDashboard);
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const tiles = currentDashboard?.tiles || [];
   const contacts = currentDashboard?.contacts || [];
   const notes = currentDashboard?.notes || [];
@@ -87,6 +113,24 @@ export function BookLibrarySection({
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Timer Effect for active generation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setGeneratingBooks((prev) => {
+        const next = { ...prev };
+        let hasUpdates = false;
+        for (const id in next) {
+          if (!next[id].paused && !next[id].stopped) {
+            next[id] = { ...next[id], elapsedTime: (next[id].elapsedTime || 0) + 1 };
+            hasUpdates = true;
+          }
+        }
+        return hasUpdates ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const isMember = user?.role === "member";
@@ -134,7 +178,7 @@ export function BookLibrarySection({
       {
         onSuccess: (res) => {
           setIsConfirmOpen(false);
-          startBookGeneration(res.bookId);
+          startBookGeneration(res.bookId, undefined, false, res.book);
         },
       },
     );
@@ -144,10 +188,21 @@ export function BookLibrarySection({
     targetBookId: string,
     targetArcs?: number,
     isResume = false,
+    passedBook?: any // Optional passed book to avoid race condition
   ) => {
     let pauseRequested = false;
     let stopRequested = false;
-    const selectedBook = books?.find((b) => b._id === targetBookId);
+    
+    const selectedBook = passedBook && passedBook._id === targetBookId 
+      ? passedBook 
+      : books?.find((b) => b._id === targetBookId);
+    
+    const targetBookForContext = selectedBook || (formData.title ? formData : null);
+    if (!targetBookForContext) {
+      toast.error("Book data not found.");
+      return;
+    }
+
     const currentLanguage = formData.language || "English";
     const sortedTiles = [...tiles].sort((a, b) => a.orderIndex - b.orderIndex);
 
@@ -157,10 +212,9 @@ export function BookLibrarySection({
     }
 
     const baseArcs = sortedTiles.length;
-    const calculatedTargetArcs = Math.ceil(formData.pagesCountGoal / 20); // Approximate 20 pages per arc for intelligent scaling
+    const calculatedTargetArcs = Math.ceil(formData.pagesCountGoal / 20);
     const totalArcs = Math.max(baseArcs, calculatedTargetArcs);
 
-    // If we need more arcs for the page count, extend with variations of the last arc
     if (totalArcs > baseArcs) {
       const lastTile = sortedTiles[sortedTiles.length - 1];
       for (let i = baseArcs; i < totalArcs; i++) {
@@ -180,7 +234,7 @@ export function BookLibrarySection({
       pauseRequested = true;
       setGeneratingBooks((prev) => ({
         ...prev,
-        [targetBookId]: { ...prev[targetBookId], paused: true },
+        [targetBookId]: { ...prev[targetBookId], paused: true, status: "Paused" },
       }));
       toast.info("Book generation paused.");
     };
@@ -190,33 +244,14 @@ export function BookLibrarySection({
       pauseRequested = true;
       setGeneratingBooks((prev) => ({
         ...prev,
-        [targetBookId]: { ...prev[targetBookId], paused: false, stopped: true },
+        [targetBookId]: { ...prev[targetBookId], paused: false, stopped: true, status: "Stopped" },
       }));
       toast.info("Book generation stopped.");
     };
 
     const prevState = generatingBooks[targetBookId];
 
-    setGeneratingBooks((prev) => ({
-      ...prev,
-      [targetBookId]: {
-        currentArc: isResume && prevState ? prevState.currentArc : 0,
-        totalArcs,
-        paused: false,
-        stopped: false,
-        synopsis: isResume ? prevState?.synopsis : undefined,
-        pauseFn,
-        stopFn,
-      },
-    }));
-
-    toast.info(
-      isResume ? "Resuming book writing..." : "Starting book writing...",
-    );
-
-    // -- Retrieve existing content if resuming --
-    let accumulatedHTML = selectedBook?.pages?.[0]?.content || "";
-
+    // -- Utilities --
     const stripHTML = (html: string) =>
       html
         .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, "\n\n$1\n\n")
@@ -241,242 +276,200 @@ export function BookLibrarySection({
       const titleMatch = normalized.match(/\[TITLE\](.*?)\[END_TITLE\]/);
       if (titleMatch) pageTitle = titleMatch[1].trim();
 
-      const cleanText = normalized
-        .replace(/\[TITLE\][\s\S]*?\[END_TITLE\]/, "")
-        .trim();
-
+      const cleanText = normalized.replace(/\[TITLE\][\s\S]*?\[END_TITLE\]/, "").trim();
       const paragraphs = cleanText.split(/\n\n+|\n(?=—)/);
       let html = isFirstOfArc && pageTitle ? `<h2>${pageTitle}</h2>` : "";
-      html += paragraphs
-        .map((para) => {
-          const lines = para.split("\n").filter((l) => l.trim());
-          return lines
-            .map((line) => {
-              const t = line.trim();
-              if (!t) return "";
-              if (t.startsWith("—"))
-                return `<p class="dialogue" style="text-indent: 1em; font-style: italic;">${t}</p>`;
-              return `<p>${t}</p>`;
-            })
-            .join("");
-        })
-        .join("");
+      html += paragraphs.map((para) => {
+        const lines = para.split("\n").filter((l) => l.trim());
+        return lines.map((line) => {
+          const t = line.trim();
+          if (!t) return "";
+          if (t.startsWith("—")) return `<p class="dialogue" style="text-indent: 1em; font-style: italic;">${t}</p>`;
+          return `<p>${t}</p>`;
+        }).join("");
+      }).join("");
       return html;
     };
 
-    const charactersToolbox =
-      contacts.length > 0
-        ? "CHARACTERS:\n" +
-          contacts
-            .map((c) => `- ${c.name}: ${c.notes || c.jobTitle || ""}`)
-            .join("\n")
-        : "";
-    const worldToolbox =
-      notes.length > 0
-        ? "WORLD NOTES:\n" +
-          notes.map((n) => `- ${n.title}: ${n.content}`).join("\n")
-        : "";
+    // Calculate total stages (Synopsis + Arcs + Optional Cover)
+    const hasCoverStep = !!(targetBookForContext.generateCover && !targetBookForContext.coverImageUrl);
+    const totalStages = totalArcs + (hasCoverStep ? 1 : 0) + 1; // +1 for synopsis
 
-    // ── STEP 0: Generate Story Synopsis (unless resuming) ──────────────────────
-    let synopsis = isResume ? prevState?.synopsis || "" : "";
-    if (!isResume) {
-      toast.info("Planning story outline...");
-      const arcSummary = sortedTiles
-        .map((t, i) => `Arc ${i + 1} — ${t.title}: ${t.content}`)
-        .join("\n");
-      const synopsisPrompt = `You are an expert romance novelist. Before writing begins, create a concise story outline.
+    setGeneratingBooks((prev) => ({
+      ...prev,
+      [targetBookId]: {
+        currentArc: 0,
+        totalArcs: totalStages,
+        paused: false,
+        stopped: false,
+        status: hasCoverStep ? "Generating Cover..." : "Generating Synopsis...",
+        pauseFn,
+        stopFn,
+        elapsedTime: 0,
+      },
+    }));
 
-LANGUAGE: Write in ${currentLanguage}.
+    toast.info(isResume ? "Resuming book writing..." : "Starting book writing...");
 
-${charactersToolbox}\n${worldToolbox}
+    const charactersToolbox = contacts.length > 0
+      ? "CHARACTERS:\n" + contacts.map((c) => `- ${c.name}: ${c.notes || c.jobTitle || ""}`).join("\n")
+      : "";
+    const worldToolbox = notes.length > 0
+      ? "WORLD NOTES:\n" + notes.map((n) => `- ${n.title}: ${n.content}`).join("\n")
+      : "";
 
-ARCS PROVIDED BY THE AUTHOR:
-${arcSummary}
+    console.warn("[startBookGeneration] DEBUG V2.5-STORY-FIX");
+    console.warn("[startBookGeneration] Original Story from Workspace:", currentWorkspace?.promptSettings?.sellingSolutionsFor);
 
-Your task:
-Write a 200-300 word story synopsis that maps the emotional journey of the couple from beginning to end.
-For each arc, write 1-2 sentences about what SPECIFICALLY happens and how it connects to the next arc.
-DO NOT repeat arc descriptions — synthesize them into a flowing outline.
-Output ONLY the synopsis text. No extra commentary.`;
+    const imageContext = buildImagePromptContext({
+      bookTitle: targetBookForContext.title,
+      bookDescription: targetBookForContext.inspiration || targetBookForContext.title,
+      authorName: targetBookForContext.publisher || "Author",
+      imageStyle: targetBookForContext.imageStyle as any,
+      originalStory: currentWorkspace?.promptSettings?.sellingSolutionsFor,
+      contacts: contacts as any[],
+      notes: notes as any[],
+      tiles: tiles as any[],
+    });
 
-      await new Promise<void>((resolve) => {
-        let buffer = "";
-        startStream(
-          {
-            prompt: synopsisPrompt,
-            previousContent: "",
-            bookContext: `Book about ${workspaceName}`,
-            workspaceId,
-            language: currentLanguage,
-          },
-          (chunk) => {
-            buffer += chunk;
-          },
-        )
-          .then(() => {
-            synopsis = buffer.trim();
-            setGeneratingBooks((prev) => ({
-              ...prev,
-              [targetBookId]: { ...prev[targetBookId], synopsis },
-            }));
-            resolve();
-          })
-          .catch(() => resolve()); // Non-fatal if synopsis fails
+    const imageSchedule = generateImageSchedule(totalArcs, {
+      generateCover: !!targetBookForContext.generateCover,
+      internalImagesCount: targetBookForContext.internalImagesCount as any,
+      imageStyle: targetBookForContext.imageStyle as any,
+    }, imageContext);
+
+    console.log("[startBookGeneration] imageContext built:", JSON.stringify(imageContext, null, 2));
+    if (imageSchedule.cover) {
+      console.log("[startBookGeneration] Cover prompt generated:", imageSchedule.cover.prompt);
+    }
+
+    // 1. Generate Cover IN THE BACKGROUND if requested (NOT blocking)
+    if (hasCoverStep && !isResume) {
+      console.log("[startBookGeneration] Starting background cover generation...");
+      
+      const totalImages = (imageSchedule.chapters.reduce((acc, c) => acc + c.images.length, 0)) + 1;
+      setGeneratingBooks((p) => ({ 
+        ...p, 
+        [targetBookId]: { ...p[targetBookId], status: `Generating Cover (1/${totalImages})...` } 
+      }));
+
+      generateImage({
+        prompt: imageSchedule.cover!.prompt,
+        workspaceId,
+        imageStyle: imageSchedule.cover!.style,
+        size: "1536x1024",
+      })
+      .then(async (coverUrl) => {
+        await updateBook({ bookId: targetBookId, updates: { coverImageUrl: coverUrl } });
+        toast.success("Cover generated in background! 🎨");
+      })
+      .catch((error) => {
+        console.error("Background cover generation failed:", error);
+        toast.error("Cover generation failed, but story continues...");
       });
     }
 
-    // ── STEP 1: Write one chapter per arc ──────────────────────────────────────
+    // 2. Generate Story Synopsis
+    let synopsis = isResume ? prevState?.synopsis || "" : "";
+    if (!isResume) {
+      setGeneratingBooks((p) => ({ ...p, [targetBookId]: { ...p[targetBookId], status: `Synopsis (1/${totalArcs})...` } }));
+      const arcSummary = sortedTiles.map((t, i) => `Arc ${i + 1} — ${t.title}: ${t.content}`).join("\n");
+      const synopsisPrompt = `You are an expert romance novelist. Create a concise outline in ${currentLanguage}.\n\n${charactersToolbox}\n${worldToolbox}\n\nARCS:\n${arcSummary}\n\nWrite a 200-300 word synopsis synthesizing the journey. Output ONLY synopsis text.`;
+
+      await new Promise<void>((resolve) => {
+        let buffer = "";
+        startStream({ prompt: synopsisPrompt, previousContent: "", bookContext: `Book about ${workspaceName}`, workspaceId, language: currentLanguage }, 
+          (chunk) => { buffer += chunk; })
+          .then(() => {
+            synopsis = buffer.trim();
+            setGeneratingBooks((p) => ({ 
+              ...p, 
+              [targetBookId]: { 
+                ...p[targetBookId], 
+                synopsis, 
+                currentArc: (p[targetBookId]?.currentArc || 0) + 1,
+                status: "Generating Chapters..." 
+              } 
+            }));
+            resolve();
+          })
+          .catch(() => resolve());
+      });
+    }
+
+    // 3. Write Arc Chapters
+    let accumulatedHTML = selectedBook?.pages?.[0]?.content || "";
     const resumeFromArc = isResume && prevState ? prevState.currentArc : 0;
 
     for (let arcIndex = 0; arcIndex < sortedTiles.length; arcIndex++) {
       if (stopRequested || pauseRequested) break;
-
-      // Skip arcs already written when resuming
       if (arcIndex < resumeFromArc) continue;
 
       const tile = sortedTiles[arcIndex];
       const arcNum = arcIndex + 1;
 
-      setGeneratingBooks((prev) => ({
-        ...prev,
-        [targetBookId]: { ...prev[targetBookId], currentArc: arcNum },
+      setGeneratingBooks((p) => ({ 
+        ...p, 
+        [targetBookId]: { ...p[targetBookId], status: `Arc ${arcNum} / ${totalArcs}...` } 
       }));
 
-      console.log(
-        `[BookGen] Writing Arc ${arcNum}/${totalArcs}: ${tile.title}`,
-      );
-
       const plainContext = stripHTML(accumulatedHTML).slice(-6000);
+      const chapterImages = imageSchedule.chapters.find(c => c.chapterIndex === arcIndex)?.images || [];
+      
+      const getImgTag = async (pos: "beginning" | "middle" | "end") => {
+        const config = chapterImages.find(img => img.position === pos);
+        if (!config) return "";
+        try {
+          const url = await generateImage({ prompt: config.prompt, workspaceId, imageStyle: config.style });
+          return `<img src="${url}" alt="${pos} image" class="w-full h-auto my-4 rounded-lg shadow-md" />`;
+        } catch { return ""; }
+      };
 
-      let chapterPrompt = `You are a Romance Novelist and narrative structure specialist writing arc ${arcNum} of ${totalArcs} of a serialized love story.
+      const beginningImg = await getImgTag("beginning");
+      let chapterPrompt = `Romance novelist writing arc ${arcNum} of ${totalArcs}. Language: ${currentLanguage}.\nSynopsis: ${synopsis}\nArcs: ${tile.title} - ${tile.content}\nDialogue uses em-dash (—) and NO quotes. Format: [TITLE] Title [END_TITLE] then plain text paragraphs. No meta. Approx ${wordsPerArc} words.`;
 
-LANGUAGE: Write EVERYTHING in ${currentLanguage}. Every word, every sentence.
-
-${charactersToolbox ? charactersToolbox + "\n" : ""}${worldToolbox ? worldToolbox + "\n" : ""}
-=== STORY SYNOPSIS (USE AS YOUR COMPASS) ===
-${synopsis || "Write a heartfelt romance story about the couple."}
-
-=== NARRATIVE PROGRESSION PRINCIPLES ===
-You are a narrative structure specialist. Your task is to guide the writing of a story with strong progression, focusing on causality, tension, and transformation. Prioritize clarity of structure over stylistic concerns.
-
-When writing this arc, follow these principles:
-
-1. BUILD ESCALATION: Ensure this arc increases pressure, stakes, or uncertainty. Gradually intensify tension.
-
-2. ESTABLISH ACTIVE CONFLICT: Design forces that resist the characters' goals. Introduce internal, external, or relational obstacles.
-
-3. DEVELOP EMOTIONAL ARCS: Track how characters change over time. Shift emotional states progressively.
-
-4. DIFFERENTIATE SCENE FUNCTIONS: Ensure each scene contributes something unique. Assign a clear purpose (introduce, complicate, reveal, decide).
-
-5. CREATE DECISION PRESSURE: Force characters to make meaningful choices with real consequences.
-
-6. STRENGTHEN CAUSALITY: Connect events through cause and effect. Build chains where outcomes generate new problems.
-
-7. CONTROL RESOLUTION TIMING: Manage when and how tension is released. Delay resolution to sustain engagement.
-
-8. VARY DYNAMICS: Introduce contrast in pacing and tone. Alternate between high and low intensity moments.
-
-9. INCLUDE STRUCTURAL TURNING POINTS: Anchor the story with key moments of change. Build toward a high-stakes climax.
-
-10. EVOLVE THEMES THROUGH EVENTS: Develop themes through action and challenge. Test ideas through character decisions.
-
-CORE DIRECTIVE: Focus on transformation driven by pressure. Construct narratives where characters encounter resistance, make decisions, experience consequences, and change over time. The story should progress through tension, not just interaction.
-
-=== OUTPUT CONTRACT (NON-NEGOTIABLE) ===
-1. Output PLAIN TEXT ONLY — no HTML, no markdown.
-2. Separate paragraphs with a blank line.
-3. Dialogue starts with an em-dash: — Hello there.
-4. NEVER use quotation marks for spoken dialogue.
-5. Write approximately ${wordsPerArc} words for this arc.
-6. NO meta-commentary. Just the story.
-
-=== THIS ARC ===
-Arc ${arcNum} of ${totalArcs}: ${tile.title}
-Arc Goal: ${tile.content}
-
-=== CONTINUITY RULES ===
-RULE 1 — CONTINUE: Begin exactly where the 'Previous Story Content' ends. No going back in time.
-RULE 2 — NO REBOOTS: If the first meeting or any key scene already appears in 'Previous Story Content', it is DONE. Move forward.
-RULE 3 — STATE AWARENESS: Read the last 3 paragraphs of 'Previous Story Content'. Write what logically happens next.
-RULE 4 — NO DUPLICATE OPENINGS: Don't re-describe rain, the characters stopping, or any scene that already happened.
-`;
-
-      if (tile.history && tile.history.length > 0) {
-        chapterPrompt += `\n=== AUTHOR NOTES FOR THIS ARC ===\n`;
-        tile.history.forEach((msg) => {
-          chapterPrompt += `${msg.role.toUpperCase()}: ${msg.content}\n`;
-        });
-        chapterPrompt += `(Follow these author notes with priority.)\n`;
-      }
-
-      chapterPrompt += `
-=== WRITING STYLE ===
-- Warm, sincere, natural language. Not flowery.
-- Show emotion through action and gesture.
-- This arc must feel like a seamless piece of a novel.
-
-=== DIALOGUE FORMAT ===
-- Em-dash only: — Speech here — said the character.
-- New speaker = new paragraph.
-- No quote marks ever.
-
-=== ARC TITLE ===
-Begin with a poetic arc title: [TITLE] Your Title Here [END_TITLE]
-
-=== YOUR TASK ===
-Write Arc ${arcNum}: '${tile.title}'. Make it approximately ${wordsPerArc} words. Continue the story from the previous content.`;
-
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         let buffer = "";
-        const plainContext2 = stripHTML(accumulatedHTML).slice(-6000);
-        startStream(
-          {
-            prompt: chapterPrompt,
-            previousContent: plainContext2,
-            bookContext: `A book about ${workspaceName}. Current chapter: ${tile.title}.`,
-            workspaceId,
-            language: currentLanguage,
-          },
-          (chunk) => {
-            buffer += chunk;
-          },
-        )
-          .then(() => {
-            const chapterHTML = parseAndAppend(buffer, true);
+        startStream({ prompt: chapterPrompt, previousContent: plainContext, bookContext: `Arc ${arcNum}: ${tile.title}`, workspaceId, language: currentLanguage }, 
+          (chunk) => { buffer += chunk; })
+          .then(async () => {
+            let chapterHTML = parseAndAppend(buffer, true);
+            if (beginningImg) chapterHTML = beginningImg + chapterHTML;
+            
+            const middleImg = await getImgTag("middle");
+            if (middleImg) {
+              const paras = chapterHTML.split("</p>");
+              if (paras.length > 2) paras.splice(Math.floor(paras.length/2), 0, middleImg);
+              else chapterHTML += middleImg;
+              chapterHTML = paras.join("</p>");
+            }
+            
+            const endImg = await getImgTag("end");
+            if (endImg) chapterHTML += endImg;
+
             accumulatedHTML += chapterHTML;
-            updateBook({
-              bookId: targetBookId,
-              updates: {
-                pages: [
-                  {
-                    title: tile.title,
-                    content: accumulatedHTML,
-                    orderIndex: 0,
-                  },
-                ],
-              },
-            });
+            updateBook({ bookId: targetBookId, updates: { pages: [{ title: tile.title, content: accumulatedHTML, orderIndex: 0 }] } });
+            
+            setGeneratingBooks((p) => ({ 
+              ...p, 
+              [targetBookId]: { ...p[targetBookId], currentArc: (p[targetBookId]?.currentArc || 0) + 1 } 
+            }));
             resolve();
           })
-          .catch(reject);
+          .catch(() => resolve());
       });
     }
 
-    // ── STEP 2: Mark completion or pause ──────────────────────────────────────
-    if (!stopRequested && !pauseRequested) {
-      setGeneratingBooks((prev) => ({
-        ...prev,
-        [targetBookId]: {
-          ...prev[targetBookId],
-          currentArc: totalArcs,
-          paused: false,
-          stopped: false,
-        },
-      }));
+    if (!pauseRequested && !stopRequested) {
       toast.success("Book complete! 🎉");
+      setGeneratingBooks((prev) => {
+        const newState = { ...prev };
+        delete newState[targetBookId];
+        return newState;
+      });
     }
   };
+
 
   if (isLoading) {
     return (
@@ -627,30 +620,47 @@ Write Arc ${arcNum}: '${tile.title}'. Make it approximately ${wordsPerArc} words
                   </h3>
 
                   {hasProgress ? (
-                    <div className="w-full mt-2 space-y-1 mb-4">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-pink-600">
-                        <span>
-                          {isStopped
-                            ? "Stopped"
-                            : isPaused
-                              ? "Paused"
-                              : isDone
-                                ? "Complete ✓"
-                                : `Writing arc ${gs.currentArc}...`}
-                        </span>
-                        <span>
-                          {gs.currentArc} / {gs.totalArcs} arcs
-                        </span>
+                      <div className="flex flex-col gap-2">
+                        {/* Arc Progress */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-pink-600">
+                            <span className={isActivelyWriting ? "animate-pulse" : ""}>
+                              {isStopped
+                                ? "Stopped"
+                                : isPaused
+                                  ? "Paused"
+                                  : isDone
+                                    ? "Complete ✓"
+                                    : gs.status || `Arc ${gs.currentArc + 1} / ${gs.totalArcs}`}
+                            </span>
+                            <span>{Math.round((gs.currentArc / gs.totalArcs) * 100)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-pink-100 rounded-full overflow-hidden shadow-inner">
+                            <div
+                              className={`h-full transition-all duration-1000 ease-out ${isDone ? "bg-green-500" : isStopped ? "bg-gray-400" : "bg-pink-500"} ${isActivelyWriting ? "animate-pulse" : ""}`}
+                              style={{
+                                width: `${Math.min((gs.currentArc / gs.totalArcs) * 100, 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Image Progress */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                            <span>Image Art</span>
+                            <span>{book.coverImageUrl ? "1/1" : "0/1"}</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-blue-100 rounded-full overflow-hidden shadow-inner font-bold">
+                            <div
+                              className={`h-full transition-all duration-1000 ease-out ${book.coverImageUrl ? "bg-blue-500" : "bg-blue-200 animate-pulse"}`}
+                              style={{
+                                width: book.coverImageUrl ? "100%" : "20%",
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="h-2 w-full bg-pink-100 rounded-full overflow-hidden shadow-inner">
-                        <div
-                          className={`h-full transition-all duration-1000 ease-out ${isDone ? "bg-green-500" : isStopped ? "bg-gray-400" : "bg-pink-500"} ${isActivelyWriting ? "animate-pulse" : ""}`}
-                          style={{
-                            width: `${Math.min((gs.currentArc / gs.totalArcs) * 100, 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
                   ) : (
                     <div className="mb-4" />
                   )}
