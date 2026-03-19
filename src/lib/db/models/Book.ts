@@ -31,6 +31,9 @@ export const bookSchema = z.object({
   pagesCountGoal: z.number().optional(),
   inspiration: z.string().default("Original"),
   removeCoAuthorship: z.boolean().default(false),
+  generateCover: z.boolean().default(false),
+  internalImagesCount: z.enum(["none", "1", "2", "3"]).default("none"),
+  imageStyle: z.string().default("romantic"),
 });
 
 export type BookPage = z.infer<typeof bookContentSchema>;
@@ -65,5 +68,8 @@ export function bookToDocument(
     pagesCountGoal: book.pagesCountGoal,
     inspiration: book.inspiration,
     removeCoAuthorship: book.removeCoAuthorship,
+    generateCover: book.generateCover,
+    internalImagesCount: book.internalImagesCount,
+    imageStyle: book.imageStyle,
   };
 }

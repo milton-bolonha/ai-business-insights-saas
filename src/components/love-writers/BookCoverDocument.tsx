@@ -5,119 +5,107 @@ import {
   View,
   Document,
   StyleSheet,
-  Font,
   Image,
 } from "@react-pdf/renderer";
 
-// Register standard fonts
-Font.register({
-  family: "Montserrat",
-  fonts: [
-    { src: "/fonts/Montserrat-Regular.ttf", fontWeight: 400 },
-    { src: "/fonts/Montserrat-Bold.ttf", fontWeight: 700 },
-  ],
-});
+import { registerFonts } from "@/lib/pdf/fonts";
 
-Font.register({
-  family: "Oswald Bold",
-  fonts: [{ src: "/fonts/Oswald-Bold.otf", fontWeight: 700 }],
-});
+// Register standard fonts
+registerFonts();
 
 // Cover dimensions: 12.62 x 9.25 inches (908.88 x 666.047 points)
 const styles = StyleSheet.create({
   page: {
     width: 908.88,
     height: 666.047,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
     display: "flex",
     flexDirection: "row",
+    padding: 0,
+    margin: 0,
   },
   backCover: {
-    width: "36%",
-    backgroundColor: "#f3e5f5",
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
+    width: "46%",
+    height: "100%",
   },
   spine: {
     width: "8%",
-    backgroundColor: "#e1bee7",
+    height: "100%",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    padding: 10,
   },
   frontCover: {
-    width: "56%",
-    backgroundColor: "#ffffff",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    padding: 30,
+    width: "46%",
+    height: "100%",
+    position: "relative",
   },
-  frontCoverImage: {
-    width: "100%",
-    height: "65%",
-    objectFit: "cover",
-    marginBottom: 20,
-  },
-  titleArea: {
+  gradientOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "100%", // Full height to contain the steps
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
-    flex: 1,
   },
-  title: {
-    fontSize: 28,
-    fontFamily: "Oswald Bold",
-    fontWeight: 700,
-    color: "#1a1a1a",
-    marginBottom: 10,
-  },
-  author: {
-    fontSize: 12,
-    fontFamily: "Montserrat",
-    fontWeight: 400,
-    color: "#666666",
-  },
-  backTitle: {
-    fontSize: 18,
-    fontFamily: "Oswald Bold",
-    fontWeight: 700,
-    color: "#1a1a1a",
-    marginBottom: 12,
-  },
-  backDescription: {
-    fontSize: 10,
-    fontFamily: "Montserrat",
-    fontWeight: 400,
-    color: "#333333",
-    lineHeight: 1.6,
-    marginBottom: 20,
-  },
-  backAuthor: {
-    fontSize: 11,
-    fontFamily: "Montserrat",
-    fontWeight: 700,
-    color: "#1a1a1a",
-  },
-  barcode: {
-    width: 60,
-    height: 30,
-    marginTop: 15,
-    backgroundColor: "#f0f0f0",
+  gradientStep1: { backgroundColor: 'rgba(0,0,0,0.5)', height: '8%' },
+  gradientStep2: { backgroundColor: 'rgba(0,0,0,0.4)', height: '8%' },
+  gradientStep3: { backgroundColor: 'rgba(0,0,0,0.3)', height: '8%' },
+  gradientStep4: { backgroundColor: 'rgba(0,0,0,0.2)', height: '8%' },
+  gradientStep5: { backgroundColor: 'rgba(0,0,0,0.1)', height: '8%' },
+  gradientStep6: { backgroundColor: 'rgba(0,0,0,0.05)', height: '8%' },
+  
+  titleArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#cccccc",
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    zIndex: 10,
   },
-  barcodeText: {
-    fontSize: 8,
-    color: "#666666",
+  title: {
+    fontSize: 36,
+    fontFamily: "Oswald Bold",
+    fontWeight: 700,
+    color: "#FFFFFF",
+    textAlign: "center",
+    textTransform: "uppercase",
+    lineHeight: 1.1,
+    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+  },
+  author: {
+    fontSize: 14,
+    fontFamily: "Montserrat",
+    fontWeight: 400,
+    color: "#FFFFFF",
+    textAlign: "center",
+    letterSpacing: 4,
+    marginTop: 10,
+    textTransform: "uppercase",
+  },
+  spineTextContainer: {
+    transform: "rotate(-90deg)",
+    width: 666.047, // page height
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  spineText: {
+    fontSize: 14,
+    fontFamily: "Oswald Bold",
+    fontWeight: 700,
+    color: "#FFFFFF",
+    textTransform: "uppercase",
+    letterSpacing: 2,
   },
 });
 
@@ -178,6 +166,14 @@ interface BookCoverDocumentProps {
  * - Specific image style preference
  * - Complete story context for accurate, personalized imagery
  */
+/**
+ * Helper to wrap image URLs in our proxy to bypass CSP/CORS
+ */
+const getProxyUrl = (url: string) => {
+  if (!url || url.startsWith("data:") || url.startsWith("/")) return url;
+  return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+};
+
 export function BookCoverDocument({
   title,
   author,
@@ -196,30 +192,43 @@ export function BookCoverDocument({
   return (
     <Document title={`${title} - Book Cover`}>
       <Page size={[908.88, 666.047]} style={styles.page}>
-        {/* Back Cover */}
-        <View style={styles.backCover}>
-          <View>
-            <Text style={styles.backTitle}>{title}</Text>
-            <Text style={styles.backDescription}>{description}</Text>
-          </View>
-          <View>
-            <Text style={styles.backAuthor}>By {author}</Text>
-            <View style={styles.barcode}>
-              <Text style={styles.barcodeText}>ISBN</Text>
-            </View>
-          </View>
-        </View>
+        {/* Full Wrap Background Image */}
+        {coverImageUrl && (
+          <Image 
+            src={getProxyUrl(coverImageUrl)} 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }} 
+          />
+        )}
 
-        {/* Spine */}
+        {/* Back Cover - Pure Imagery */}
+        <View style={styles.backCover} />
+
+        {/* Spine Overlay */}
         <View style={styles.spine}>
-          <Text style={styles.author}>{title.substring(0, 5)}</Text>
+          <View style={styles.spineTextContainer}>
+            <Text style={styles.spineText}>
+              {title.length > 40 ? title.substring(0, 37) + "..." : title}
+            </Text>
+          </View>
         </View>
 
-        {/* Front Cover */}
+        {/* Front Cover Overlay */}
         <View style={styles.frontCover}>
-          {coverImageUrl && (
-            <Image src={coverImageUrl} style={styles.frontCoverImage} />
-          )}
+          <View style={styles.gradientOverlay}>
+            <View style={styles.gradientStep6} />
+            <View style={styles.gradientStep5} />
+            <View style={styles.gradientStep4} />
+            <View style={styles.gradientStep3} />
+            <View style={styles.gradientStep2} />
+            <View style={styles.gradientStep1} />
+          </View>
           <View style={styles.titleArea}>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.author}>By {author}</Text>

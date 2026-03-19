@@ -1,33 +1,26 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import {
   Page,
   Text,
   View,
   Document,
   StyleSheet,
-  Font,
+  Image,
 } from "@react-pdf/renderer";
+import { registerFonts } from "@/lib/pdf/fonts";
 
-// Register fonts once at module load (required for @react-pdf/renderer)
-// We align with the cover document's font registrations to avoid missing/incorrect font lookups.
-Font.register({
-  family: "Montserrat",
-  fonts: [
-    { src: "/fonts/Montserrat-Regular.ttf", fontWeight: 400 },
-    { src: "/fonts/Montserrat-Bold.ttf", fontWeight: 700 },
-  ],
-});
+// Register fonts once at module load
+registerFonts();
 
-Font.register({
-  family: "Oswald Bold",
-  fonts: [{ src: "/fonts/Oswald-Bold.otf", fontWeight: 700 }],
-});
-
-// Disable automatic hyphenation (reduces flicker and unpredictable breaks)
-Font.registerHyphenationCallback(() => []);
+/**
+ * Helper to wrap image URLs in our proxy to bypass CSP/CORS
+ */
+const getProxyUrl = (url: string) => {
+  if (!url || url.startsWith("data:") || url.startsWith("/")) return url;
+  return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+};
 
 // 6x9 inch book dimensions in PostScript points: 432 x 648
-// We will use 6x9 inch format and apply the required paddings.
 const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
@@ -111,7 +104,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 1.4,
     color: "#1a1a1a",
-    textAlign: "justify",
+    textAlign: "left",
     marginBottom: 12,
   },
   indentedParagraphText: {
@@ -119,19 +112,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 1.4,
     color: "#1a1a1a",
-    textAlign: "justify",
+    textAlign: "left",
     marginBottom: 12,
     textIndent: 24,
+  },
+  contentImage: {
+    width: "100%",
+    height: "auto",
+    maxHeight: 300,
+    objectFit: "contain",
+    marginVertical: 12,
   },
   pageNumber: {
     position: "absolute",
     fontSize: 9,
-    bottom: 40, // Lowered page number
+    bottom: 40,
     left: 0,
     right: 0,
     textAlign: "center",
     color: "#9ca3af",
   },
+  debugBox: {
+    border: "1pt solid red",
+    padding: 10,
+    margin: 10,
+  }
 });
 
 interface BookPDFDocumentProps {
@@ -145,28 +150,31 @@ const parseHTMLContent = (htmlString: string) => {
   console.log("parseHTMLContent input:", htmlString);
 
   // 1. Remove newlines and trim to prevent empty text nodes
-  const cleanHTML = htmlString.replace(/\n/g, "").replace(/<\//g, "</").trim();
+  const cleanHTML = htmlString.replace(/\n/g, "").trim();
   console.log("cleanHTML:", cleanHTML);
 
-  // 2. Simple regex based parser to find h2 and p tags sequentially
-  const elements: { type: "h2" | "p"; content: string }[] = [];
+  // 2. Simple regex based parser to find h2, p, and img tags sequentially
+  const elements: { type: "h2" | "p" | "img"; content?: string; src?: string }[] = [];
 
-  // We will extract inner text of tags.
-  // This regex looks for <h2>...</h2> or <p>...</p>
-  // Uses global and single-line/dot-all flags if necessary but since we removed newlines, standard is fine.
-  const tagRegex = /<(h2|p)[^>]*>(.*?)<\/\1>/gi;
+  // We will extract inner text of tags or src from img.
+  // This regex looks for <h2>...</h2>, <p>...</p>, or <img ... src="..." ...>
+  const tagRegex = /<(h2|p)[^>]*>(.*?)<\/\1>|<img[^>]+src=["'](.*?)["'][^>]*>/gi;
 
   let match;
   while ((match = tagRegex.exec(cleanHTML)) !== null) {
-    const type = match[1].toLowerCase() as "h2" | "p";
-    // Remove nested tags (like <br> or <strong>) if AI outputted them by mistake
-    // react-pdf Text primitive only expects raw strings
-    const content = match[2].replace(/<[^>]+>/g, "").trim();
-
-    console.log("Found element:", { type, content });
-
-    if (content) {
-      elements.push({ type, content });
+    if (match[1]) {
+      // It's a text tag (h2 or p)
+      const type = match[1].toLowerCase() as "h2" | "p";
+      const content = match[2].replace(/<[^>]+>/g, "").trim();
+      console.log("Found text element:", { type, content });
+      if (content) {
+        elements.push({ type, content });
+      }
+    } else if (match[3]) {
+      // It's an img tag
+      const src = match[3];
+      console.log("Found image element:", { type: "img", src });
+      elements.push({ type: "img", src });
     }
   }
 
@@ -235,12 +243,23 @@ export const BookPDFDocument = ({
 
       {/* Main Content */}
       <Page size={[432, 648]} style={styles.page} wrap={true}>
+        {elements.length === 0 && (
+          <View style={styles.debugBox}>
+            <Text>No content found in elements array.</Text>
+          </View>
+        )}
         {elements.map((el, index) => {
           if (el.type === "h2") {
             return (
               <Text key={`h2-${index}`} style={styles.titleText}>
                 {el.content}
               </Text>
+            );
+          }
+
+          if (el.type === "img" && el.src) {
+            return (
+              <Image key={`img-${index}`} src={getProxyUrl(el.src)} style={styles.contentImage} />
             );
           }
 
@@ -260,12 +279,13 @@ export const BookPDFDocument = ({
             </Text>
           );
         })}
-
         <Text
           style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) =>
-            `${pageNumber - 2} / ${totalPages - 2}`
-          }
+          render={({ pageNumber, totalPages }) => {
+            const current = pageNumber - 2;
+            const total = (totalPages || 0) - 2;
+            return total > 0 ? `${current} / ${total}` : "";
+          }}
           fixed
         />
       </Page>

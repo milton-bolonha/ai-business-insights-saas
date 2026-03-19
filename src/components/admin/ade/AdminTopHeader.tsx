@@ -221,30 +221,12 @@ export function AdminTopHeader({
 
                     <div className="h-6 w-px bg-gray-200/20 mx-1" />
 
-                    {/* Quick color presets */}
-                    <div className="flex items-center space-x-1">
-                        {[
-                            { color: "#f7f7f7", name: "Beige" },
-                            { color: "#e8f4fd", name: "Blue" },
-                            { color: "#f0f9e8", name: "Green" },
-                            { color: "#fef7ed", name: "Orange" }
-                        ].map((preset) => (
-                            <button
-                                key={preset.color}
-                                onClick={() => handleColorChange(preset.color)}
-                                className="h-6 w-6 rounded-full border-2 border-white bg-opacity-100 shadow-sm cursor-pointer hover:scale-110 transition-transform"
-                                style={{ backgroundColor: preset.color }}
-                                title={preset.name}
-                            />
-                        ))}
-                    </div>
-
                     {/* Color Picker (Droplet) */}
                     <div className="relative">
                         <button
                             onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-black/5 text-gray-500 transition-colors cursor-pointer"
-                            title="More background colors"
+                            title="Workspace background color"
                         >
                             <Droplet className="h-4 w-4 cursor-pointer" />
                         </button>
@@ -256,16 +238,42 @@ export function AdminTopHeader({
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
-                                        className="absolute right-0 top-full z-50 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-200 w-48"
+                                        className="absolute right-0 top-full z-50 mt-2 p-4 bg-white rounded-xl shadow-xl border border-gray-200 w-56"
                                     >
-                                        <div className="relative">
-                                            <label className="block text-xs font-medium text-black mb-1 w-fit">Custom Color</label>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="color"
-                                                    className="h-8 w-full cursor-pointer rounded border border-gray-200 p-0.5"
-                                                    onChange={(e) => handleColorChange(e.target.value)}
-                                                />
+                                        <div className="space-y-4">
+                                            {/* Quick color presets inside modal */}
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Presets</label>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[
+                                                        { color: "#f7f7f7", name: "Beige" },
+                                                        { color: "#e8f4fd", name: "Blue" },
+                                                        { color: "#f0f9e8", name: "Green" },
+                                                        { color: "#fef7ed", name: "Orange" }
+                                                    ].map((preset) => (
+                                                        <button
+                                                            key={preset.color}
+                                                            onClick={() => {
+                                                                handleColorChange(preset.color);
+                                                                setIsColorPickerOpen(false);
+                                                            }}
+                                                            className="h-8 w-8 rounded-full border border-gray-100 shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                                                            style={{ backgroundColor: preset.color }}
+                                                            title={preset.name}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t border-gray-100 pt-3">
+                                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Custom Color</label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="color"
+                                                        className="h-10 w-full cursor-pointer rounded-lg border border-gray-200 p-1 bg-gray-50"
+                                                        onChange={(e) => handleColorChange(e.target.value)}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>

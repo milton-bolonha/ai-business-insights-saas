@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
             restrictPublicity,
             pagesCountGoal,
             inspiration,
-            removeCoAuthorship
+            removeCoAuthorship,
+            generateCover,
+            internalImagesCount,
+            imageStyle
         } = body;
 
         if (!workspaceId) {
@@ -52,6 +55,9 @@ export async function POST(request: NextRequest) {
                 pagesCountGoal,
                 inspiration: inspiration || "Original",
                 removeCoAuthorship: removeCoAuthorship || false,
+                generateCover: generateCover || false,
+                internalImagesCount: internalImagesCount || "none",
+                imageStyle: imageStyle || "romantic",
             },
             userId,
             workspaceId,
@@ -64,7 +70,14 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(),
         });
 
-        return NextResponse.json({ bookId: insertedId, success: true });
+        // Add the inserted ID to the document to return it
+        const bookDocWithId = { ...bookDoc, _id: insertedId };
+
+        return NextResponse.json({ 
+            bookId: insertedId, 
+            success: true,
+            book: bookDocWithId
+        });
     } catch (error) {
         if (error instanceof Error && error.message === "Unauthorized") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
