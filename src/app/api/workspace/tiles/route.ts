@@ -21,6 +21,7 @@ const createTileSchema = z.object({
   requestSize: z.enum(["small", "medium", "large"]).optional(),
   dashboardId: z.string().optional(),
   workspaceId: z.string().optional(),
+  category: z.string().optional(),
 });
 
 function getMaxTokensForSize(size: "small" | "medium" | "large"): number {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { requestSize = "small", title, prompt, model, useMaxPrompt, dashboardId, workspaceId } =
+  const { requestSize = "small", title, prompt, category, model, useMaxPrompt, dashboardId, workspaceId } =
     parseResult.data;
   const maxTokens = getMaxTokensForSize(requestSize);
 
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
       content: generationResult.content,
       prompt,
       templateId: "custom",
-      category: "custom",
+      category: category || "custom",
       model: resolvedModel,
       orderIndex: -1,
       createdAt: new Date().toISOString(),
@@ -172,6 +173,14 @@ export async function POST(request: NextRequest) {
     await audit.createTile(newTile.id, dashboardId || "", auditUserId, request);
 
     if (userId) {
+      // 🟢 MEMBER: Save to MongoDB
+      await db.insertOne("tiles", {
+        ...newTile,
+        userId,
+        workspaceId: finalWorkspaceId,
+        dashboardId,
+      });
+
       const { incrementUsage } = await import("@/lib/saas/usage-service");
       await incrementUsage(userId, "tilesCount", 1);
     } else {

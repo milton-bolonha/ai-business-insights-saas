@@ -19,6 +19,30 @@ export interface ClassicHeroFormSubmission {
   user_name?: string;
   partner_name?: string;
   meeting_story?: string;
+
+  // Trade Ranking Fields
+  product_category?: string;
+  product_condition?: string;
+  catDeprec?: string;
+  product_age?: string;
+  product_working?: string;
+  product_repair_cost?: string;
+  market_value_new?: string;
+  market_value_used_avg?: string;
+  market_demand?: string;
+  market_supply?: string;
+  market_time_to_sell?: string;
+  mes?: string;
+  trader_mode?: string;
+  trader_risk?: string;
+  trader_cash_pressure?: string;
+  market_share?: string;
+  market_pricing_power?: string;
+  market_competition?: string;
+  taxaAltern?: string;
+
+  // Extra flexibility for future tools
+  [key: string]: any;
 }
 
 interface ClassicHeroFormProps {

@@ -59,10 +59,18 @@ export function HomeContainer() {
 
   // Derived Hero Content
   const heroContent = {
-    title: activeAppTag === 'love_writers' ? 'Love Writers' : 'Business Insights',
+    title: activeAppTag === 'love_writers' ? 'Love Writers' : activeAppTag === 'trade_ranking' ? 'Trade Ranking' : activeAppTag === 'furniture_logistics' ? 'Logística & Gestão' : activeAppTag === 'furniture_layout' ? 'Layout Mapping' : activeAppTag === 'furniture_store' ? 'Virtual Store' : 'Business Insights',
     subtitle: activeAppTag === 'love_writers'
       ? 'Craft your romance novel arc by arc.'
-      : 'Generate deep business insights from company data.'
+      : activeAppTag === 'trade_ranking'
+        ? 'Professional parametric trade valuation system.'
+        : activeAppTag === 'furniture_logistics'
+          ? 'Painel KDS de montagem, controle de caixa e logística operacional para lojas de móveis.'
+          : activeAppTag === 'furniture_layout'
+            ? 'Visualize e monetize cada metro quadrado da sua loja com mapeamento inteligente.'
+            : activeAppTag === 'furniture_store'
+              ? 'Exhibit your furniture in a premium store and receive orders directly on your panel.'
+              : 'Generate deep business insights from company data.'
   };
 
 
@@ -74,7 +82,14 @@ export function HomeContainer() {
       const firstInfo = APP_ATTRIBUTES.find(a => a.appTagId === activeAppTag);
       if (firstInfo) {
         // Simple mapping for display title
-        const title = activeAppTag === 'love_writers' ? 'Love Writers' : 'Business Insights';
+        const titles: Record<string, string> = {
+          'love_writers': 'Love Writers',
+          'trade_ranking': 'Trade Ranking',
+          'furniture_logistics': 'Furniture Logistics',
+          'furniture_layout': 'Store Layout',
+          'business_insights': 'Business Insights'
+        };
+        const title = titles[activeAppTag] || 'App';
         initialMessage = `You chose ${title}. Let's get started. What is the ${firstInfo.label}?`;
       }
     }
@@ -98,6 +113,92 @@ export function HomeContainer() {
   }, [activeAppTag, hasStarted]);
 
   // Handle Chat Input
+  const handleTestMode = (scenario: string = 'iphone') => {
+    if (activeAppTag !== 'trade_ranking') return;
+
+    let testValues: any = {};
+    let scenarioLabel = "";
+
+    if (scenario === 'iphone') {
+      testValues = {
+        product_category: 'iPhone 14 Pro',
+        product_condition: 'semi_novo',
+        catDeprec: 'smartphone',
+        product_age: '1.5',
+        product_working: '0.95',
+        product_repair_cost: '0',
+        market_value_new: '7500',
+        market_value_used_avg: '4200',
+        market_demand: '0.85',
+        market_supply: '0.25',
+        market_time_to_sell: '5',
+        mes: '8', // Setembro
+        trader_mode: 'giro',
+        trader_risk: '0.3',
+        trader_cash_pressure: '0.2',
+        market_share: '0.6',
+        market_pricing_power: '0.7',
+        market_competition: '0.3'
+      };
+      scenarioLabel = "iPhone 14 Pro";
+    } else if (scenario === 'geladeira') {
+      testValues = {
+        product_category: 'Geladeira Consul',
+        product_condition: 'usado',
+        catDeprec: 'eletro',
+        product_age: '4',
+        product_working: '1.0',
+        product_repair_cost: '0',
+        market_value_new: '1890',
+        market_value_used_avg: '1590',
+        market_demand: '0.7',
+        market_supply: '0.6',
+        market_time_to_sell: '15',
+        mes: '8',
+        trader_mode: 'margem',
+        trader_risk: '0.2',
+        trader_cash_pressure: '0.1',
+        market_share: '0.2',
+        market_pricing_power: '0.3',
+        market_competition: '0.8'
+      };
+      scenarioLabel = "Geladeira Consul";
+    } else if (scenario === 'armario') {
+      testValues = {
+        product_category: 'Armário MDF',
+        product_condition: 'usado',
+        catDeprec: 'generico',
+        product_age: '2',
+        product_working: '0.8',
+        product_repair_cost: '150',
+        market_value_new: '2500',
+        market_value_used_avg: '1200',
+        market_demand: '0.4',
+        market_supply: '0.8',
+        market_time_to_sell: '30',
+        mes: '8',
+        trader_mode: 'agressivo',
+        trader_risk: '0.6',
+        trader_cash_pressure: '0.5',
+        market_share: '0.1',
+        market_pricing_power: '0.2',
+        market_competition: '0.9'
+      };
+      scenarioLabel = "Armário MDF";
+    }
+
+    setFormValues(testValues);
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: `⏩ Skip to ${scenarioLabel} Analysis` },
+      { role: 'assistant', content: `Test Mode detected. Compiling Trade Dossiê for ${scenarioLabel}...` }
+    ]);
+
+    setTimeout(() => {
+      handleTradeSubmit(testValues);
+    }, 1500);
+  };
+
   const handleChatSubmit = (msg: string, attrId?: string) => {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
 
@@ -144,6 +245,10 @@ export function HomeContainer() {
           setTimeout(() => {
             if (activeAppTag === 'love_writers') {
               handleBookSubmit(updatedValues);
+            } else if (activeAppTag === 'trade_ranking') {
+              handleTradeSubmit(updatedValues);
+            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store') {
+              handleFurnitureSubmit(activeAppTag, updatedValues);
             } else {
               handleSubmit(updatedValues as ClassicHeroFormSubmission);
             }
@@ -183,7 +288,38 @@ export function HomeContainer() {
 
       // Short delay for toast visibility
       setTimeout(() => {
-        router.push("/sign-up?redirect_url=/admin");
+        router.push(isSignedIn ? "/admin" : "/sign-up?redirect_url=/admin");
+      }, 1000);
+
+    } catch (error) {
+      console.error("Failed to capture onboarding data:", error);
+      push({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTradeSubmit = async (values?: Partial<ClassicHeroFormSubmission>) => {
+    const currentValues = values || formValues;
+
+    setIsSubmitting(true);
+    try {
+      sessionStorage.setItem("onboarding_data", JSON.stringify({
+        type: "trade_ranking",
+        data: currentValues
+      }));
+
+      push({
+        title: "Calculating trade value...",
+        description: "Create a free account to view your ranking report.",
+        variant: "default",
+      });
+
+      setTimeout(() => {
+        router.push(isSignedIn ? "/admin" : "/sign-up?redirect_url=/admin");
       }, 1000);
 
     } catch (error) {
@@ -226,6 +362,33 @@ export function HomeContainer() {
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFurnitureSubmit = async (type: AppTagId, values?: Partial<ClassicHeroFormSubmission>) => {
+    const currentValues = values || formValues;
+
+    setIsSubmitting(true);
+    try {
+      sessionStorage.setItem("onboarding_data", JSON.stringify({
+        type: type,
+        data: currentValues
+      }));
+
+      push({
+        title: `Carregando ${type.replace('_', ' ')}...`,
+        description: "Crie sua conta gratuita para acessar o painel.",
+        variant: "default",
+      });
+
+      setTimeout(() => {
+        router.push(isSignedIn ? "/admin" : "/sign-up?redirect_url=/admin");
+      }, 1000);
+
+    } catch (error) {
+      console.error("Failed to capture furniture data:", error);
+      push({ title: "Error", description: "Something went wrong.", variant: "destructive" });
       setIsSubmitting(false);
     }
   };
@@ -386,6 +549,7 @@ export function HomeContainer() {
         activeAppTag={activeAppTag}
         onAppTagChange={setActiveAppTag}
         onSubmit={handleChatSubmit}
+        onTestMode={handleTestMode}
         isSubmitting={isSubmitting}
       />
 

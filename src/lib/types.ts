@@ -26,6 +26,7 @@ export interface Tile {
   agentId?: string;
   responseLength?: "short" | "medium" | "long";
   promptVariables?: string[];
+  metadata?: Record<string, any>;
 }
 
 export interface TileChatAttachment {
@@ -42,6 +43,7 @@ export interface Note {
   id: string;
   title: string;
   content: string;
+  category?: string;
   createdAt: string;
   updatedAt: string;
 }

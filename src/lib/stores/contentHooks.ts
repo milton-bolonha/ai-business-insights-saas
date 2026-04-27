@@ -14,6 +14,7 @@ import {
   useCreateNote,
   useUpdateNote,
   useDeleteNote,
+  useUpdateTile,
 } from '../state/query';
 
 type RequestSize = "small" | "medium" | "large";
@@ -23,11 +24,12 @@ interface CreateTileInput {
   prompt?: string;
   description?: string;
   model?: string;
+  category?: string;
   useMaxPrompt?: boolean;
   requestSize?: RequestSize;
 }
 
-type NoteInput = string | { title?: string; content?: string };
+type NoteInput = string | { title?: string; content?: string; category?: string };
 type ContactInput = Partial<Contact>;
 
 interface TileChatPayload {
@@ -41,6 +43,9 @@ const resolveNoteTitle = (input: NoteInput) =>
 const resolveNoteContent = (input: NoteInput) =>
   typeof input === "string" ? input : input.content ?? "";
 
+const resolveNoteCategory = (input: NoteInput) =>
+  typeof input === "string" ? undefined : input.category;
+
 export function useContent() {
   const currentDashboard = useCurrentDashboard();
   const currentWorkspace = useCurrentWorkspace();
@@ -51,6 +56,7 @@ export function useContent() {
   const chatWithTileMutation = useChatWithTile();
   const reorderTilesMutation = useReorderTiles();
   const deleteTileMutation = useDeleteTile();
+  const updateTileMutation = useUpdateTile();
 
   // Queries para contacts
   const createContactMutation = useCreateContact();
@@ -92,6 +98,7 @@ export function useContent() {
         workspaceId: currentWorkspace.id,
         title: data.title || 'Custom Tile',
         prompt: data.prompt || data.description || '',
+        category: data.category,
         model: data.model,
         useMaxPrompt: data.useMaxPrompt,
         requestSize: data.requestSize
@@ -112,6 +119,7 @@ export function useContent() {
         workspaceId: currentWorkspace.id,
         title: data.title || data.prompt?.slice(0, 50) || "New Tile",
         prompt: data.prompt || data.description || "",
+        category: data.category,
         model: data.model || "gpt-4",
         useMaxPrompt: data.useMaxPrompt || false,
         requestSize: data.requestSize || "medium",
@@ -138,9 +146,19 @@ export function useContent() {
         updates
       );
 
-      // TODO: If we had a backend mutation, we would call it here.
-      // For now, since we use local storage persistence via the store, 
-      // the updateTileInDashboard action handles the persistence.
+      // Save to backend DB
+      try {
+        await updateTileMutation.mutateAsync({
+          tileId,
+          dashboardId: currentDashboard.id,
+          workspaceId: currentWorkspace.id,
+          updates
+        });
+        console.log('[DEBUG] useContent.updateTile successfully saved to DB');
+      } catch (error) {
+        console.error('[DEBUG] useContent.updateTile API failed:', error);
+        throw error;
+      }
     },
     async deleteTile(tileId: string) {
       console.log('[DEBUG] useContent.deleteTile called:', { tileId, dashboardId: currentDashboard?.id, workspaceId: currentWorkspace?.id });
@@ -195,7 +213,8 @@ export function useContent() {
         dashboardId,
         workspaceId: currentWorkspace?.id,
         title: resolveNoteTitle(data),
-        content: resolveNoteContent(data)
+        content: resolveNoteContent(data),
+        category: resolveNoteCategory(data)
       });
       console.log('[DEBUG] useContent.createNote result:', result);
       return result.note;

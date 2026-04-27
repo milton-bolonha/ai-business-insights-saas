@@ -11,6 +11,7 @@ interface CreateTileVariables {
   title: string;
   prompt: string;
   model?: string;
+  category?: string;
   useMaxPrompt?: boolean;
   requestSize?: RequestSize;
 }
@@ -104,6 +105,7 @@ export function useCreateTile() {
       workspaceId,
       title,
       prompt,
+      category,
       model = "gpt-4",
       useMaxPrompt = false,
       requestSize = "medium",
@@ -124,6 +126,7 @@ export function useCreateTile() {
           workspaceId,
           title,
           prompt,
+          category,
           model,
           useMaxPrompt,
           requestSize,

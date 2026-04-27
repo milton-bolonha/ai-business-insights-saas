@@ -104,6 +104,11 @@ export async function getDb(): Promise<Db> {
   return client.db();
 }
 
+export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
+    const client = await connect();
+    return { client, db: client.db() };
+}
+
 export async function getCollection<T extends Document>(
   name: string
 ): Promise<Collection<T>> {

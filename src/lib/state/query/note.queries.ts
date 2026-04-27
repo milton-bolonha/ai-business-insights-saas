@@ -10,11 +10,13 @@ export function useCreateNote() {
       workspaceId,
       title,
       content,
+      category,
     }: {
       dashboardId: string;
       workspaceId?: string;
       title: string;
       content: string;
+      category?: string;
     }) => {
       // Check if user is guest or member
       const { useAuthStore } = await import("@/lib/stores/authStore");
@@ -29,6 +31,7 @@ export function useCreateNote() {
             id: `note_${Date.now()}`, // Temporary ID, store will likely generate one or use this
             title,
             content,
+            category,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
@@ -44,6 +47,7 @@ export function useCreateNote() {
           workspaceId,
           title,
           content,
+          category,
         }),
       });
       if (!response.ok) {
@@ -85,12 +89,14 @@ export function useUpdateNote() {
       noteId,
       title,
       content,
-      workspaceId, // Optional, but needed for store sync for guests
-      dashboardId, // Optional, but needed for store sync for guests
+      category,
+      workspaceId,
+      dashboardId,
     }: {
       noteId: string;
       title?: string;
       content: string;
+      category?: string;
       workspaceId?: string;
       dashboardId?: string;
     }) => {
@@ -100,13 +106,13 @@ export function useUpdateNote() {
       const isMember = user?.role === "member";
 
       if (!isMember) {
-        return { success: true, note: { id: noteId, title, content } };
+        return { success: true, note: { id: noteId, title, content, category } };
       }
 
       const response = await fetch(`/api/workspace/notes/${noteId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content, category }),
       });
       if (!response.ok) throw new Error("Failed to update note");
       return response.json();

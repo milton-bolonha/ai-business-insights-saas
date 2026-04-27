@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
   const content = typeof body?.content === "string" ? body.content.trim() : "";
   const dashboardId = typeof body?.dashboardId === "string" ? body.dashboardId.trim() : "";
   const workspaceId = typeof body?.workspaceId === "string" ? body.workspaceId.trim() : "";
+  const category = typeof body?.category === "string" ? body.category.trim() : "";
 
   if (!title) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
       id: noteId,
       title,
       content,
+      category: category || undefined,
       createdAt: now,
       updatedAt: now,
     };

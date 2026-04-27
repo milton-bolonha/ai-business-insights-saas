@@ -190,6 +190,9 @@ export function AddWorkspaceModal({
                   <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
                     <option value="template_1">Essential Research (8 tiles)</option>
                     <option value="template_2">Deep Dive Research (9 tiles)</option>
+                    <option value="template_trade_ranking">Trader Ranking & VMR</option>
+                    <option value="template_furniture_logistics">Furniture: Logistics & Assembly</option>
+                    <option value="template_furniture_layout">Furniture: Store Layout Map</option>
                   </select>
                 </div>
               </>

@@ -15,6 +15,7 @@ interface NotesPanelAdeProps {
   ) => Promise<void>;
   onDeleteNote?: (noteId: string) => Promise<void>;
   appearance?: AdeAppearanceTokens;
+  title?: string;
 }
 
 export function NotesPanelAde({
@@ -23,6 +24,7 @@ export function NotesPanelAde({
   onUpdateNote,
   onDeleteNote,
   appearance,
+  title = "Notes"
 }: NotesPanelAdeProps) {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -108,7 +110,7 @@ export function NotesPanelAde({
             className="text-lg font-semibold"
             style={{ color: appearance?.textColor || "#111827" }}
           >
-            Notes
+            {title}
           </h3>
         </div>
       </div>

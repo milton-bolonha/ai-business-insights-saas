@@ -351,6 +351,166 @@ The meeting is OVER. This arc starts AFTER they have parted ways or a day later.
       },
     ],
   },
+  template_trade_ranking: {
+    id: "template_trade_ranking",
+    name: "Trade Ranking",
+    description: "Parametric algorithm for high-margin trade and barter opportunities.",
+    tiles: [
+      {
+        id: "trade_valuation",
+        title: "Investment Analysis",
+        prompt: `Analyze the trade opportunity for a {product_condition} {product_category}.
+        
+### INPUT DATA:
+- Product: {product_category}
+- Condition: {product_condition}
+- Market Val (New): R$ {market_value_new}
+- Market Val (Used): R$ {market_value_used_avg}
+- Demand Score: {market_demand}
+- Trader Mode: {trader_mode}
+
+### ALGORITHM TASKS:
+1. Calculate VMR (Valor de Mercado Real) using: VMR = {market_value_used_avg} * (1 + ({market_demand} - 0.5)) * condition_multiplier.
+2. Determine PIC (Preço Ideal de Compra) based on {trader_mode}.
+3. Provide a Score (A, B, or C) for this opportunity.
+
+### OUTPUT:
+Return a technical report with the calculated values, the deal grade, and a concise justification based on the Trader Algorithm.`,
+        category: "analysis",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      },
+      {
+        id: "exit_strategy",
+        title: "Exit & Pricing Strategy",
+        prompt: `Based on the {product_category} analysis, define the exit strategy for a {trader_mode} trader.
+        
+### VALUES TO GENERATE:
+- Anchor Price (for negotiation)
+- Real Market Price (Closing target)
+- Turnover Price (Fast sale)
+
+### INSIGHTS:
+Provide two types of insights:
+1. **Algorithmic Insight**: Formula-based recommendation.
+2. **AI Market Insight**: Contextual advice on how to pitch this specific item in the current market.`,
+        category: "strategy",
+        orderIndex: 1,
+        agentId: "ade_sales_coach",
+        preferredLength: "medium",
+      },
+      {
+        id: "liquidity_report",
+        title: "Liquidity & Risk",
+        prompt: `Evaluate the liquidity risk for {product_category} with demand score {market_demand}.
+        
+Analyze how long the capital remains locked given the {trader_mode} strategy. 
+If the mode is 'Margin', emphasize the patience required. If 'Turnover', emphasize the urgency of the price point.`,
+        category: "insights",
+        orderIndex: 2,
+        agentId: "ade_research_analyst",
+        preferredLength: "short",
+      },
+    ],
+  },
+  template_furniture_logistics: {
+    id: "template_furniture_logistics",
+    name: "Furniture Logistics",
+    description: "Real-time assembly and delivery tracking board (KDS Style).",
+    tiles: [
+      {
+        id: "order_kds_list",
+        title: "Lista de Pedidos Ativos",
+        prompt: "Generate a list of 5 furniture assembly orders for a retail store. For each, include: Order # (6 digits), Client Name, Product Name, Status (A Montar, Em Montagem, Entregue), Priority (Alta, Média, Baixa), and Payment (Pix, Dinheiro, Maquininha). Return a human-readable summary AND a JSON array under ```json blocks with the fields: {id, orderNumber, clientName, product, status, priority, paymentMethod}.",
+        category: "orders",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "long",
+      },
+      {
+        id: "assembly_details",
+        title: "Protocolos e Manuais de Montagem",
+        prompt: "Provide technical assembly requirements for standard {product_category}. Mention tools needed and estimated time. Return a markdown guide AND a JSON object under ```json blocks: {tools: [], estimatedTime: string, difficulty: 1-5}.",
+        category: "technical",
+        orderIndex: 1,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      }
+    ]
+  },
+  template_furniture_layout: {
+    id: "template_furniture_layout",
+    name: "Mapeamento de Layout de Loja",
+    description: "Visual grid mapping for walls, central islands, and product locations.",
+    tiles: [
+      {
+        id: "aisle_configuration",
+        title: "Configuração de Expositores",
+        prompt: `Define a store layout emphasizing a logistics/stock flow. 
+        The layout has:
+        - Wall Left (ID: 0)
+        - Wall Right (ID: 4)
+        - Central Islands (IDs: 1, 2, 3) where people walk between them.
+        
+        Assign a thematic category (ex: Cozinhas, Dormitórios) to each Wall and Island. 
+        Return a summary AND a JSON mapping: {aisles: [{id: 0-4, name: string, category: string}, ...]}.`,
+        category: "layout",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      },
+      {
+        id: "product_pins",
+        title: "Mapeamento de Pins (Produtos)",
+        prompt: `Generate 10 products for the store. For each, assign a physical position (pin).
+        
+        ### NOMENCLATURE:
+        - aisle: 0 (Wall Left), 4 (Wall Right), 1 (Island A), 2 (Island B), 3 (Island C).
+        - side: 'Left' or 'Right' (Only for Islands 1, 2, 3).
+        - pos: Number 1 to 12.
+        
+        Return a list AND a JSON array under \`\`\`json blocks with: {id, name, aisle, side, pos, category}.`,
+        category: "pins",
+        orderIndex: 1,
+        agentId: "ade_research_analyst",
+        preferredLength: "long",
+      }
+    ]
+  },
+  template_furniture_store: {
+    id: "template_furniture_store",
+    name: "Loja Virtual Mobiliário",
+    description: "Vitrine ativa para exposição de produtos e captura de leads.",
+    tiles: [
+      {
+        id: "public_catalog",
+        title: "Catálogo de Produtos (Estoque)",
+        prompt: `Create a luxurious furniture catalog for a store specialized in {product_category}.
+        Define 5 flagship products. For each, include:
+        - name
+        - price (realistic BRL)
+        - mainCategory (ex: Quarto, Cozinha, Sala)
+        - shortDescription
+        - isFeatured (true or false)
+        
+        Return a beautiful catalog description and a JSON array under \`\`\`json blocks: {products: [{id, name, price, category, description, isFeatured}, ...]}.`,
+        category: "products",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "long",
+      },
+      {
+        id: "orders_database",
+        title: "Banco de Dados de Pedidos",
+        prompt: "Create an empty order database structure. Just return a JSON skeleton under ```json: {orders: []} blocks to initialize the metadata accurately.",
+        category: "orders",
+        orderIndex: 1,
+        agentId: "ade_research_analyst",
+        preferredLength: "short",
+      }
+    ]
+  }
 };
 
 export const APP_SCENARIOS = GUEST_DASHBOARD_TEMPLATES;

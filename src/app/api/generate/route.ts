@@ -20,6 +20,7 @@ import { generateTileContent } from "@/lib/ai/tile-generation";
 import { writeWorkspace } from "@/lib/cookies-store";
 import { getAuth } from "@/lib/auth/get-auth";
 import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
+import type { TradeRankingInput } from "@/lib/services/trade-ranking-service";
 
 const requestSchema = z.object({
   salesRepCompany: z.string().min(2),
@@ -31,9 +32,27 @@ const requestSchema = z.object({
   model: z.string().min(2).optional(),
   promptAgent: z.string().min(2).optional(),
   responseLength: z.enum(["short", "medium", "long"]).optional(),
-  promptVariables: z.array(z.string().min(1)).max(16).optional(),
+  promptVariables: z.array(z.string().min(1)).max(100).optional(),
   bulkPrompts: z.array(z.string().min(2)).max(200).optional(),
 });
+
+function extractJsonFromMarkdown(text: string): any | null {
+  try {
+    const match = text.match(/```json\n?([\s\S]*?)\n?```/);
+    if (match && match[1]) {
+      return JSON.parse(match[1].trim());
+    }
+    const firstBrace = text.indexOf("{");
+    const lastBrace = text.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const maybeJson = text.substring(firstBrace, lastBrace + 1);
+      return JSON.parse(maybeJson);
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   const rate = await checkRateLimitMiddleware(request, "/api/generate");
@@ -174,18 +193,115 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    const isTradeRanking = templateId === "template_trade_ranking";
+
+    if (!process.env.OPENAI_API_KEY && !isTradeRanking) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY is not configured" },
         { status: 500 }
       );
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = process.env.OPENAI_API_KEY 
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
 
     let tiles: any[] = [];
 
-    if (template.generationMode === "sequential") {
+    if (isTradeRanking) {
+      // Local Algorithm First
+      const { calculateTradeRanking } = await import("@/lib/services/trade-ranking-service");
+      
+      const tradeInput: TradeRankingInput = {
+        produto: {
+          categoria: parsedVariables.product_category || "General",
+          estado: (parsedVariables.product_condition?.toLowerCase() || "usado") as any,
+          catDeprec: (parsedVariables.catDeprec?.toLowerCase() || "generico") as any,
+          idade_anos: Number(parsedVariables.product_age || 0),
+          funcionamento: Number(parsedVariables.product_working || 1),
+          custo_reparo: Number(parsedVariables.product_repair_cost || 0),
+        },
+        mercado: {
+          valor_novo: Number(parsedVariables.market_value_new || 0),
+          media_usado: Number(parsedVariables.market_value_used_avg || 0),
+          demanda: Number(parsedVariables.market_demand || 0.5),
+          oferta: Number(parsedVariables.market_supply || 0.5),
+          tempo_medio_venda_dias: Number(parsedVariables.market_time_to_sell || 7),
+          mes: Number(parsedVariables.mes || new Date().getMonth()),
+        },
+        trader: {
+          modo: (parsedVariables.trader_mode?.toLowerCase() || "margem") as any,
+          tolerancia_risco: Number(parsedVariables.trader_risk || 0.5),
+          pressao_caixa: Number(parsedVariables.trader_cash_pressure || 0),
+          taxaAltern: Number(parsedVariables.taxaAltern || 1.5),
+        },
+        dominancia: {
+          market_share: Number(parsedVariables.market_share || 0),
+          poder_preco: Number(parsedVariables.market_pricing_power || 0),
+          concorrencia: Number(parsedVariables.market_competition || 1),
+        }
+      };
+
+      // 🟢 Fix: Enrich mercado object AFTER tradeInput is initialized to avoid ReferenceError
+      if (parsedVariables.market_ml_used_median) {
+        tradeInput.mercado = {
+          ...tradeInput.mercado,
+          marketStats: {
+            used: {
+              median: Number(parsedVariables.market_ml_used_median),
+              p10: Number(parsedVariables.market_ml_used_p10 || 0),
+              p90: Number(parsedVariables.market_ml_used_p90 || 0),
+              count: Number(parsedVariables.market_ml_used_count || 0),
+            },
+            new: {
+              median: Number(parsedVariables.market_ml_new_median || 0),
+              p10: 0,
+              p90: 0,
+              count: 0,
+            },
+            confidence: Number(parsedVariables.market_ml_confidence || 0),
+          }
+        };
+      }
+
+      const ranking = calculateTradeRanking(tradeInput);
+
+      // Create tiles with the calculated results
+      tiles = prompts.map((item, index) => {
+        let content = "";
+        if (item.id === "trade_valuation") {
+          content = `## Ranking Score: ${ranking.nota}\n\n**VMR:** R$ ${ranking.valor_mercado}\n**Ideal Buy:** R$ ${ranking.compra_ideal}\n\n${ranking.insights.algorithmic}`;
+        } else if (item.id === "exit_strategy") {
+          content = `**Anchor Price:** R$ ${ranking.preco_ancora}\n**Target Sale:** R$ ${ranking.preco_real}\n**Quick Sale:** R$ ${ranking.preco_giro}\n\nEstratégia: ${ranking.estrategia}`;
+        } else {
+          content = `**Risk:** ${ranking.insights.risk_level.toUpperCase()}\n**Liquidity Score:** ${ranking.liquidez_score.toFixed(2)}`;
+        }
+
+        return {
+          id: `tile_${randomUUID()}`,
+          title: item.title,
+          content,
+          prompt: item.prompt,
+          templateId,
+          templateTileId: item.templateTileId,
+          category: item.category,
+          model: "local-algorithm",
+          orderIndex: index,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          totalTokens: 0,
+          attempts: 1,
+          history: [],
+          agentId: item.agentId,
+          responseLength: item.preferredLength,
+          promptVariables: item.runtimeVariables,
+        };
+      });
+
+      // Special: Add a metadata prompt variable to store the JSON ranking
+      (normalizedPromptVariables as any).push(`ranking_data:${JSON.stringify(ranking)}`);
+    }
+    else if (template.generationMode === "sequential") {
       let previousArcContent = "";
 
       for (const [index, item] of prompts.entries()) {
@@ -207,7 +323,7 @@ export async function POST(request: NextRequest) {
 
         // For sequential projects (like Books), only generate the FIRST tile in the main API call
         // to avoid timeouts. The UI Administrating loop will handle the rest.
-        if (index === 0) {
+        if (index === 0 && openai) {
           const gen = await generateTileContent({
             client: openai,
             prompt: contextualizedPrompt,
@@ -242,6 +358,7 @@ export async function POST(request: NextRequest) {
           agentId: item.agentId,
           responseLength: item.preferredLength,
           promptVariables: item.runtimeVariables,
+          metadata: extractJsonFromMarkdown(content) || undefined,
         };
 
         tiles.push(tile);
@@ -250,6 +367,25 @@ export async function POST(request: NextRequest) {
    else {
       // Parallel Generation (Default)
       const tilePromises = prompts.map(async (item, orderIndex) => {
+        if (!openai) {
+           return {
+              id: `tile_${randomUUID()}`,
+              title: item.title,
+              content: "AI Insights unavailable (No credits). Local metrics are still available.",
+              prompt: item.prompt,
+              templateId,
+              templateTileId: item.templateTileId,
+              category: item.category,
+              model: "offline",
+              orderIndex,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              totalTokens: 0,
+              attempts: 1,
+              history: []
+           };
+        }
+
         const generation = await generateTileContent({
           client: openai,
           prompt: item.prompt,
@@ -280,6 +416,7 @@ export async function POST(request: NextRequest) {
           agentId: item.agentId,
           responseLength: item.preferredLength,
           promptVariables: item.runtimeVariables,
+          metadata: extractJsonFromMarkdown(generation.content) || undefined,
         };
       });
 

@@ -12,6 +12,7 @@ export interface NoteDocument extends Document {
   dashboardId: string;
   title: string;
   content: string;
+  category?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ export function noteToDocument(
     dashboardId,
     title: note.title,
     content: note.content,
+    category: note.category,
   };
 }
 
@@ -44,6 +46,7 @@ export function noteDocumentToNote(
     id: doc.id || doc._id?.toString() || `note_${Date.now()}`,
     title: doc.title,
     content: doc.content,
+    category: doc.category,
     createdAt: doc.createdAt instanceof Date 
       ? doc.createdAt.toISOString() 
       : typeof doc.createdAt === 'string' 

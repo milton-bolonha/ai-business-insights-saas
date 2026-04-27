@@ -242,10 +242,9 @@ export async function incrementUsage(
           [usageType]: amount,
           creditsUsed: actionCost
         },
-        $setOnInsert: { userId, createdAt: new Date() },
         $set: { updatedAt: new Date() },
       },
-      { upsert: true }
+      { upsert: false }
     );
 
     // [New feature] Log the transaction ledger in the DB

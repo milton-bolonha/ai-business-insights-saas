@@ -10,6 +10,8 @@ interface ContactsPanelAdeProps {
   onAddContact?: () => void;
   onOpenContact?: (contact: Contact) => void;
   appearance?: AdeAppearanceTokens;
+  title?: string;
+  addLabel?: string;
 }
 
 export function ContactsPanelAde({
@@ -17,6 +19,8 @@ export function ContactsPanelAde({
   onAddContact,
   onOpenContact,
   appearance,
+  title = "Contacts",
+  addLabel = "Add Contact"
 }: ContactsPanelAdeProps) {
   return (
     <div className="space-y-4">
@@ -26,7 +30,7 @@ export function ContactsPanelAde({
           className="text-lg font-semibold"
           style={{ color: appearance?.textColor || "#111827" }}
         >
-          Characters
+          {title}
         </h3>
       </div>
 
@@ -48,7 +52,7 @@ export function ContactsPanelAde({
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
             <Plus className="h-5 w-5" />
           </div>
-          <span className="text-sm font-medium">Add Character</span>
+          <span className="text-sm font-medium">{addLabel}</span>
         </button>
 
         {contacts.map((contact) => (

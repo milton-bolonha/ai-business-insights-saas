@@ -21,6 +21,7 @@ export interface TileDocument extends Document {
   totalTokens?: number;
   attempts?: number;
   history?: TileMessage[];
+  metadata?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +50,7 @@ export function tileToDocument(
     totalTokens: tile.totalTokens,
     attempts: tile.attempts,
     history: tile.history,
+    metadata: tile.metadata,
   };
 }
 
@@ -71,6 +73,7 @@ export function tileDocumentToTile(
     totalTokens: doc.totalTokens,
     attempts: doc.attempts ?? 0,
     history: doc.history ?? [],
+    metadata: doc.metadata,
     createdAt: doc.createdAt instanceof Date 
       ? doc.createdAt.toISOString() 
       : typeof doc.createdAt === 'string' 

@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ShoppingBag } from "lucide-react";
 
 import { useToast } from "@/lib/state/toast-context";
 import { AdminShellAde } from "@/components/admin/ade/AdminShellAde";
@@ -17,6 +18,7 @@ import { AddContactModal } from "@/components/admin/ade/AddContactModal";
 import { CreateBlankDashboardModal } from "@/components/admin/ade/CreateBlankDashboardModal";
 import { AddWorkspaceModal } from "@/components/admin/ade/AddWorkspaceModal";
 import { UpgradeModal } from "@/components/ui/UpgradeModal";
+import { TradeRankingMeter } from "@/components/admin/ade/TradeRankingMeter";
 import { PaymentEmailModal } from "@/components/ui/PaymentEmailModal";
 import { TileDetailModal } from "@/components/ui/prompt-tiles/TileDetailModal";
 import { ContactDetailModal } from "@/components/admin/ade/ContactDetailModal";
@@ -25,6 +27,15 @@ import { BookReaderModal } from "@/components/admin/ade/BookReaderModal";
 import { BookWriterView } from "@/components/love-writers/BookWriterView";
 import { BookLibrarySection } from "@/components/love-writers/BookLibrarySection";
 import { AdminNavigation, type NavTab } from "@/components/admin/ade/AdminNavigation";
+import { LogisticsBoard } from "@/components/admin/ade/LogisticsBoard";
+import { StoreLayoutGrid } from "@/components/admin/ade/StoreLayoutGrid";
+import { AddOrderModal } from "@/components/admin/ade/AddOrderModal";
+import { FurnitureStoreBoard } from "@/components/admin/ade/FurnitureStoreBoard";
+import { FurniturePublicStore } from "@/components/admin/ade/FurniturePublicStore";
+import { AddProductModal } from "@/components/admin/ade/AddProductModal";
+import { ClientsBoard } from "@/components/admin/ade/ClientsBoard";
+import { StaffBoard } from "@/components/admin/ade/StaffBoard";
+import { FurnitureAnalyticsBoard } from "@/components/admin/ade/FurnitureAnalyticsBoard";
 
 // Zustand stores
 import {
@@ -44,6 +55,7 @@ import {
   useAppearanceManagement,
   usePaymentFlow,
   useGuestDataMigration,
+  useFurnitureSystem,
 } from "@/containers/admin/hooks";
 
 import { useUpdateTile } from "@/lib/state/query/tile.queries";
@@ -66,15 +78,21 @@ export function AdminContainer() {
   const content = useContent();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
 
-  // When URL workspaceId param changes (e.g. after onboarding redirect), switch to that workspace
+  // Handle ML Sync Success Notification
+  const mlSuccess = searchParams?.get("ml_success");
   useEffect(() => {
-    if (!hydrated || !urlWorkspaceId) return;
-    const targetWorkspace = useWorkspaceStore.getState().workspaces.find(w => w.id === urlWorkspaceId);
-    if (targetWorkspace && currentWorkspace?.id !== urlWorkspaceId) {
-      console.log(`[AdminContainer] URL workspaceId changed, switching to: ${urlWorkspaceId}`);
-      workspaceActions.switchWorkspace(urlWorkspaceId);
+    if (mlSuccess === "true") {
+      push({
+        title: "Mercado Livre Sincronizado",
+        description: "A conexão mestre foi estabelecida com sucesso.",
+        variant: "success"
+      });
+      // Clean URL
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete("ml_success");
+      router.replace(`/admin?${newParams.toString()}`);
     }
-  }, [urlWorkspaceId, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mlSuccess, push, router, searchParams]);
 
   // UI Store actions (declaradas abaixo com todas as outras)
 
@@ -85,6 +103,18 @@ export function AdminContainer() {
 
   const updateTileMutation = useUpdateTile();
 
+  // Shared ref for workspace tracking (prevents side effects on every render)
+  const prevWsIdRef = useRef<string | null>(null);
+
+  // Furniture System Hook
+  const furniture = useFurnitureSystem(currentDashboard, currentWorkspace);
+
+  useEffect(() => {
+    if (currentWorkspace?.promptSettings?.templateId?.startsWith("template_furniture")) {
+        furniture.populateDefaults();
+    }
+  }, [currentWorkspace?.id]);
+
   // Sequential Writer Logic (Client-Side Orchestration)
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -93,7 +123,37 @@ export function AdminContainer() {
   const [openBookMode, setOpenBookMode] = useState<"create" | "library">("library");
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<NavTab>("library");
+  const [activeTab, setActiveTab] = useState<NavTab>("arcs");
+
+  // Sync activeTab and template context
+  useEffect(() => {
+    if (!currentWorkspace || !hydrated) return;
+    const templateId = currentWorkspace.promptSettings?.templateId;
+    
+    // Deterministic tab management when switching workspaces
+    const getInitialTab = (tid: string): NavTab => {
+        if (tid === "template_trade_ranking") return "ranking";
+        if (tid === "template_furniture_logistics") return "logistics";
+        if (tid === "template_furniture_layout") return "layout";
+        if (tid === "template_furniture_store") return "store" as any;
+        if (tid === "template_love_writers") return "library";
+        return "arcs";
+    };
+
+    // If active tab doesn't exist for the current template, or we just switched workspace
+    if (prevWsIdRef.current !== currentWorkspace.id) {
+        setActiveTab(getInitialTab(templateId || ""));
+        prevWsIdRef.current = currentWorkspace.id;
+        return;
+    }
+
+    // Individual cases if user manually navigates to 'arcs' but we want to redirect once
+    if (templateId === "template_trade_ranking" && activeTab === "arcs") setActiveTab("ranking");
+    if (templateId === "template_furniture_logistics" && activeTab === "arcs") setActiveTab("logistics" as any);
+    if (templateId === "template_furniture_layout" && activeTab === "arcs") setActiveTab("layout" as any);
+    if (templateId === "template_furniture_store" && activeTab === "arcs") setActiveTab("store" as any);
+
+  }, [currentWorkspace?.id, hydrated]);
 
   // Count of tiles with content — used to re-trigger sequential generation after each completion
   const tilesWithContentCount = currentDashboard?.tiles?.filter(t => t.content && t.content.trim().length > 0).length ?? 0;
@@ -572,6 +632,8 @@ export function AdminContainer() {
   const allContacts = currentDashboard?.contacts || [];
   const allNotes = currentDashboard?.notes || [];
 
+  // Logic handled by useFurnitureSystem hook
+
 
 
   // Filter tiles for sequential writer (Love Writers)
@@ -587,7 +649,11 @@ export function AdminContainer() {
     <AdminShellAde
       appearance={appearance}
       navigation={
-        <AdminNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <AdminNavigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          templateId={currentWorkspace?.promptSettings?.templateId}
+        />
       }
       // Top Header Props
       onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
@@ -642,50 +708,111 @@ export function AdminContainer() {
                 </div>
               )}
 
-              {activeTab === "arcs" && (
+              {activeTab === "ranking" && (
+                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                   {(() => {
+                     const isTradeRanking = currentWorkspace.promptSettings?.templateId === "template_trade_ranking";
+                     let rankingData = null;
+                     const rankingVar = currentWorkspace.promptSettings?.promptVariables?.find(v => v.startsWith("ranking_data:"));
+                     if (rankingVar) {
+                       try {
+                         rankingData = JSON.parse(rankingVar.replace("ranking_data:", ""));
+                       } catch (e) {
+                         console.error("Failed to parse ranking data", e);
+                       }
+                     }
+                     return (
+                       <div className="space-y-6">
+                         {isTradeRanking && rankingData && (
+                           <div className="mb-8">
+                             <TradeRankingMeter 
+                               nota={rankingData.nota}
+                               valorNovo={rankingData.valor_novo}
+                               valorMercado={rankingData.valor_mercado}
+                               compraIdeal={rankingData.compra_ideal}
+                               precoReal={rankingData.preco_real}
+                               liquidezScore={rankingData.liquidez_score}
+                               estrategia={rankingData.estrategia}
+                               roiPct={rankingData.roi_pct}
+                               roiMensal={rankingData.roi_mensal}
+                               negotiation={rankingData.negotiation}
+                               marketAnalysis={rankingData.market_analysis}
+                               sazonalidade={rankingData.sazonalidade}
+                             />
+                           </div>
+                         )}
+                         {isTradeRanking && !rankingData && (
+                           <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[3rem] border border-dashed border-gray-200">
+                             <div className="text-gray-400 font-medium">Ranking details are still being calculated...</div>
+                           </div>
+                         )}
+                       </div>
+                     );
+                   })()}
+                 </div>
+               )}
+
+               {activeTab === "arcs" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <TileGridAde
-                    tiles={displayedTiles}
-                    isGenerating={isGenerating}
-                    onDeleteTile={async (tileId) => {
-                      try {
-                        await content.deleteTile(tileId);
-                        workspaceActions.refreshWorkspaces();
-                        push({ title: "Tile deleted", description: "The tile has been removed.", variant: "default" });
-                      } catch (error) {
-                        push({ title: "Error", description: "Failed to delete tile. Please try again.", variant: "destructive" });
-                      }
-                    }}
-                    onReorderTiles={async (order) => {
-                      if (!currentDashboard?.id) return;
-                      try {
-                        await content.reorderTiles(currentDashboard.id, order);
-                        workspaceActions.refreshWorkspaces();
-                      } catch (error) {
-                        push({ title: "Error", description: "Failed to reorder tiles. Please try again.", variant: "destructive" });
-                      }
-                    }}
-                    onOpenTile={(tile) => setSelectedTile(tile)}
-                    isReordering={false}
-                    appearance={appearance}
-                    onAddPrompt={openAddPrompt}
-                    onBulkUploadPrompts={openBulkUpload}
-                    animateEntrance={true}
-                    workspaceName={currentWorkspace?.name}
-                    dashboards={dashboardsForHeader}
-                    onSelectDashboard={workspaceActions.setActiveDashboard}
-                    onCreateBlankDashboard={openCreateBlankDashboard}
-                  />
+                      {currentWorkspace?.promptSettings?.templateId?.startsWith("template_furniture") ? (
+                        <FurnitureAnalyticsBoard tiles={allTiles} />
+                      ) : (
+                        <div className="space-y-6">
+                            <TileGridAde
+                              tiles={displayedTiles}
+                              isGenerating={isGenerating}
+                              onDeleteTile={async (tileId) => {
+                                try {
+                                  await content.deleteTile(tileId);
+                                  workspaceActions.refreshWorkspaces();
+                                  push({ title: "Tile deleted", description: "The tile has been removed.", variant: "default" });
+                                } catch (error) {
+                                  push({ title: "Error", description: "Failed to delete tile. Please try again.", variant: "destructive" });
+                                }
+                              }}
+                              onReorderTiles={async (order) => {
+                                if (!currentDashboard?.id) return;
+                                try {
+                                  await content.reorderTiles(currentDashboard.id, order);
+                                  workspaceActions.refreshWorkspaces();
+                                } catch (error) {
+                                  push({ title: "Error", description: "Failed to reorder tiles. Please try again.", variant: "destructive" });
+                                }
+                              }}
+                              onOpenTile={(tile) => setSelectedTile(tile)}
+                              isReordering={false}
+                              appearance={appearance}
+                              onAddPrompt={openAddPrompt}
+                              onBulkUploadPrompts={openBulkUpload}
+                              animateEntrance={true}
+                              workspaceName={currentWorkspace?.name}
+                              dashboards={dashboardsForHeader}
+                              onSelectDashboard={workspaceActions.setActiveDashboard}
+                              onCreateBlankDashboard={openCreateBlankDashboard}
+                            />
+                        </div>
+                      )}
                 </div>
-              )}
+               )}
 
               {activeTab === "characters" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <ContactsPanelAde
+                   <ContactsPanelAde
                     contacts={allContacts}
                     onAddContact={openAddContact}
                     onOpenContact={setSelectedContact}
                     appearance={appearance}
+                    title={
+                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? "Elenco" :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_logistics" ? "Equipe/Clientes" :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_layout" ? "Equipe" :
+                        "Contatos"
+                    }
+                    addLabel={
+                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? "Novo Personagem" :
+                        currentWorkspace?.promptSettings?.templateId?.startsWith("template_furniture") ? "Novo Integrante" :
+                        "Novo Contato"
+                    }
                   />
                 </div>
               )}
@@ -713,6 +840,12 @@ export function AdminContainer() {
                       }
                     }}
                     appearance={appearance}
+                    title={
+                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? "Arcos e Cenas" :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_logistics" ? "Relatórios e Protocolos" :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_layout" ? "Plantas e Ajustes" :
+                        "Notas"
+                    }
                   />
                 </div>
               )}
@@ -720,6 +853,102 @@ export function AdminContainer() {
               {activeTab === "files" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <FilesPlaceholderAde appearance={appearance} />
+                </div>
+              )}
+
+              {(activeTab as any) === "store" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {furniture.storeViewMode === "internal" ? (
+                        <FurnitureStoreBoard 
+                            tiles={allTiles}
+                            workspaceId={currentWorkspace?.id}
+                            onUpdateTile={async (tileId, updates) => {
+                                await content.updateTile(tileId, updates);
+                                workspaceActions.refreshWorkspaces();
+                            }}
+                            onOpenProductModal={(data) => {
+                                furniture.setEditingProduct(data);
+                                furniture.setProductModalOpen(true);
+                            }}
+                            onToggleViewMode={() => {
+                                furniture.setStoreViewMode("public");
+                            }}
+                        />
+                    ) : (
+                        <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+                            <div className="flex bg-white items-center gap-4 px-6 py-4 rounded-3xl shadow-sm border border-gray-100 mb-8">
+                                <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl">
+                                    <ShoppingBag className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight">Active Virtual Store</h4>
+                                    <p className="text-xs text-gray-500 font-medium">Your public URL is live</p>
+                                </div>
+                                <button 
+                                    onClick={() => furniture.setStoreViewMode("internal")}
+                                    className="ml-auto px-6 py-3 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-gray-200 transition-all hover:bg-black active:scale-95 cursor-pointer"
+                                >
+                                    Back to Manager
+                                </button>
+                            </div>
+                            <FurniturePublicStore 
+                                tiles={allTiles}
+                                onPurchaseRequest={furniture.handlePurchaseRequest}
+                            />
+                        </div>
+                    )}
+                </div>
+              )}
+
+              {(activeTab as any) === "clients" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ClientsBoard 
+                    tiles={allTiles}
+                    onClientSubmit={furniture.handleClientSubmit}
+                  />
+                </div>
+              )}
+
+              {(activeTab as any) === "staff" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <StaffBoard 
+                    tiles={allTiles}
+                    onStaffSubmit={furniture.handleStaffSubmit}
+                  />
+                </div>
+              )}
+
+              {(activeTab as any) === "logistics" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <LogisticsBoard 
+                    tiles={allTiles} 
+                    appearance={appearance}
+                    onUpdateTile={async (tileId, updates) => {
+                       await content.updateTile(tileId, updates);
+                       workspaceActions.refreshWorkspaces();
+                    }}
+                    onAddNote={async (noteData) => {
+                      if (currentDashboard) {
+                        await content.createNote(currentDashboard.id, noteData);
+                        handleNotesChanged();
+                        push({ title: "Nota de Protocolo criada", variant: "success" });
+                      }
+                    }}
+                    onOpenOrderModal={(data) => {
+                      furniture.setEditingOrder(data);
+                      furniture.setOrderModalOpen(true);
+                    }}
+                  />
+                </div>
+              )}
+
+              {(activeTab as any) === "layout" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <StoreLayoutGrid 
+                    tiles={displayedTiles} 
+                    onSaveLayout={furniture.handleSaveLayout}
+                    appearance={appearance} 
+                  />
                 </div>
               )}
           </div>
@@ -896,8 +1125,8 @@ export function AdminContainer() {
           open={modals.isCreateBlankDashboardOpen}
           onClose={closeCreateBlankDashboard}
           onSubmit={async (payload) => {
-            if (currentWorkspace) {
-              await workspaceActions.createDashboard(currentWorkspace.id, {
+            if (!currentWorkspace) return null;
+            await workspaceActions.createDashboard(currentWorkspace.id, {
                 name: payload.dashboardName,
               });
               closeCreateBlankDashboard();
@@ -905,7 +1134,6 @@ export function AdminContainer() {
                 title: "Dashboard created",
                 variant: "success",
               });
-            }
           }}
         />
       )}
@@ -991,6 +1219,31 @@ export function AdminContainer() {
         onClose={closePreview}
         tiles={allTiles}
         title={currentWorkspace?.name || "Book Preview"}
+      />
+
+      {furniture.orderModalOpen && (
+        <AddOrderModal
+          open={furniture.orderModalOpen}
+          onClose={() => {
+            furniture.setOrderModalOpen(false);
+            furniture.setEditingOrder(null);
+          }}
+          onSubmit={furniture.handleOrderSubmit}
+          initialData={furniture.editingOrder}
+          clients={Array.isArray(allTiles.find(t => t.category === "clients")?.metadata) ? allTiles.find(t => t.category === "clients")?.metadata : (allTiles.find(t => t.category === "clients")?.metadata?.clients || [])}
+          staff={Array.isArray(allTiles.find(t => t.category === "staff")?.metadata) ? allTiles.find(t => t.category === "staff")?.metadata : (allTiles.find(t => t.category === "staff")?.metadata?.staff || [])}
+          products={Array.isArray(allTiles.find(t => t.category === "products")?.metadata) ? allTiles.find(t => t.category === "products")?.metadata : (allTiles.find(t => t.category === "products")?.metadata?.products || [])}
+        />
+      )}
+
+      <AddProductModal 
+        open={furniture.productModalOpen}
+        onClose={() => {
+            furniture.setProductModalOpen(false);
+            furniture.setEditingProduct(null);
+        }}
+        onSubmit={furniture.handleProductSubmit}
+        initialData={furniture.editingProduct}
       />
 
     </AdminShellAde >

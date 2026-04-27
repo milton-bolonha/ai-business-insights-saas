@@ -249,48 +249,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             }
           });
 
-          // If Guest, we are done (local is truth)
-          if (!isMember) {
-            set((state) => {
-              state.workspaces = localWorkspaces;
-              reconcileGuestWorkspaceUsage(localWorkspaces.length);
-
-              const updatedWorkspace = localWorkspaces.find(
-                (w) => w.id === state.currentWorkspace?.id
-              );
-
-              if (updatedWorkspace) {
-                state.currentWorkspace = updatedWorkspace;
-                // Always ensure dashboard is set — even if currentDashboard was null
-                if (state.currentDashboard) {
-                  const updatedDashboard = updatedWorkspace.dashboards.find(
-                    (d) => d.id === state.currentDashboard?.id
-                  );
-                  state.currentDashboard =
-                    updatedDashboard ??
-                    updatedWorkspace.dashboards.find((d) => d.isActive) ??
-                    updatedWorkspace.dashboards[0] ??
-                    null;
-                } else {
-                  // currentDashboard was null — set it from the workspace's dashboards
-                  state.currentDashboard =
-                    updatedWorkspace.dashboards.find((d) => d.isActive) ??
-                    updatedWorkspace.dashboards[0] ??
-                    null;
-                }
-              } else if (localWorkspaces.length > 0) {
-                state.currentWorkspace = localWorkspaces[0];
-                state.currentDashboard =
-                  localWorkspaces[0].dashboards.find((d) => d.isActive) ??
-                  localWorkspaces[0].dashboards[0] ??
-                  null;
-              } else {
-                state.currentDashboard = null;
-              }
-            });
-            console.log("[DEBUG] workspaceStore (Guest) loaded from local", localWorkspaces.length);
-            return;
-          }
+          // We load from local first, but we ALWAYS try to fetch from API 
+          // because Clerk hydration can be slow on the client authStore, 
+          // while the Server API reads session cookies instantly.
 
           // If Member, continue to fetch from API
           // ...
