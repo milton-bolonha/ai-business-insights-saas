@@ -54,7 +54,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
     const topProducts = Object.entries(productPopularity)
         .sort(([,a]: any, [,b]: any) => b - a)
         .slice(0, 4)
-        .map(([name, count]) => ({ name, count }));
+        .map(([name, count]) => ({ name, count: count as number }));
 
     return (
         <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
