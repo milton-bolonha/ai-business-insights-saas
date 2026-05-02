@@ -260,6 +260,50 @@ export function useFurnitureSystem(currentDashboard: any, _currentWorkspace: any
     return success;
   }, [updateMetadata, push]);
 
+  const handleExportData = useCallback((category: string, format: "json" | "csv") => {
+    const allTiles = currentDashboard?.tiles || [];
+    const tile = allTiles.find((t: any) => t.category === category);
+    if (!tile || !tile.metadata) {
+      push({ title: "Export Error", description: "No data found to export.", variant: "destructive" });
+      return;
+    }
+
+    const data = tile.metadata;
+    const filename = `${category}_${Date.now()}`;
+
+    if (format === "json") {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `${filename}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    } else {
+      // Very basic CSV converter for demo
+      const keys = Object.keys(data[category] || data);
+      let csvContent = "data:text/csv;charset=utf-8,";
+      if (Array.isArray(data[category])) {
+        const items = data[category];
+        const headers = Object.keys(items[0] || {});
+        csvContent += headers.join(",") + "\n";
+        items.forEach((item: any) => {
+          csvContent += headers.map(h => `"${item[h] || ''}"`).join(",") + "\n";
+        });
+      } else {
+        csvContent += JSON.stringify(data);
+      }
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+    push({ title: "Export Complete", description: `File ${filename}.${format} downloaded.`, variant: "success" });
+  }, [currentDashboard, push]);
+
   return {
     orderModalOpen,
     setOrderModalOpen,
@@ -278,6 +322,7 @@ export function useFurnitureSystem(currentDashboard: any, _currentWorkspace: any
     handleClientSubmit,
     handleStaffSubmit,
     handleSaveLayout,
+    handleExportData,
     populateDefaults
   };
 }

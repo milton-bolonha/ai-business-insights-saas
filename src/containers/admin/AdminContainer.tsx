@@ -36,6 +36,7 @@ import { AddProductModal } from "@/components/admin/ade/AddProductModal";
 import { ClientsBoard } from "@/components/admin/ade/ClientsBoard";
 import { StaffBoard } from "@/components/admin/ade/StaffBoard";
 import { FurnitureAnalyticsBoard } from "@/components/admin/ade/FurnitureAnalyticsBoard";
+import { AdminChatView } from "@/components/admin/chat/AdminChatView";
 
 // Zustand stores
 import {
@@ -71,6 +72,7 @@ export function AdminContainer() {
   // Zustand stores
   const appearance = useUIStore((state) => state.appearance);
   const modals = useUIStore((state) => state.modals);
+  const openSaaSLimits = useUIStore((state) => state.openSaaSLimits);
   const auth = useAuthStore();
   const currentWorkspace = useCurrentWorkspace();
   const currentDashboard = useCurrentDashboard();
@@ -124,6 +126,7 @@ export function AdminContainer() {
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<NavTab>("arcs");
+  const [viewMode, setViewMode] = useState<"chat" | "menu">("chat");
 
   // Sync activeTab and template context
   useEffect(() => {
@@ -133,9 +136,7 @@ export function AdminContainer() {
     // Deterministic tab management when switching workspaces
     const getInitialTab = (tid: string): NavTab => {
         if (tid === "template_trade_ranking") return "ranking";
-        if (tid === "template_furniture_logistics") return "logistics";
-        if (tid === "template_furniture_layout") return "layout";
-        if (tid === "template_furniture_store") return "store" as any;
+        if (tid?.startsWith("template_furniture")) return "store" as any;
         if (tid === "template_love_writers") return "library";
         return "arcs";
     };
@@ -648,12 +649,33 @@ export function AdminContainer() {
   return (
     <AdminShellAde
       appearance={appearance}
+      chatOverlay={
+        viewMode === "chat" ? (
+          <AdminChatView
+            workspaces={workspaces}
+            currentWorkspace={currentWorkspace}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onSetActiveWorkspace={(id) => {
+                const ws = workspaces.find((w) => w.id === id);
+                if (ws) workspaceActions.setCurrentWorkspace(ws);
+            }}
+            onSwitchToMenu={() => setViewMode("menu")}
+            onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
+            onSetSpecificColor={handleSetBackground}
+            onOpenSaaSLimits={openSaaSLimits}
+          />
+        ) : null
+      }
       navigation={
-        <AdminNavigation 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab} 
-          templateId={currentWorkspace?.promptSettings?.templateId}
-        />
+        viewMode === "chat" ? null : (
+          <AdminNavigation 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+            templateId={currentWorkspace?.promptSettings?.templateId}
+            onSwitchToChat={() => setViewMode("chat")}
+          />
+        )
       }
       // Top Header Props
       onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
@@ -947,6 +969,7 @@ export function AdminContainer() {
                   <StoreLayoutGrid 
                     tiles={displayedTiles} 
                     onSaveLayout={furniture.handleSaveLayout}
+                    onExport={furniture.handleExportData}
                     appearance={appearance} 
                   />
                 </div>

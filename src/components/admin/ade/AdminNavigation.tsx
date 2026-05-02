@@ -19,7 +19,8 @@ import {
     Map as MapIcon,
     Layout,
     ShoppingBag,
-    Star
+    Star,
+    Sparkles
 } from "lucide-react";
 import { FaGavel } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -31,9 +32,10 @@ interface AdminNavigationProps {
     activeTab: NavTab;
     onTabChange: (tab: NavTab) => void;
     templateId?: string;
+    onSwitchToChat?: () => void;
 }
 
-export function AdminNavigation({ activeTab, onTabChange, templateId = "template_1" }: AdminNavigationProps) {
+export function AdminNavigation({ activeTab, onTabChange, templateId = "template_1", onSwitchToChat }: AdminNavigationProps) {
     // Resolve Configuration based on Template
     const isWriters = templateId === "template_love_writers";
     const isTrade = templateId === "template_trade_ranking";
@@ -137,6 +139,24 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                         );
                     })}
                 </nav>
+
+                {onSwitchToChat && (
+                    <div className="mt-auto pb-4 px-2 w-full flex justify-center">
+                        <div className="relative group flex justify-center">
+                            <button
+                                onClick={onSwitchToChat}
+                                className="p-3 rounded-2xl transition-all duration-300 relative cursor-pointer text-blue-500 hover:bg-blue-50 bg-white border border-blue-100 shadow-sm"
+                            >
+                                <Sparkles className="w-6 h-6" />
+                            </button>
+                            {/* Tooltip */}
+                            <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap shadow-xl">
+                                Modo Chat AI
+                                <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 border-y-[4px] border-y-transparent border-r-[4px] border-r-gray-900" />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </aside>
 
             {/* Mobile Bottom Menu (Floating) */}
@@ -167,6 +187,18 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                             </button>
                         );
                     })}
+
+                    {onSwitchToChat && (
+                        <>
+                            <div className="w-px h-8 bg-gray-200 mx-1" />
+                            <button
+                                onClick={onSwitchToChat}
+                                className="p-3 rounded-2xl transition-all duration-300 relative flex flex-col items-center gap-1 cursor-pointer text-blue-500 hover:text-blue-600"
+                            >
+                                <Sparkles className="w-6 h-6" />
+                            </button>
+                        </>
+                    )}
                 </nav>
             </div>
         </>

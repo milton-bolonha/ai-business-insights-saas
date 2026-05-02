@@ -13,7 +13,8 @@ import {
   Wallet,
   ArrowRightLeft,
   Filter,
-  CreditCard
+  CreditCard,
+  ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tile } from "@/lib/types";
@@ -45,6 +46,7 @@ interface Order {
 export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onOpenOrderModal }: LogisticsBoardProps) {
   const [showArchived, setShowArchived] = useState(false);
   const [activeRole, setActiveRole] = useState<"admin" | "vendedor" | "montador" | "entregador">("admin");
+  const [expandedOrderIds, setExpandedOrderIds] = useState<Record<string, string | null>>({});
 
   // Parse tiles into structured orders
   const orders = tiles
@@ -239,112 +241,147 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                     <div className="flex flex-col gap-4">
                         <AnimatePresence>
                             {colOrders.map((order) => (
-                            <motion.div
-                                key={order.id}
-                                layout
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className={cn(
-                                "group relative bg-white border-2 rounded-[2.5rem] p-5 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden",
-                                ((order.priority as string) === "High" || (order.priority as string) === "Alta") ? "border-rose-100" : "border-gray-50",
-                                ((order.status as string) === "Delivered" || (order.status as string) === "Entregue") && "opacity-80 border-emerald-100 bg-emerald-50/20"
-                                )}
-                            >
-                                {/* Header Section */}
-                                <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className={cn("p-2.5 rounded-2xl border", getPriorityColor(order.priority))}>
-                                    <ClipboardList className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">#{order.orderNumber}</div>
-                                    <div className="text-sm font-black text-gray-900 truncate max-w-[120px]">{order.clientName}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <button onClick={() => onOpenOrderModal(order)} className="p-2 text-gray-300 hover:text-blue-500 transition-colors">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(order)} className="p-2 text-gray-300 hover:text-rose-500 transition-colors">
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                                </div>
-
-                {/* Product Detail */}
-                <div className="bg-gray-50 rounded-3xl p-4 mb-4">
-                    <div className="flex justify-between items-start mb-1">
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Produto</div>
-                        <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 rounded-full">R$ {order.value || 0}</div>
-                    </div>
-                    <div className="text-sm font-bold text-gray-800 leading-snug">{order.product}</div>
-                </div>
-
-                {/* Status and Action Section */}
-                <div className="space-y-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        {["Nova Solicitação", "A Montar", "Em Montagem", "Pronto Entrega", "Em Rota", "Entregue"].map((st) => {
-                            const internalStMap: Record<string, string> = {
-                                "Nova Solicitação": "Nova Solicitação",
-                                "A Montar": "To Assemble",
-                                "Em Montagem": "Assembling",
-                                "Pronto Entrega": "Ready for Delivery",
-                                "Em Rota": "In Transit",
-                                "Entregue": "Delivered"
-                            };
-                            const internalSt = internalStMap[st];
-                            const isActive = (order.status as string) === internalSt || (order.status as string) === st;
-
-                            return (
-                                <button
-                                    key={st}
-                                    onClick={() => handleStatusChange(order, internalSt as any)}
+                                <motion.div
+                                    key={order.id}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    onClick={() => setExpandedOrderIds(prev => ({
+                                        ...prev,
+                                        [col.title]: prev[col.title] === order.id ? null : order.id
+                                    }))}
                                     className={cn(
-                                        "px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-tight transition-all cursor-pointer",
-                                        isActive 
-                                        ? internalSt === "Delivered" ? "bg-emerald-500 text-white shadow-md scale-105" : internalSt === "In Transit" ? "bg-indigo-500 text-white shadow-md" : internalSt === "Ready for Delivery" ? "bg-amber-500 text-white" : internalSt === "Assembling" ? "bg-blue-500 text-white" : "bg-gray-600 text-white"
-                                        : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                                        "group relative bg-white border-2 rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer",
+                                        ((order.priority as string) === "High" || (order.priority as string) === "Alta") ? "border-rose-100" : "border-gray-50",
+                                        ((order.status as string) === "Delivered" || (order.status as string) === "Entregue") && "opacity-80 border-emerald-100 bg-emerald-50/20",
+                                        expandedOrderIds[col.title] === order.id ? "p-5" : "p-3"
                                     )}
                                 >
-                                    {st}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    
-                    <div className="flex items-center justify-between border-t border-gray-50 pt-3">
-                        <div className="flex flex-col gap-1">
-                             <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                <span className="text-[10px] font-bold text-gray-400 capitalize">{order.paymentMethod}</span>
-                             </div>
-                             {order.assignedStaffName && (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">{order.assignedStaffName}</span>
-                                </div>
-                             )}
-                        </div>
-                        
-                        <button 
-                            onClick={() => handleArchive(order)}
-                            className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors cursor-pointer"
-                        >
-                            <Archive className="h-3 w-3" />
-                            {order.archived ? "Desarquivar" : "Arquivar"}
-                        </button>
-                    </div>
-                </div>
+                                    {expandedOrderIds[col.title] === order.id ? (
+                                        <>
+                                            {/* Header Section (Maximized) */}
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn("p-2.5 rounded-2xl border", getPriorityColor(order.priority))}>
+                                                        <ClipboardList className="h-4 w-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">#{order.orderNumber}</div>
+                                                        <div className="text-sm font-black text-gray-900 truncate max-w-[120px]">{order.clientName}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button onClick={(e) => { e.stopPropagation(); onOpenOrderModal(order); }} className="p-2 text-gray-300 hover:text-blue-500 transition-colors">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(order); }} className="p-2 text-gray-300 hover:text-rose-500 transition-colors">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                {/* Status Pulse for priority */}
-                {((order.status as string) === "To Assemble" || (order.status as string) === "A Montar" || (order.status as string) === "Nova Solicitação") && ((order.priority as string) === "High" || (order.priority as string) === "Alta") && (
-                <div className="absolute top-4 right-4 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                </div>
-                )}
-            </motion.div>
+                                            {/* Product Detail */}
+                                            <div className="bg-gray-50 rounded-3xl p-4 mb-4">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Produto</div>
+                                                    <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 rounded-full">R$ {order.value || 0}</div>
+                                                </div>
+                                                <div className="text-sm font-bold text-gray-800 leading-snug">{order.product}</div>
+                                            </div>
+
+                                            {/* Status and Action Section */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {["Nova Solicitação", "A Montar", "Em Montagem", "Pronto Entrega", "Em Rota", "Entregue"].map((st) => {
+                                                        const internalStMap: Record<string, string> = {
+                                                            "Nova Solicitação": "Nova Solicitação",
+                                                            "A Montar": "To Assemble",
+                                                            "Em Montagem": "Assembling",
+                                                            "Pronto Entrega": "Ready for Delivery",
+                                                            "Em Rota": "In Transit",
+                                                            "Entregue": "Delivered"
+                                                        };
+                                                        const internalSt = internalStMap[st];
+                                                        const isActive = (order.status as string) === internalSt || (order.status as string) === st;
+
+                                                        return (
+                                                            <button
+                                                                key={st}
+                                                                onClick={(e) => { e.stopPropagation(); handleStatusChange(order, internalSt as any); }}
+                                                                className={cn(
+                                                                    "px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-tight transition-all cursor-pointer",
+                                                                    isActive 
+                                                                    ? internalSt === "Delivered" ? "bg-emerald-500 text-white shadow-md scale-105" : internalSt === "In Transit" ? "bg-indigo-500 text-white shadow-md" : internalSt === "Ready for Delivery" ? "bg-amber-500 text-white" : internalSt === "Assembling" ? "bg-blue-500 text-white" : "bg-gray-600 text-white"
+                                                                    : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                                                                )}
+                                                            >
+                                                                {st}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between border-t border-gray-50 pt-3">
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                            <span className="text-[10px] font-bold text-gray-400 capitalize">{order.paymentMethod}</span>
+                                                        </div>
+                                                        {order.assignedStaffName && (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">{order.assignedStaffName}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleArchive(order); }}
+                                                        className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors cursor-pointer"
+                                                    >
+                                                        <Archive className="h-3 w-3" />
+                                                        {order.archived ? "Desarquivar" : "Arquivar"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        /* Minimized View */
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shrink-0", getPriorityColor(order.priority))}>
+                                                    {order.clientName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="text-[10px] font-black text-gray-900 truncate">{order.clientName}</div>
+                                                        <div className="text-[8px] font-bold text-gray-400 uppercase shrink-0">#{order.orderNumber}</div>
+                                                    </div>
+                                                    <div className="text-[9px] font-bold text-gray-400 truncate italic">{order.product}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className={cn(
+                                                    "w-2 h-2 rounded-full",
+                                                    (order.status as string) === "Delivered" ? "bg-emerald-500" : 
+                                                    (order.status as string) === "In Transit" ? "bg-indigo-500" :
+                                                    (order.status as string) === "Ready for Delivery" ? "bg-amber-500" :
+                                                    (order.status as string) === "Assembling" ? "bg-blue-500" : "bg-gray-400"
+                                                )} />
+                                                <ChevronRight className="h-3 w-3 text-gray-300" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Status Pulse for priority */}
+                                    {((order.status as string) === "To Assemble" || (order.status as string) === "A Montar" || (order.status as string) === "Nova Solicitação") && ((order.priority as string) === "High" || (order.priority as string) === "Alta") && (
+                                        <div className="absolute top-2 right-2 flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                                        </div>
+                                    )}
+                                </motion.div>
             ))}
                         </AnimatePresence>
                     </div>

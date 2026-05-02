@@ -40,6 +40,7 @@ export interface AdminTopHeaderProps {
     onOpenWorkspaceDetail?: () => void;
     onDeleteWorkspace?: (workspaceId: string) => void;
     onSetSpecificColor?: (color: string) => void;
+    hideWorkspaceSwitcher?: boolean;
 }
 
 export function AdminTopHeader({
@@ -47,7 +48,8 @@ export function AdminTopHeader({
     onOpenSaaSLimits,
     onOpenWorkspaceDetail,
     onDeleteWorkspace,
-    onSetSpecificColor
+    onSetSpecificColor,
+    hideWorkspaceSwitcher
 }: AdminTopHeaderProps) {
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -104,7 +106,8 @@ export function AdminTopHeader({
                 </div>
 
                 {/* Center: Workspace Chooser - Hidden on mobile if needed, or adjusted */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-200 group/ws">
+                {!hideWorkspaceSwitcher && (
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-200 group/ws">
                     <div className="relative flex items-center gap-1">
                         <button
                             onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
@@ -205,9 +208,11 @@ export function AdminTopHeader({
                         </AnimatePresence>
                     </div>
                 </div>
+                )}
 
 
                 {/* Right: Actions & User */}
+                {!hideWorkspaceSwitcher && (
                 <div className="flex items-center gap-2 z-20">
                     {/* Workspace Info Icon */}
                     {currentWorkspace && (
@@ -316,6 +321,7 @@ export function AdminTopHeader({
                         <UserButton />
                     </div>
                 </div>
+                )}
             </div>
 
             {/* Book Writer Overlay Rendered within Layout Constraint */}

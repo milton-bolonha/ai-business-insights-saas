@@ -57,12 +57,14 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
         bgColor: nextColor
       });
 
-      // 2. Persist to server (for both members and guests)
-      updateBgColorApi({
-        dashboardId: currentDashboard.id,
-        workspaceId: workspaceId,
-        bgColor: nextColor
-      });
+      // 2. Persist to server (only for members)
+      if (!isGuest) {
+        updateBgColorApi({
+          dashboardId: currentDashboard.id,
+          workspaceId: workspaceId,
+          bgColor: nextColor
+        });
+      }
 
       // Also update the global appearance for consistency
       setBaseColor(nextColor);
@@ -105,12 +107,14 @@ export function useAppearanceManagement(currentDashboard?: Dashboard) {
         bgColor: color
       });
 
-      // 2. Persist to server (for both members and guests)
-      updateBgColorApi({
-        dashboardId: currentDashboard.id,
-        workspaceId: workspaceId,
-        bgColor: color
-      });
+      // 2. Persist to server (only for members)
+      if (!isGuest) {
+        updateBgColorApi({
+          dashboardId: currentDashboard.id,
+          workspaceId: workspaceId,
+          bgColor: color
+        });
+      }
 
       // Also update the global appearance for consistency
       setBaseColor(color);
