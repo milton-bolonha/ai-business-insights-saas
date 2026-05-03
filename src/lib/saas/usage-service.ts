@@ -269,7 +269,8 @@ export async function incrementUsage(
  * Get current usage for a user
  */
 export async function getUsage(
-  userId: string
+  userId: string,
+  email?: string
 ): Promise<Record<string, number>> {
   if (!userId) {
     return {
@@ -315,29 +316,29 @@ export async function getUsage(
     
     try {
       const stripeCustomerId = userDoc?.stripeCustomerId;
-      const email = userDoc?.email;
+      const userEmail = userDoc?.email || email;
       
       const purchases = await db.find("purchases", {
         $or: [
           { userId },
           { clerkId: userId },
           ...(stripeCustomerId ? [{ stripeCustomerId }] : []),
-          ...(email ? [{ email }] : []) // Try by email if it was stored
+          ...(userEmail ? [{ email: userEmail }] : []) // Try by email if it was stored
         ]
       }) as any[];
 
       let totalFromPurchases = purchases.reduce((sum, p) => sum + (p.acquiredCredits || 0), 0);
       
       // Fallback: Check credit_transactions ledger by email for purchase_credits
-      if (totalFromPurchases === 0 && email) {
+      if (totalFromPurchases === 0 && userEmail) {
         const ledgerPurchases = await db.find("credit_transactions", {
-            email: email,
+            email: userEmail,
             usageType: "purchase_credits"
         }) as any[];
         
         if (ledgerPurchases.length > 0) {
             totalFromPurchases = ledgerPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-            console.log(`[UsageService] 🔍 Found ${totalFromPurchases} credits in ledger via email fallback for ${email}`);
+            console.log(`[UsageService] 🔍 Found ${totalFromPurchases} credits in ledger via email fallback for ${userEmail}`);
         }
       }
       
@@ -347,6 +348,8 @@ export async function getUsage(
         await db.updateOne("users", { _id: userDoc._id }, { 
             $set: { 
                 creditsTotal: totalFromPurchases,
+                // Ensure email is saved in userDoc if it was missing
+                ...( (!userDoc.email && userEmail) ? { email: userEmail } : {} ),
                 // Also sync stripeCustomerId if we found one in purchases but not in userDoc
                 ...( (!stripeCustomerId && purchases.find(p => p.stripeCustomerId)) ? { stripeCustomerId: purchases.find(p => p.stripeCustomerId).stripeCustomerId } : {} )
             } 

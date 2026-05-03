@@ -50,7 +50,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
 
   // Apply authentication protection for protected page routes
-  if (isProtectedRoute(req) && !userId && !guestId) {
+  if (isProtectedRoute(req) && !userId) {
     // For page routes: redirect to home
     return NextResponse.redirect(new URL("/", req.url));
   }

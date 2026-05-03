@@ -10,9 +10,10 @@ export async function POST(req: NextRequest) {
         const { userId } = await getAuth();
         const body = await req.json().catch(() => ({}));
         const targetUserId = body.userId || userId;
+        const email = body.email;
 
         const planInfo = await getPlanForUser(targetUserId);
-        const usage = await getUsage(targetUserId ?? "");
+        const usage = await getUsage(targetUserId ?? "", email);
 
         return new NextResponse(
             JSON.stringify({

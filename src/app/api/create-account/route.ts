@@ -97,20 +97,20 @@ export async function POST(req: NextRequest) {
       } catch (e) { console.error("[create-account] customer fetch failed:", e); }
     }
 
-    if (!targetUserId) {
-      if (email) {
-        const existingUser = await db.findOne<UserDocument>("users", { email });
-        if (existingUser) {
-          targetUserId = existingUser.userId || existingUser.clerkId;
-          console.log(`[create-account] Resolved TargetUser via email mapping: ${targetUserId}`);
-        }
+    if (!targetUserId && email) {
+      const existingUser = await db.findOne<UserDocument>("users", { email });
+      if (existingUser) {
+        targetUserId = existingUser.userId || existingUser.clerkId;
+        console.log(`[create-account] Resolved TargetUser via email mapping: ${targetUserId}`);
       }
+    }
 
-      if (!targetUserId) {
-        const { randomUUID } = await import("crypto");
-        targetUserId = `guest_${randomUUID()}`;
-        console.log(`[create-account] Generated anonymous TargetUser: ${targetUserId}`);
-      }
+    if (!targetUserId) {
+      console.warn(`[create-account] ❌ Could not resolve any TargetUser for session ${sessionId}. Aborting.`);
+      return NextResponse.json(
+        { error: "Authentication required: Please sign in to link your purchase." },
+        { status: 401 }
+      );
     }
 
     console.log(`[create-account] Processing for TargetUser: ${targetUserId} (Clerk: ${clerkUserId}, Stripe: ${stripeUserId})`);
@@ -300,7 +300,7 @@ export async function POST(req: NextRequest) {
 
     const planInfo = await getPlanForUser(targetUserId);
 
-    const response = NextResponse.json(
+    return NextResponse.json(
       {
         success: true,
         plan,
@@ -313,14 +313,6 @@ export async function POST(req: NextRequest) {
         headers: { "Cache-Control": "no-store" },
       }
     );
-
-    response.cookies.set("guest_user_id", targetUserId, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
-
-    return response;
   } catch (error) {
     console.error("[create-account] Error confirming membership:", error);
     // return detailed error in dev

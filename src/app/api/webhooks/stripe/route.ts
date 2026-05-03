@@ -108,28 +108,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   let email = session.customer_details?.email || session.customer_email;
 
-  if (!userId) {
-    if (!email && stripeCustomerId) {
-      try {
-        const cust = await stripe.customers.retrieve(stripeCustomerId);
-        if (!cust.deleted && (cust as any).email) {
-          email = (cust as any).email;
-        }
-      } catch (e) { console.error("[Stripe Webhook] customer fetch failed:", e); }
-    }
-
-    if (email) {
-      const existingUser = await db.findOne("users", { email }) as any;
-      if (existingUser) {
-        userId = existingUser.userId || existingUser.clerkId;
-        console.log(`[Stripe Webhook] Resolved TargetUser via email mapping: ${userId}`);
-      }
-    }
-
-    if (!userId) {
-      const { randomUUID } = await import("crypto");
-      userId = `guest_${randomUUID()}`;
-      console.log(`[Stripe Webhook] Generated anonymous TargetUser: ${userId}`);
+  if (!userId && email) {
+    const existingUser = await db.findOne("users", { email }) as any;
+    if (existingUser) {
+      userId = existingUser.userId || existingUser.clerkId;
+      console.log(`[Stripe Webhook] Resolved TargetUser via email mapping: ${userId}`);
     }
   }
 
