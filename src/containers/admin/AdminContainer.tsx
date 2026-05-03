@@ -219,7 +219,7 @@ export function AdminContainer() {
       const tiles = [...dashboardTiles].sort((a, b) => a.orderIndex - b.orderIndex);
       const nextTile = tiles.find(t => 
         (!t.content || t.content.trim().length === 0) && 
-        t.status !== "failed" && 
+        t.status !== "error" && 
         t.status !== "completed"
       );
 
@@ -376,7 +376,7 @@ export function AdminContainer() {
             capturedWorkspaceId,
             capturedDashboardId,
             nextTile.id,
-            { status: "failed" },
+            { status: "error" },
             nextTile
         );
 
@@ -386,7 +386,7 @@ export function AdminContainer() {
                 tileId: nextTile.id,
                 workspaceId: capturedWorkspaceId,
                 dashboardId: capturedDashboardId,
-                updates: { status: "failed" }
+                updates: { status: "error" }
             });
         }
 
