@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useToast } from "@/lib/state/toast-context";
-import { useContent, useWorkspaceActions } from "@/lib/stores";
+import { useContent, useWorkspaceActions, useAuthStore } from "@/lib/stores";
 
 interface Product {
     id: string;
@@ -33,6 +33,7 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
   const { push } = useToast();
   const content = useContent();
   const workspaceActions = useWorkspaceActions();
+  const auth = useAuthStore();
 
   // State Management
   const [orderModalOpen, setOrderModalOpen] = useState(false);
@@ -103,6 +104,11 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
         push({ title: "Erro de Sistema", description: "Painel ativo não encontrado.", variant: "destructive" });
         return;
     }
+
+    if (!auth.canPerformAction("ordersCount")) {
+        push({ title: "Limite de Créditos", description: "Você não possui créditos para criar pedidos.", variant: "destructive" });
+        return;
+    }
     
     const allTiles = currentDashboard.tiles || [];
     const ordersTile = allTiles.find((t: any) => t.category === "orders");
@@ -123,6 +129,7 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
 
     const success = await updateMetadata("orders", "orders", updatedList);
     if (success) {
+        auth.consumeUsage("ordersCount");
         push({ title: orderData.id ? "Order Updated" : "Order Created", variant: "success" });
     }
   }, [currentDashboard, updateMetadata, push]);
@@ -170,6 +177,11 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
         push({ title: "Erro de Sistema", description: "Painel ativo não encontrado.", variant: "destructive" });
         return;
     }
+
+    if (!auth.canPerformAction("wmsInventoryCount")) {
+        push({ title: "Limite de Créditos", description: "Você não possui créditos para adicionar produtos.", variant: "destructive" });
+        return;
+    }
     
     const allTiles = currentDashboard.tiles || [];
     const productTile = allTiles.find((t: any) => t.category === "products");
@@ -194,6 +206,7 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
     // Use the core updateMetadata for maximum reliability
     const success = await updateMetadata("products", "products", updatedList);
     if (success) {
+        auth.consumeUsage("wmsInventoryCount");
         push({ title: "Catalog Updated", description: `${productData.name} saved.`, variant: "success" });
         setProductModalOpen(false);
         setEditingProduct(null);
@@ -249,6 +262,11 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
         push({ title: "Erro de Sistema", description: "Painel ativo não encontrado.", variant: "destructive" });
         return;
     }
+
+    if (!auth.canPerformAction("staffCount")) {
+        push({ title: "Limite de Créditos", description: "Você não possui créditos para adicionar membros da equipe.", variant: "destructive" });
+        return;
+    }
     const allTiles = currentDashboard.tiles || [];
     const staffTile = allTiles.find((t: any) => t.category === "staff");
     const currentMetadata = staffTile?.metadata || {};
@@ -261,7 +279,10 @@ export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any)
         updatedList = [...staffList, { ...staffData, id: `staff_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, createdAt: new Date().toISOString() }];
     }
     const success = await updateMetadata("staff", "staff", updatedList);
-    if (success) push({ title: "Staff Member Saved", variant: "success" });
+    if (success) {
+        auth.consumeUsage("staffCount");
+        push({ title: "Staff Member Saved", variant: "success" });
+    }
   }, [currentDashboard, updateMetadata, push]);
 
   const handleSaveLayout = useCallback(async (sections: any[]) => {

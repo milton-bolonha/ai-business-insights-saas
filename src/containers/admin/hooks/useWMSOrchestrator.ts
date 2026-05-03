@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/lib/state/toast-context";
+import { useAuthStore } from "@/lib/stores";
 
 export interface WMSCommand {
   action: 'CREATE_SECTOR' | 'DELETE_SECTOR' | 'PUTAWAY' | 'AUTO_PUTAWAY' | 'PICKING';
@@ -44,6 +45,7 @@ export function useWMSOrchestrator(
   catalogProducts: any[] = []
 ) {
   const { push } = useToast();
+  const auth = useAuthStore();
    const [isProcessingAI, setIsProcessingAI] = useState(false);
    const [actionLogs, setActionLogs] = useState<ActionLog[]>([]);
    const [detectedItems, setDetectedItems] = useState<any[]>([]);
@@ -204,6 +206,15 @@ export function useWMSOrchestrator(
   const callGeminiAI = async (input: string, images: any[] = []) => {
     setIsProcessingAI(true);
     try {
+      // Proactive credit check
+      if (!auth.canPerformAction("wmsAiAssistant")) {
+        push({ 
+          title: "Limite de Créditos", 
+          description: "Você não possui créditos suficientes para usar o Assistente AI.", 
+          variant: "destructive" 
+        });
+        return { reply: "Desculpe, você atingiu seu limite de créditos.", logs: [] };
+      }
       // Prompt construction from prototype
       const prompt = `Você é uma IA de Sistema de Armazém (WMS MCP). Você deve interpretar o pedido do usuário e retornar EXATAMENTE UM JSON com duas chaves: "reply" (texto Markdown amigável respondendo o usuário) e "commands" (array de objetos de ação, vazio se for só conversa).
         
@@ -228,6 +239,9 @@ export function useWMSOrchestrator(
       const data = await response.json();
       const logs = executeCommands(data.commands || []);
       
+      // Consume credits locally for UI sync
+      auth.consumeUsage("wmsAiAssistant");
+
       return {
         reply: data.reply,
         logs

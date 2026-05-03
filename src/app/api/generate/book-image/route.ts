@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         
         // Note: usage-service might need to be updated to handle specific credit amounts
         // For this implementation, we'll increment by 1 and assume 1 unit = 1 image (100 credits)
-        const limitCheck = await checkLimit(userId, "bookGenerationsCount"); // Using bookGenerationsCount as a proxy or we can use credits balance
+        const limitCheck = await checkLimit(userId, "imageGenerationsCount");
         
         if (!limitCheck.allowed) {
             return NextResponse.json(
@@ -90,9 +90,7 @@ export async function POST(req: NextRequest) {
         console.log("[POST /api/generate/book-image] Cloudinary upload success:", imageUrl);
 
         // Charge usage
-        // await incrementUsage(userId, "credits", COST_PER_IMAGE); 
-        // For now, let's just log it or increment a counter
-        await incrementUsage(userId, "bookGenerationsCount", 1); 
+        await incrementUsage(userId, "imageGenerationsCount", 1); 
 
         return NextResponse.json({ url: imageUrl, success: true });
     } catch (error) {

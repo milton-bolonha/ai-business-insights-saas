@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Coins, Sparkles, UserPlus, Briefcase, MessageSquare } from "lucide-react";
+import { X, Coins, Sparkles, UserPlus, Briefcase, MessageSquare, BookOpen, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { useAuthStore, useUsage, useLimits } from "@/lib/stores/authStore";
@@ -58,7 +58,11 @@ function TransactionLedgerList({ filterType }: { filterType: "purchases" | "usag
         createContact: "New Character",
         tileChat: "Insight Map Chat",
         contactChat: "Character Chat",
-        regenerate: "AI Regeneration"
+        regenerate: "AI Regeneration",
+        bookGenerationsCount: "Book Chapter",
+        imageGenerationsCount: "AI Book Image",
+        marketEnrichmentCount: "Market Enrichment",
+        assetsCount: "Asset Upload"
     };
 
     return (
@@ -201,6 +205,27 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                                                         <span className="font-medium text-sm">Send Message</span>
                                                     </div>
                                                     <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">2 Credits</div>
+                                                </div>
+                                                <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <BookOpen className="h-4 w-4 text-amber-500" />
+                                                        <span className="font-medium text-sm">Book Chapter / Arc</span>
+                                                    </div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">20 Credits</div>
+                                                </div>
+                                                <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <Zap className="h-4 w-4 text-amber-500" />
+                                                        <span className="font-medium text-sm">Market Enrichment</span>
+                                                    </div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">5 Credits</div>
+                                                </div>
+                                                <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
+                                                    <div className="flex items-center gap-3">
+                                                        <Sparkles className="h-4 w-4 text-amber-500" />
+                                                        <span className="font-medium text-sm">AI Book Image</span>
+                                                    </div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">100 Credits</div>
                                                 </div>
                                             </div>
                                         </div>

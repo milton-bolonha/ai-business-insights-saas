@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth/get-auth";
 import { uploadToCloudinary } from "@/lib/storage/cloudinary";
+import { enforceAssetLimit } from "@/lib/saas/usage-service";
 
 export const maxDuration = 60; // 1 minute timeout
 
 export async function POST(req: NextRequest) {
     try {
-        await getAuth();
-        // We allow guests to upload as well, similar to the rest of the app logic
+        const { userId } = await getAuth();
+        
+        // Enforce credit limit for assets
+        if (userId) {
+            const limit = await enforceAssetLimit(userId);
+            if (!limit.allowed) {
+                return NextResponse.json({ error: limit.reason }, { status: 402 });
+            }
+        }
         
         const body = await req.json();
         const { fileData, folder = "ade/products" } = body;

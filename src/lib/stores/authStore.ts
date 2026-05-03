@@ -7,7 +7,11 @@ export type GuestAction =
   | 'regenerate'
   | 'createContact'
   | 'createWorkspace'
-  | 'createTile';
+  | 'createTile'
+  | 'wmsAiAssistant'
+  | 'wmsInventoryCount'
+  | 'ordersCount'
+  | 'staffCount';
 
 export interface UsageResult {
   action: GuestAction;
@@ -54,6 +58,10 @@ const MEMBER_LIMITS: Record<GuestAction, number> = {
   createContact: 5,
   createWorkspace: 3,
   createTile: 20,
+  wmsAiAssistant: 50,
+  wmsInventoryCount: 100,
+  ordersCount: 100,
+  staffCount: 50,
 };
 
 const USAGE_VERSION = 2;
@@ -73,6 +81,10 @@ export const useAuthStore = create<AuthState>()(
         createContact: 0,
         createWorkspace: 0,
         createTile: 0,
+        wmsAiAssistant: 0,
+        wmsInventoryCount: 0,
+        ordersCount: 0,
+        staffCount: 0,
       },
 
       // Getters computados (legacy compatibility)
@@ -102,6 +114,10 @@ export const useAuthStore = create<AuthState>()(
             regenerate: 5,
             createContact: 1,
             createWorkspace: 10,
+            wmsAiAssistant: 5,
+            wmsInventoryCount: 1,
+            ordersCount: 2,
+            staffCount: 1,
         };
 
         const cost = costs[action] || 0;
@@ -125,6 +141,10 @@ export const useAuthStore = create<AuthState>()(
             regenerate: 5,
             createContact: 1,
             createWorkspace: 10,
+            wmsAiAssistant: 5,
+            wmsInventoryCount: 1,
+            ordersCount: 2,
+            staffCount: 1,
         };
         const cost = costs[action] || 0;
         const totalCredits = (usage as any).creditsTotal || (limits as any).creditsTotal || 0;
@@ -155,6 +175,10 @@ export const useAuthStore = create<AuthState>()(
             regenerate: 5,
             createContact: 1,
             createWorkspace: 10,
+            wmsAiAssistant: 5,
+            wmsInventoryCount: 1,
+            ordersCount: 2,
+            staffCount: 1,
         };
         const cost = costs[action] || 0;
 
@@ -191,6 +215,10 @@ export const useAuthStore = create<AuthState>()(
             createContact: 0,
             createWorkspace: 0,
             createTile: 0,
+            wmsAiAssistant: 0,
+            wmsInventoryCount: 0,
+            ordersCount: 0,
+            staffCount: 0,
           }
         });
       },
@@ -240,6 +268,10 @@ export const useAuthStore = create<AuthState>()(
               createContact: 0,
               createWorkspace: 0,
               createTile: 0,
+              wmsAiAssistant: 0,
+              wmsInventoryCount: 0,
+              ordersCount: 0,
+              staffCount: 0,
             }
           };
         }

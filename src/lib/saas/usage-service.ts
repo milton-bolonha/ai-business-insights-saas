@@ -24,7 +24,13 @@ export type UsageType =
   | "contactChatsCount"
   | "regenerationsCount"
   | "assetsCount"
-  | "bookGenerationsCount";
+  | "bookGenerationsCount"
+  | "marketEnrichmentCount"
+  | "imageGenerationsCount"
+  | "wmsInventoryCount"
+  | "wmsAiAssistant"
+  | "ordersCount"
+  | "staffCount";
 
 export interface UsageLimits {
   companiesCount: number; // Max workspaces per user
@@ -36,6 +42,12 @@ export interface UsageLimits {
   regenerationsCount: number; // Max regenerations
   assetsCount: number; // Max assets/uploads
   bookGenerationsCount?: number; // Max book generations
+  marketEnrichmentCount?: number; // Max market data enrichments
+  imageGenerationsCount?: number; // Max image generations
+  wmsInventoryCount?: number;
+  wmsAiAssistant?: number;
+  ordersCount?: number;
+  staffCount?: number;
   tokensUsed: number; // Max tokens per month
   creditsTotal: number; // Max available credits
 }
@@ -50,6 +62,12 @@ export const CREDIT_COSTS: Record<UsageType, number> = {
   regenerationsCount: 5,
   assetsCount: 1,
   bookGenerationsCount: 20, // generating a portion of a book costs 20 credits
+  marketEnrichmentCount: 5, // enrichment costs 5 credits
+  imageGenerationsCount: 100,
+  wmsInventoryCount: 1,
+  wmsAiAssistant: 5,
+  ordersCount: 2,
+  staffCount: 1,
   tokensUsed: 0,
 };
 
@@ -69,6 +87,13 @@ export const FREE_LIMITS: UsageLimits = {
   contactChatsCount: 20,
   regenerationsCount: 10,
   assetsCount: 0,
+  bookGenerationsCount: 5,
+  marketEnrichmentCount: 5,
+  imageGenerationsCount: 0,
+  wmsInventoryCount: 50,
+  wmsAiAssistant: 10,
+  ordersCount: 20,
+  staffCount: 10,
   tokensUsed: 3000,
   creditsTotal: 200, // Included initial credits
 };
@@ -82,6 +107,9 @@ export const SAFE_DEFAULT_MEMBER: UsageLimits = {
   contactChatsCount: 50,
   regenerationsCount: 20,
   assetsCount: 10,
+  bookGenerationsCount: 50,
+  marketEnrichmentCount: 100,
+  imageGenerationsCount: 10,
   tokensUsed: 10_000,
   creditsTotal: 10000, // Default Pro credits
 };
