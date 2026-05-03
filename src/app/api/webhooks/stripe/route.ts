@@ -245,8 +245,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       });
 
       console.log(`[Stripe Webhook] ✅ User ${userId} marked as member`);
-      console.log(`[Stripe Webhook] 📝 Migration flag set - client should migrate localStorage data`);
       console.log(`[Stripe Webhook] 💰 Purchase recorded, added ${acquiredCredits} credits.`);
+
+      // 3. Log credit transaction for ledger tracking
+      await db.insertOne("credit_transactions", {
+        userId,
+        email: email || undefined,
+        usageType: "purchase_credits",
+        amount: acquiredCredits,
+        creditsCost: 0,
+        stripeSessionId: session.id,
+        createdAt: new Date(),
+      });
     } else {
       console.log(`[Stripe Webhook] ⏩ Purchase ${session.id} already processed. Skipping duplicate user credit assignment.`);
     }

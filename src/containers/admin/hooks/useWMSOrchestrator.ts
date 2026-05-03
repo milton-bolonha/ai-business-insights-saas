@@ -24,8 +24,11 @@ export interface WMSCommand {
 export interface Spot {
   id: string;
   code: string;
-  span: "short" | "long";
+  row: number;
+  col: number;
+  status: "available" | "occupied" | "reserved" | "blocked";
   products: any[];
+  updatedAt?: string;
 }
 
 export interface ActionLog {
@@ -57,14 +60,18 @@ export function useWMSOrchestrator(
   }, []);
 
   const generateSpots = (sectorId: string, rows: number, cols: number) => {
-    const spots = [];
+    const spots: Spot[] = [];
+    const sectorPrefix = sectorId.replace('SEC-', '').charAt(0);
     for (let r = 1; r <= rows; r++) {
       for (let c = 1; c <= cols; c++) {
         spots.push({
           id: `${sectorId}-${r}-${c}`,
-          code: `${sectorId}-${r}-${c}`,
-          span: "short",
-          products: []
+          code: `${sectorPrefix}${r}${c}`,
+          row: r,
+          col: c,
+          status: "available",
+          products: [],
+          updatedAt: new Date().toISOString()
         });
       }
     }

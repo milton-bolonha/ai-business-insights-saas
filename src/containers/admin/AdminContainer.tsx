@@ -119,6 +119,7 @@ export function AdminContainer() {
 
   // Sequential Writer Logic (Client-Side Orchestration)
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Book Writer State
   const [openBookId, setOpenBookId] = useState<string | null>(null);
@@ -207,6 +208,12 @@ export function AdminContainer() {
       // 2b. Check Usage Limits
       if (!auth.canPerformAction("createTile")) {
           console.warn("[SequentialWriter] 🚫 Limit reached for createTile");
+          setGenerationError("Você atingiu o limite de geração de blocos para o seu plano.");
+          return;
+      }
+
+      if (generationError) {
+          console.log("[SequentialWriter] 🛑 Stopping due to previous error.");
           return;
       }
 
@@ -328,8 +335,19 @@ export function AdminContainer() {
           console.log(`[SequentialWriter] Completed tile: ${nextTile.title}`);
         }
 
-      } catch (e) {
+      } catch (e: any) {
         console.error("[SequentialWriter] Loop Error:", e);
+        const errorMsg = e.message || "Erro desconhecido na geração";
+        
+        // Only stop the loop for fatal errors (500, Unauthorized, etc.)
+        if (errorMsg.includes("500") || errorMsg.includes("401") || errorMsg.includes("credits") || errorMsg.includes("limit")) {
+            setGenerationError(errorMsg);
+            push({
+                title: "Geração Interrompida",
+                description: errorMsg,
+                variant: "destructive"
+            });
+        }
       } finally {
         setIsGenerating(false);
       }

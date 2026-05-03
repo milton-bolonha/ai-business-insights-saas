@@ -35,8 +35,11 @@ interface ProductReference {
 interface Spot {
     id: string;
     code: string;
-    span: "short" | "long";
+    row: number;
+    col: number;
+    status: "available" | "occupied" | "reserved" | "blocked";
     products: ProductReference[];
+    updatedAt?: string;
 }
 
 interface MapSection {
@@ -44,10 +47,17 @@ interface MapSection {
     type: "Wall" | "Showcase";
     label: string;
     spots: Spot[];
-    rows?: number;
-    cols?: number;
-    orientation?: "horizontal" | "vertical";
+    rows: number;
+    cols: number;
+    orientation: "horizontal" | "vertical";
 }
+
+const STATUS_MAP = {
+  available: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-400', label: 'Vazio' },
+  occupied: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-600', label: 'Ocupado' },
+  reserved: { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-600', label: 'Reservado' },
+  blocked: { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-600', label: 'Bloqueado' },
+};
 
 interface StoreLayoutGridProps {
     tiles: Tile[];
@@ -98,9 +108,9 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
     // Wizard Configuration State
     const [wizardConfig, setWizardConfig] = useState({
         showcaseCount: 4,
-        hasWallShowcases: true,
-        spotType: "multiple" as "single" | "multiple",
-        isMirrored: false
+        rows: 4,
+        cols: 6,
+        orientation: "horizontal" as "horizontal" | "vertical"
     });
 
     const allSpots = sections.flatMap(s => s.spots);
@@ -135,27 +145,48 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
     const generateLayout = () => {
         const newSections: MapSection[] = [];
 
-        // Generate Showcases
         for (let i = 0; i < wizardConfig.showcaseCount; i++) {
             const char = String.fromCharCode(65 + i); // A, B, C...
+            const sectionId = `SEC-${char}`;
+            const spots: Spot[] = [];
+            
+            for (let r = 1; r <= wizardConfig.rows; r++) {
+                for (let c = 1; c <= wizardConfig.cols; c++) {
+                    spots.push({
+                        id: `${sectionId}-${r}-${c}`,
+                        code: `${char}${r}${c}`,
+                        row: r,
+                        col: c,
+                        status: "available",
+                        products: [],
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+            }
+
             newSections.push({
-                id: `show-${char}`,
+                id: sectionId,
                 type: "Showcase",
-                label: `Expositor ${char}`,
-                spots: [
-                    { id: `${char}1`, code: `${char}1`, span: "short", products: [] },
-                    { id: `${char}2`, code: `${char}2`, span: "long", products: [] },
-                    { id: `${char}3`, code: `${char}3`, span: "short", products: [] },
-                ]
+                label: `Setor ${char}`,
+                spots,
+                rows: wizardConfig.rows,
+                cols: wizardConfig.cols,
+                orientation: wizardConfig.orientation
             });
         }
 
-        const finalSections = wizardConfig.isMirrored ? [...newSections].reverse() : newSections;
-        setSections(finalSections);
+        setSections(newSections);
+        setActiveSectionIndex(0);
+        
         if (onSaveLayout) {
-            onSaveLayout(finalSections);
+            onSaveLayout(newSections);
         }
-        push({ title: "Planta Gerada & Salva", description: "Mapeamento reconfigurado e persistido no banco.", variant: "success" });
+        
+        push({ 
+            title: "Planta Regerada", 
+            description: `${newSections.length} setores criados e salvos.`, 
+            variant: "success" 
+        });
     };
 
     // --- AI Smart Inventory Assistant ---
@@ -223,8 +254,19 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
         const newSection: MapSection = {
             id: `new-${Date.now()}`,
             type: "Showcase",
-            label: "Novo",
-            spots: [{ id: `s-${Date.now()}`, code: "?", span: "short", products: [] }]
+            label: "Novo Setor",
+            rows: 1,
+            cols: 1,
+            orientation: "horizontal",
+            spots: [{ 
+                id: `s-${Date.now()}`, 
+                code: "?", 
+                row: 1, 
+                col: 1, 
+                status: "available", 
+                products: [],
+                updatedAt: new Date().toISOString()
+            }]
         };
         const updated = [...sections];
         updated.splice(index, 0, newSection);
@@ -246,9 +288,19 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
     const addSpot = (sectionId: string) => {
         setSections(sections.map(s => {
             if (s.id !== sectionId) return s;
+            const nextCol = (s.cols || 0) + 1;
             return {
                 ...s,
-                spots: [...s.spots, { id: `spot-${Date.now()}`, code: `${s.label}${s.spots.length + 1}`, span: "short", products: [] }]
+                cols: nextCol,
+                spots: [...s.spots, { 
+                    id: `spot-${Date.now()}`, 
+                    code: `${s.label}${s.spots.length + 1}`, 
+                    row: 1, 
+                    col: nextCol, 
+                    status: "available", 
+                    products: [],
+                    updatedAt: new Date().toISOString()
+                }]
             };
         }));
     };
@@ -379,9 +431,9 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden bg-gray-50/50 border-b border-gray-100"
                         >
-                            <div className="p-8 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-6">
+                            <div className="p-8 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-6 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expositores</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Setores</label>
                                     <input
                                         type="number"
                                         value={wizardConfig.showcaseCount}
@@ -389,24 +441,33 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                         className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:border-indigo-500 outline-none"
                                     />
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Linhas</label>
+                                    <input
+                                        type="number"
+                                        value={wizardConfig.rows}
+                                        onChange={e => setWizardConfig({ ...wizardConfig, rows: parseInt(e.target.value) })}
+                                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:border-indigo-500 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Colunas</label>
+                                    <input
+                                        type="number"
+                                        value={wizardConfig.cols}
+                                        onChange={e => setWizardConfig({ ...wizardConfig, cols: parseInt(e.target.value) })}
+                                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold focus:border-indigo-500 outline-none"
+                                    />
+                                </div>
 
                                 <div className="flex items-center gap-6 md:col-span-2">
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Expositores Parede</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Orientação</label>
                                         <button
-                                            onClick={() => setWizardConfig({ ...wizardConfig, hasWallShowcases: !wizardConfig.hasWallShowcases })}
-                                            className={cn("w-12 h-6 rounded-full transition-all relative p-1", wizardConfig.hasWallShowcases ? "bg-indigo-600" : "bg-gray-200")}
+                                            onClick={() => setWizardConfig({ ...wizardConfig, orientation: wizardConfig.orientation === "horizontal" ? "vertical" : "horizontal" })}
+                                            className={cn("w-12 h-6 rounded-full transition-all relative p-1", wizardConfig.orientation === "vertical" ? "bg-indigo-600" : "bg-gray-200")}
                                         >
-                                            <div className={cn("w-4 h-4 bg-white rounded-full transition-all shadow-sm", wizardConfig.hasWallShowcases ? "translate-x-6" : "translate-x-0")} />
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Layout Espelhado</label>
-                                        <button
-                                            onClick={() => setWizardConfig({ ...wizardConfig, isMirrored: !wizardConfig.isMirrored })}
-                                            className={cn("w-12 h-6 rounded-full transition-all relative p-1", wizardConfig.isMirrored ? "bg-indigo-600" : "bg-gray-200")}
-                                        >
-                                            <div className={cn("w-4 h-4 bg-white rounded-full transition-all shadow-sm", wizardConfig.isMirrored ? "translate-x-6" : "translate-x-0")} />
+                                            <div className={cn("w-4 h-4 bg-white rounded-full transition-all shadow-sm", wizardConfig.orientation === "vertical" ? "translate-x-6" : "translate-x-0")} />
                                         </button>
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -570,77 +631,66 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                             </div>
 
                                             <div className={cn(
-                                                "flex p-4 rounded-2xl transition-all relative min-h-[350px] w-full items-center bg-white border border-gray-100 shadow-md",
-                                                section.orientation === "vertical" ? "flex-col overflow-y-auto" : "flex-row overflow-x-auto",
-                                                isCompactView ? "gap-1" : "gap-4"
+                                                "grid p-6 rounded-[2.5rem] transition-all relative min-h-[400px] w-full items-center bg-white border-4 border-gray-100 shadow-2xl overflow-auto scrollbar-hide",
+                                                isCompactView ? "gap-2" : "gap-4"
                                             )}
                                             style={{
-                                                display: section.rows && section.cols ? "grid" : "flex",
-                                                gridTemplateColumns: section.orientation === "vertical" 
-                                                    ? `repeat(${section.cols || 1}, 1fr)` 
-                                                    : `repeat(${section.cols || section.spots.length}, 1fr)`,
-                                                gridTemplateRows: section.orientation === "vertical"
-                                                    ? `repeat(${section.rows || section.spots.length}, 1fr)`
-                                                    : `repeat(${section.rows || 1}, 1fr)`
+                                                gridTemplateColumns: `repeat(${section.cols || 1}, minmax(0, 1fr))`,
+                                                gridTemplateRows: `repeat(${section.rows || 1}, auto)`,
                                             }}
                                             >
-                                                {section.spots.map((spot) => (
-                                                    <div key={spot.id} className="relative group/spot">
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.02, y: -2 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => setSelectedSpot(spot)}
-                                                            className={cn(
-                                                                "relative rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1.5",
-                                                                isCompactView ? "h-16 w-16" : (spot.span === "long" ? "h-56 w-28 lg:w-36" : "h-20 w-28 lg:w-36"),
-                                                                (searchQuery && spot.products && spot.products.some((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) || (searchQuery && spot.code.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                                    ? "bg-amber-500 border-amber-500 text-white shadow-xl z-10 animate-pulse"
-                                                                    : selectedSpot?.id === spot.id
-                                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-xl z-10"
-                                                                        : spot.products && spot.products.length > 0
-                                                                            ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                                                                            : "bg-white border-gray-100 text-gray-300 hover:border-indigo-100"
-                                                            )}
-                                                        >
-                                                            <div
-                                                                className={cn("font-black uppercase tracking-tighter", isCompactView ? "text-[8px]" : "text-[10px]")}
-                                                                contentEditable={isEditorMode}
-                                                                suppressContentEditableWarning
-                                                                onBlur={(e) => {
-                                                                    const val = e.currentTarget.innerText;
-                                                                    setSections(prev => prev.map(s => {
-                                                                        if (s.id !== section.id) return s;
-                                                                        return { ...s, spots: s.spots.map(sp => sp.id === spot.id ? { ...sp, code: val } : sp) };
-                                                                    }));
-                                                                }}
+                                                {section.spots.map((spot) => {
+                                                    const status = spot.products && spot.products.length > 0 ? "occupied" : (spot.status || "available");
+                                                    const style = STATUS_MAP[status as keyof typeof STATUS_MAP] || STATUS_MAP.available;
+                                                    
+                                                    return (
+                                                        <div key={spot.id} className="relative group/spot">
+                                                            <motion.button
+                                                                whileHover={{ scale: 1.05, y: -4, zIndex: 30 }}
+                                                                whileTap={{ scale: 0.95 }}
+                                                                onClick={() => setSelectedSpot(spot)}
+                                                                className={cn(
+                                                                    "relative rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 shadow-sm",
+                                                                    isCompactView ? "h-14 w-14" : "h-20 w-24 lg:w-28",
+                                                                    style.bg,
+                                                                    style.border,
+                                                                    style.text,
+                                                                    selectedSpot?.id === spot.id && "ring-4 ring-indigo-500/30 z-10 border-indigo-500 shadow-2xl scale-110",
+                                                                    (searchQuery && spot.products && spot.products.some((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))) || (searchQuery && spot.code.toLowerCase().includes(searchQuery.toLowerCase()))
+                                                                        ? "ring-4 ring-amber-500 z-10 animate-pulse bg-amber-500 border-amber-500 text-white" : ""
+                                                                )}
                                                             >
-                                                                {spot.code}
-                                                            </div>
-                                                            {spot.products.length > 0 && <Box className={cn(isCompactView ? "h-3 w-3" : "h-4 w-4", selectedSpot?.id === spot.id ? "text-white" : "text-indigo-600")} />}
-                                                            {spot.products.length > 1 && (
-                                                                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white shadow-sm">
-                                                                    {spot.products.length}
+                                                                <span className={cn("font-black opacity-40 uppercase tracking-tighter leading-none mb-1", isCompactView ? "text-[7px]" : "text-[9px]")}>
+                                                                    {spot.code || `${spot.row}-${spot.col}`}
                                                                 </span>
-                                                            )}
-                                                        </motion.button>
+                                                                
+                                                                {status === 'occupied' ? (
+                                                                    <Box size={isCompactView ? 16 : 24} className="animate-in zoom-in duration-300" />
+                                                                ) : status === 'blocked' ? (
+                                                                    <Zap size={isCompactView ? 16 : 24} />
+                                                                ) : (
+                                                                    <div className={cn("rounded-full bg-current opacity-5", isCompactView ? "w-2 h-2" : "w-3 h-3")} />
+                                                                )}
 
-                                                        {/* Micro-Interaction: Smart AI Add on Slot */}
-                                                        <div className="absolute top-0 -right-2 flex flex-col gap-1 opacity-0 group-hover/spot:opacity-100 transition-all z-20">
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); setSelectedSpot(spot); setAssistantMode("voice"); setIsAssistantOpen(true); }}
-                                                                className="p-1.5 bg-white border border-indigo-100 text-indigo-600 rounded-lg shadow-xl hover:scale-110 active:scale-95"
-                                                            >
-                                                                <Mic className="h-3 w-3" />
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); setSelectedSpot(spot); setAssistantMode("camera"); setIsAssistantOpen(true); }}
-                                                                className="p-1.5 bg-gray-900 border border-gray-800 text-white rounded-lg shadow-xl hover:scale-110 active:scale-95"
-                                                            >
-                                                                <Camera className="h-3 w-3" />
-                                                            </button>
+                                                                {spot.products && spot.products.length > 1 && (
+                                                                    <span className={cn("absolute bg-indigo-600 text-white font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white", isCompactView ? "-top-1 -right-1 w-4 h-4 text-[7px]" : "-top-2 -right-2 w-6 h-6 text-[10px]")}>
+                                                                        {spot.products.length}
+                                                                    </span>
+                                                                )}
+                                                            </motion.button>
+
+                                                            {/* Quick Action Overlay */}
+                                                            <div className="absolute -top-2 -right-2 flex flex-col gap-1 opacity-0 group-hover/spot:opacity-100 transition-all z-40 scale-75 group-hover/spot:scale-100">
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); setSelectedSpot(spot); setAssistantMode("voice"); setIsAssistantOpen(true); }}
+                                                                    className="p-2 bg-white border border-gray-100 text-indigo-600 rounded-xl shadow-xl hover:bg-indigo-600 hover:text-white transition-all"
+                                                                >
+                                                                    <Mic className="h-3 w-3" />
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
 
                                                 {isEditorMode && section.type === "Showcase" && (
                                                     <button
