@@ -291,6 +291,50 @@ export async function getUsage(
     const userDoc = await db.findOne("users", {
       $or: [{ userId }, { clerkId: userId }]
     }) as any;
+
+    if (!userDoc && userId) {
+      // Se no existe usuário, mas temos ID (clerk/guest), retornamos zerado
+      return {
+        companiesCount: 0,
+        contactsCount: 0,
+        notesCount: 0,
+        tilesCount: 0,
+        tileChatsCount: 0,
+        contactChatsCount: 0,
+        regenerationsCount: 0,
+        assetsCount: 0,
+        tokensUsed: 0,
+        creditsUsed: 0,
+        creditsTotal: 0,
+      };
+    }
+
+    // Auto-reconciliation logic:
+    // If user has purchases that aren't reflected in creditsTotal, update it.
+    let creditsTotal = userDoc?.creditsTotal || 0;
+    
+    try {
+      const stripeCustomerId = userDoc?.stripeCustomerId;
+      const purchases = await db.find("purchases", {
+        $or: [
+          { userId },
+          { clerkId: userId },
+          ...(stripeCustomerId ? [{ stripeCustomerId }] : [])
+        ]
+      }) as any[];
+
+      const totalFromPurchases = purchases.reduce((sum, p) => sum + (p.acquiredCredits || 0), 0);
+      
+      // If the ledger has more credits than the profile, heal the profile
+      if (totalFromPurchases > creditsTotal) {
+        console.log(`[UsageService] 🟢 Auto-healing credits for ${userId}: ${creditsTotal} -> ${totalFromPurchases}`);
+        await db.updateOne("users", { _id: userDoc._id }, { $set: { creditsTotal: totalFromPurchases } });
+        creditsTotal = totalFromPurchases;
+      }
+    } catch (reconcileErr) {
+      console.warn("[UsageService] Failed to reconcile credits", reconcileErr);
+    }
+
     return {
       companiesCount: userDoc?.companiesCount || 0,
       contactsCount: userDoc?.contactsCount || 0,
@@ -302,7 +346,7 @@ export async function getUsage(
       assetsCount: userDoc?.assetsCount || 0,
       tokensUsed: userDoc?.tokensUsed || 0,
       creditsUsed: userDoc?.creditsUsed || 0,
-      creditsTotal: userDoc?.creditsTotal || 0,
+      creditsTotal: creditsTotal,
     };
   } catch (error) {
     console.error("[UsageService] Error getting usage:", error);
