@@ -23,9 +23,22 @@ export function AuthSync() {
             isPaid: currentStoreUser?.isPaid || false, // Maintain local payment claim until verified
             ...({ id: user.id } as any) // Pass the Clerk ID so modal can use it immediately
           });
+
+          // Sync usage and credits from DB for the member
+          if (!hasClearedMemberCache.current) {
+            fetch("/api/user/sync-usage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: user.id })
+            }).then(res => res.json()).then(data => {
+              if (data.usage) {
+                console.log("[AuthSync] ✅ Member usage synced from DB:", data.usage);
+                useAuthStore.getState().setUsage(data.usage);
+                hasClearedMemberCache.current = true;
+              }
+            }).catch(err => console.error("[AuthSync] Member usage sync failed:", err));
+          }
         }
-        // If isSignedIn is true but user is null/undefined, DO NOTHING.
-        // Wait for the next render where user is populated.
       } else { // User is NOT signed in
         const currentStoreUser = useAuthStore.getState().user;
         const storedGuestId = typeof window !== "undefined" ? localStorage.getItem("guest_checkout_user_id") : null;

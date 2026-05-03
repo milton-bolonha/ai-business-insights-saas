@@ -19,8 +19,11 @@ export async function POST(request: NextRequest) {
             }, { status: 200 });
         }
 
-        // If the user has a stripeCustomerId stored, we should query purchases by it too
-        // Fallback or-condition incase userId is clerkId or vice-versa
+        const { getUsage } = await import("@/lib/saas/usage-service");
+        const usageData = await getUsage(userId);
+        const creditsTotal = usageData.creditsTotal || 0;
+
+        // Still get the userDoc for stripeCustomerId mapping
         const userDoc = await db.findOne("users", {
             $or: [
                 { userId },
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             history: timeline.slice(0, 100), // cap at 100 merged
-            creditsTotal: userDoc?.creditsTotal || 0
+            creditsTotal: creditsTotal
         }, { status: 200 });
 
     } catch (error: any) {
