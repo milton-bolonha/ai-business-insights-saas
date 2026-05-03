@@ -9,6 +9,8 @@ export interface WMSCommand {
   rows?: number;
   cols?: number;
   orientation?: 'horizontal' | 'vertical';
+  type?: 'Wall' | 'Showcase' | 'Rack';
+  layoutMode?: 'boxed' | 'full';
   item?: {
     id?: string;
     name?: string;
@@ -91,7 +93,8 @@ export function useWMSOrchestrator(
           if (!currentSections.find(s => s.id === id)) {
             const newSec = {
               id,
-              type: "Showcase",
+              type: cmd.type || "Showcase",
+              layoutMode: cmd.layoutMode || "boxed",
               label: `Setor ${id}`,
               rows: cmd.rows || 4,
               cols: cmd.cols || 6,
@@ -219,7 +222,7 @@ export function useWMSOrchestrator(
       const prompt = `Você é uma IA de Sistema de Armazém (WMS MCP). Você deve interpretar o pedido do usuário e retornar EXATAMENTE UM JSON com duas chaves: "reply" (texto Markdown amigável respondendo o usuário) e "commands" (array de objetos de ação, vazio se for só conversa).
         
       Ações suportadas em 'commands':
-      1. { "action": "CREATE_SECTOR", "id": "A1", "rows": 4, "cols": 5, "orientation": "horizontal" }
+      1. { "action": "CREATE_SECTOR", "id": "A1", "rows": 4, "cols": 5, "orientation": "horizontal", "type": "Showcase", "layoutMode": "boxed" } (Types: Wall, Showcase, Rack. Modes: boxed, full)
       2. { "action": "AUTO_PUTAWAY", "item": { "name": "...", "sku": "...", "price": "...", "condition": "...", "description": "..." } }
       3. { "action": "PUTAWAY", "targetId": "A1-1-1", "item": { ... } }
       4. { "action": "PICKING", "targetId": "A1-1-1", "sku": "...", "reason": "..." }
