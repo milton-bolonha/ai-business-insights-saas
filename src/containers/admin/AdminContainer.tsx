@@ -367,15 +367,15 @@ export function AdminContainer() {
         console.error("[SequentialWriter] Loop Error:", e);
         const errorMsg = e.message || "Erro desconhecido na geração";
         
-        // Only stop the loop for fatal errors (500, Unauthorized, etc.)
-        if (errorMsg.includes("500") || errorMsg.includes("401") || errorMsg.includes("credits") || errorMsg.includes("limit")) {
-            setGenerationError(errorMsg);
-            push({
-                title: "Geração Interrompida",
-                description: errorMsg,
-                variant: "destructive"
-            });
-        }
+        // Stop the loop for any error to prevent flooding/retries
+        setGenerationError(errorMsg);
+        setIsGenerating(false);
+        
+        push({
+            title: "Geração Interrompida",
+            description: errorMsg,
+            variant: "destructive"
+        });
       } finally {
         setIsGenerating(false);
       }

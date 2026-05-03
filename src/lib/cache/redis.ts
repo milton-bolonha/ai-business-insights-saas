@@ -42,15 +42,30 @@ if (!vercelClient) {
   }
 }
 
+let lastMajorErrorTime = 0;
+const CIRCUIT_BREAKER_MS = 60000; // Wait 1 minute before retrying after a network failure
+
 function getClient() {
+  // Circuit breaker: If we had a DNS/Network error recently, don't even try
+  if (Date.now() - lastMajorErrorTime < CIRCUIT_BREAKER_MS) {
+    return null;
+  }
+
   if (cacheImpl === "vercel") {
     return vercelClient;
   }
   if (cacheImpl === "upstash") {
     return upstashClient;
   }
-  console.warn("[Cache] ⚠️ No Redis client available - caching will be disabled");
   return null;
+}
+
+function handleCacheError(error: any) {
+    const errorStr = String(error);
+    if (errorStr.includes("ENOTFOUND") || errorStr.includes("fetch failed") || errorStr.includes("ECONNREFUSED")) {
+        console.warn("[Cache] 🔌 Network/DNS failure. Engaging circuit breaker for 60s.");
+        lastMajorErrorTime = Date.now();
+    }
 }
 
 /**
@@ -81,6 +96,7 @@ export const cache = {
       }
       return null;
     } catch (error) {
+      handleCacheError(error);
       console.warn(`[Cache] Get failed for key "${key}":`, error);
       return null;
     }
@@ -111,6 +127,7 @@ export const cache = {
         }
       }
     } catch (error) {
+      handleCacheError(error);
       console.warn(`[Cache] Set failed for key "${key}":`, error);
     }
   },
@@ -189,6 +206,7 @@ export const cache = {
       }
       return 0;
     } catch (error) {
+      handleCacheError(error);
       console.warn(`[Cache] Increment failed for key "${key}":`, error);
       return 0;
     }
