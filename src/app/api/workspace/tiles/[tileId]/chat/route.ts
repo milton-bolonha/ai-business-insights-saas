@@ -6,7 +6,6 @@ import { resolveWorkspaceName } from "@/lib/workspace-resolver";
 import { resolveModel } from "@/lib/ai/settings";
 import { generateTileContent } from "@/lib/ai/tile-generation";
 import type { Tile } from "@/lib/types";
-import type { WorkspaceWithDashboards } from "@/lib/types/dashboard";
 import { DEFAULT_MAX_OUTPUT_TOKENS } from "@/lib/ai/settings";
 import { getAuth } from "@/lib/auth/get-auth";
 import { authorizeResourceAccess } from "@/lib/auth/authorize";
@@ -14,7 +13,6 @@ import { invalidateResourceCache } from "@/lib/cache/invalidation";
 import { checkLimit, incrementUsage } from "@/lib/saas/usage-service";
 import { checkRateLimitMiddleware } from "@/lib/middleware/rate-limit";
 import { db } from "@/lib/db/mongodb";
-import { loadWorkspacesWithDashboards } from "@/lib/storage/dashboards-store";
 
 // Runtime: Node.js (required for file system operations)
 export const runtime = "nodejs";
@@ -75,36 +73,10 @@ export async function POST(
       );
     }
   } else {
-    // 🔒 Guest Security Check
-    const { checkGuestLimit } = await import("@/lib/middleware/guest-limit");
-    const { SAFE_DEFAULT_GUEST } = await import("@/lib/saas/usage-service");
-
-    // Check "generation" limit (shared with tile generation for now, or specific)
-    // Using "generation" as a proxy for "AI interactions" if specific not defined
-    const guestLimitData = await checkGuestLimit(
-      request,
-      "generation",
-      SAFE_DEFAULT_GUEST.tileChatsCount,
-      1
+    return NextResponse.json(
+      { error: "Authentication required. Please sign in to use this feature." },
+      { status: 401 }
     );
-
-    if (!guestLimitData.allowed) {
-      const errorRes = NextResponse.json(
-        {
-          error: guestLimitData.reason,
-          upgradeRequired: true
-        },
-        { status: 403 }
-      );
-      if (guestLimitData.response) {
-        guestLimitData.response.cookies.getAll().forEach((c) => errorRes.cookies.set(c));
-      }
-      return errorRes;
-    }
-
-    // Pass cookie response for later use
-    (request as any)._guestLimitResponse = guestLimitData.response;
-    (request as any)._guestId = guestLimitData.guestId;
   }
 
   if (!process.env.OPENAI_API_KEY) {
@@ -127,14 +99,6 @@ export async function POST(
         const existingTile = await db.findOne("tiles", { id: tileId, userId, workspaceId, dashboardId }) as any;
         if (existingTile?.history) {
             existingHistory = existingTile.history;
-        }
-    } else {
-        const workspaces = loadWorkspacesWithDashboards();
-        const workspace = workspaces.find((w: WorkspaceWithDashboards) => w.id === workspaceId);
-        const dashboard = workspace?.dashboards.find((d: any) => d.id === dashboardId);
-        const tile = dashboard?.tiles.find((t: any) => t.id === tileId);
-        if (tile?.history) {
-            existingHistory = tile.history;
         }
     }
 
@@ -168,27 +132,12 @@ export async function POST(
     if (userId) {
       await invalidateResourceCache("tiles", dashboardId, workspaceId);
       await incrementUsage(userId, "tileChatsCount", 1);
-    } else {
-      // Increment Guest Usage
-      const guestId = (request as any)._guestId;
-      if (guestId) {
-        const { incrementGuestUsage } = await import("@/lib/middleware/guest-limit");
-        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-        await incrementGuestUsage(guestId, ip, "generation", 1);
-      }
     }
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       tile: chatTile,
     });
-
-    // Set cookie if needed
-    const guestResponse = (request as any)._guestLimitResponse as NextResponse | undefined;
-    if (guestResponse) {
-      guestResponse.cookies.getAll().forEach((c) => response.cookies.set(c));
-    }
-    return response;
   } catch (error) {
     console.error("[API] Error in tile chat:", error);
     return NextResponse.json(

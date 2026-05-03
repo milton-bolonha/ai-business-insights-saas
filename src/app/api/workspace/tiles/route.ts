@@ -9,6 +9,7 @@ import { generateTileContent } from "@/lib/ai/tile-generation";
 import OpenAI from "openai";
 import { getAuth } from "@/lib/auth/get-auth";
 import { audit } from "@/lib/audit/logger";
+import { incrementUsage } from "@/lib/saas/usage-service";
 
 // Runtime: Node.js (required for file system and potential MongoDB)
 export const runtime = 'nodejs';
@@ -67,35 +68,10 @@ export async function POST(request: NextRequest) {
       );
     }
   } else {
-    // 🔒 Guest Security Check (Server-Side)
-    const { checkGuestLimit } = await import("@/lib/middleware/guest-limit");
-    const { SAFE_DEFAULT_GUEST } = await import("@/lib/saas/usage-service");
-
-    // Check "tiles" limit (1 unit)
-    const guestLimitData = await checkGuestLimit(
-      request,
-      "tiles",
-      SAFE_DEFAULT_GUEST.tilesCount,
-      1
+    return NextResponse.json(
+      { error: "Authentication required. Please sign in to use this feature." },
+      { status: 401 }
     );
-
-    if (!guestLimitData.allowed) {
-      const errorRes = NextResponse.json(
-        {
-          error: guestLimitData.reason,
-          upgradeRequired: true
-        },
-        { status: 403 }
-      );
-      if (guestLimitData.response) {
-        guestLimitData.response.cookies.getAll().forEach((c) => errorRes.cookies.set(c));
-      }
-      return errorRes;
-    }
-
-    // Pass cookie response for later use
-    (request as any)._guestLimitResponse = guestLimitData.response;
-    (request as any)._guestId = guestLimitData.guestId;
   }
 
   let finalWorkspaceId = workspaceId;
@@ -181,32 +157,15 @@ export async function POST(request: NextRequest) {
         dashboardId,
       });
 
-      const { incrementUsage } = await import("@/lib/saas/usage-service");
       await incrementUsage(userId, "tilesCount", 1);
-    } else {
-      // Increment Guest Usage
-      const guestId = (request as any)._guestId;
-      if (guestId) {
-        const { incrementGuestUsage } = await import("@/lib/middleware/guest-limit");
-        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-        await incrementGuestUsage(guestId, ip, "tiles", 1);
-      }
     }
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       tile: newTile,
       dashboardId,
       workspaceId: finalWorkspaceId,
     });
-
-    // Set cookie if needed
-    const guestResponse = (request as any)._guestLimitResponse as NextResponse | undefined;
-    if (guestResponse) {
-      guestResponse.cookies.getAll().forEach((c) => response.cookies.set(c));
-    }
-
-    return response;
   } catch (error) {
     console.error("[API] /api/workspace/tiles - Error generating tile:", error);
     return NextResponse.json(

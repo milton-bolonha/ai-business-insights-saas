@@ -13,7 +13,7 @@ import {
   resolveTemplateTiles,
   type PromptAgentId,
   type PromptVariableId,
-} from "@/lib/guest-templates";
+} from "@/lib/templates";
 import type { Tile, WorkspaceSnapshot } from "@/lib/types";
 import { DEFAULT_MAX_OUTPUT_TOKENS, resolveModel } from "@/lib/ai/settings";
 import { generateTileContent } from "@/lib/ai/tile-generation";
@@ -160,37 +160,11 @@ export async function POST(request: NextRequest) {
 
     const { userId } = await getAuth();
 
-    // 🔒 Guest Security Check (Server-Side)
-    let guestLimitData: import("@/lib/middleware/guest-limit").GuestLimitResult | null = null;
-
     if (!userId) {
-      const { checkGuestLimit } = await import("@/lib/middleware/guest-limit");
-      const { SAFE_DEFAULT_GUEST } = await import("@/lib/saas/usage-service");
-
-      // Calculate requested amount strictly (e.g. tiles.length isn't known yet, but template implies it)
-      // For now we check "Access" (1 unit). Real increment happens later.
-      // Better: Check if user has AT LEAST 1 slot remaining.
-      guestLimitData = await checkGuestLimit(
-        request,
-        "tiles",
-        SAFE_DEFAULT_GUEST.tilesCount,
-        1
+      return NextResponse.json(
+        { error: "Authentication required. Please sign in to use this feature." },
+        { status: 401 }
       );
-
-      if (!guestLimitData.allowed) {
-        const errorRes = NextResponse.json(
-          {
-            error: guestLimitData.reason,
-            upgradeRequired: true
-          },
-          { status: 403 }
-        );
-        // Ensure creation of guest identity cookie even on error
-        if (guestLimitData.response) {
-          guestLimitData.response.cookies.getAll().forEach((c) => errorRes.cookies.set(c));
-        }
-        return errorRes;
-      }
     }
 
     const isTradeRanking = templateId === "template_trade_ranking";
@@ -478,53 +452,27 @@ export async function POST(request: NextRequest) {
         const { migrateWorkspaceToMongo } = await import(
           "@/lib/db/migration-helpers"
         );
-        console.log(`[api/generate] Saving workspace ${workspace.sessionId} to MongoDB for user ${userId}...`);
+      console.log(`[api/generate] Saving workspace ${workspace.sessionId} to MongoDB for user ${userId}...`);
         await migrateWorkspaceToMongo(workspace, userId);
 
-        // Increment workspace count (stored as companiesCount in usage-service for legacy compatibility)
+        // Increment workspace count
         const { incrementUsage } = await import("@/lib/saas/usage-service");
         await incrementUsage(userId, "companiesCount", 1);
         await incrementUsage(userId, "tilesCount", tiles.length);
 
-        console.log(
-          "[api/generate] ✅ Workspace também salvo no MongoDB (member)"
-        );
+        console.log("[api/generate] ✅ Workspace saved to MongoDB");
       } catch (mongoError) {
-        // Log but don't fail the request if MongoDB is unavailable
-        const errorMessage =
-          mongoError instanceof Error ? mongoError.message : String(mongoError);
-        console.warn(
-          "[api/generate] ⚠️ Falha ao salvar no MongoDB (não crítico):",
-          errorMessage
-        );
+        const errorMessage = mongoError instanceof Error ? mongoError.message : String(mongoError);
+        console.warn("[api/generate] ⚠️ Failed to save to MongoDB (non-critical):", errorMessage);
       }
-    } else {
-      // Guest: Only localStorage, never MongoDB
-      console.log(
-        "[api/generate] ℹ️ Guest mode: Workspace salvo apenas em localStorage (não MongoDB)"
-      );
+    } // end if (userId)
 
-      // Increment Guest Usage (Server-Side)
-      if (guestLimitData?.guestId) {
-        const { incrementGuestUsage } = await import("@/lib/middleware/guest-limit");
-        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-        await incrementGuestUsage(guestLimitData.guestId, ip, "tiles", tiles.length);
-      }
-    }
-
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       tilesGenerated: tiles.length,
       sessionId,
       workspace,
     });
-
-    // Ensure guest cookie is set if it was created/updated during check
-    if (guestLimitData?.response) {
-      guestLimitData.response.cookies.getAll().forEach((c) => response.cookies.set(c));
-    }
-
-    return response;
   } catch (error) {
     console.error("[api/generate] ❌ Unexpected error", error);
     return NextResponse.json(

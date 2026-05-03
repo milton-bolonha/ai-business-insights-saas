@@ -55,7 +55,6 @@ import {
   useModalState,
   useAppearanceManagement,
   usePaymentFlow,
-  useGuestDataMigration,
   useFurnitureSystem,
 } from "@/containers/admin/hooks";
 
@@ -414,9 +413,6 @@ export function AdminContainer() {
     return () => clearTimeout(timer);
 
   }, [currentWorkspace?.id, currentDashboard?.id, tilesWithContentCount, isGenerating, workspaces.length]); // Added workspaces.length to track new creations
-
-  // Auto-migrate guest data when user becomes a member
-  useGuestDataMigration();
 
   // UI actions from stores
   // (Consolidated at the top of the component)

@@ -125,126 +125,56 @@ export function AdminOnboardingHandler() {
     };
 
     const handleLoveWritersCreation = async (data: any) => {
-        // Client-side generation logic (copied from HomeContainer adaptation)
-        // Since Love Writers generation logic was client-side heavy in the previous version,
-        // we might need to verify if we want to move it to API or keep it client-side here.
-        // For now, let's assume we can generate the structure client-side and save it via API/Store actions.
-
-        // Simpler approach: Create outline directly using store actions if possible, 
-        // OR call a hypothetical /api/generate-book endpoint if we had one.
-        // Given current architecture, let's try to reconstruct the Workspace Snapshot manually 
-        // and add it via store (Active Sync will save it to DB).
-
         const userName = data.user_name || "Author";
         const partnerName = data.partner_name || "Partner";
         const bookTitle = `${userName} & ${partnerName}`;
         const templateId = "template_love_writers";
 
-        // Helper imports
-        const {
-            getGuestTemplate,
-            resolveTemplateTiles,
-            getPromptAgent,
-            processPromptVariables,
-        } = await import("@/lib/guest-templates");
-
-        const template = getGuestTemplate(templateId);
-        const agent = getPromptAgent("publisher");
+        // Build prompt variables from form data
         const promptVariablesList = Object.entries(data).map(([key, value]) => `${key}: ${value}`);
 
-        const resolvedTiles = resolveTemplateTiles(template as any, {
-            templateId,
-            agentId: agent.id as any,
-            responseLength: "long",
-            promptVariables: promptVariablesList as any,
-        });
-
-        const context = {
-            user_name: userName,
-            partner_name: partnerName,
-            meeting_story: data.meeting_story,
-        };
-
-        const tiles = resolvedTiles.map((item, index) => {
-            const processedPrompt = processPromptVariables(item.prompt, context);
-            return {
-                id: `tile_${crypto.randomUUID()}`,
-                title: item.title,
-                content: null,
-                prompt: processedPrompt,
-                templateId,
-                templateTileId: item.id,
-                category: item.category,
-                model: "gpt-4o-mini",
-                orderIndex: index,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                agentId: item.agentId,
-                status: "pending",
-            };
-        });
-
-        const workspaceSnapshot = {
-            id: `ws_${crypto.randomUUID()}`,
-            sessionId: `session_${crypto.randomUUID()}`,
-            name: bookTitle,
-            website: "https://lovewriters.com",
-            createdAt: new Date().toISOString(),
-            tiles,
+        // Call the same /api/generate endpoint used by other templates — 
+        // it handles template resolution server-side
+        const payload = {
             salesRepCompany: "Love Writers",
             salesRepWebsite: "https://lovewriters.com",
-            generatedAt: new Date().toISOString(),
-            tilesToGenerate: tiles.length,
-            promptSettings: {
-                templateId,
-                model: "gpt-4o",
-                promptAgent: "publisher",
-                responseLength: "long",
-                promptVariables: promptVariablesList,
-            }
+            solution: "Love Story Book",
+            targetCompany: bookTitle,
+            targetWebsite: "https://lovewriters.com",
+            templateId,
+            model: "gpt-4o-mini",
+            promptAgent: "publisher",
+            responseLength: "long",
+            promptVariables: promptVariablesList,
+            bulkPrompts: [],
         };
 
-        // Use initializeWorkspaceFromHome to add properly to store and persist
-        const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(workspaceSnapshot as any);
-        useWorkspaceStore.getState().setCurrentWorkspace(ws);
+        const response = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
 
-        // Always save to MongoDB directly (don't rely on authStore being synced in initializeWorkspaceFromHome)
-        try {
-            console.log(`[Onboarding] Saving workspace ${ws.id} to MongoDB...`);
-            const createRes = await fetch("/api/workspace/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: ws.id,
-                    name: ws.name,
-                    website: ws.website || "https://lovewriters.com",
-                    salesRepCompany: ws.salesRepCompany,
-                    salesRepWebsite: ws.salesRepWebsite,
-                    templateId: ws.promptSettings?.templateId,
-                    promptSettings: ws.promptSettings,
-                    tiles: workspaceSnapshot.tiles,
-                }),
-            });
-            if (createRes.ok) {
-                console.log(`[Onboarding] ✅ Workspace ${ws.id} saved to MongoDB`);
-                // Re-sync store with MongoDB now that workspace+dashboard are created
-                await useWorkspaceStore.getState().refreshWorkspaces();
-                // Re-select the current workspace so dashboard is set
-                const freshWorkspace = useWorkspaceStore.getState().workspaces.find(w => w.id === ws.id);
-                if (freshWorkspace) {
-                    useWorkspaceStore.getState().setCurrentWorkspace(freshWorkspace);
-                    console.log(`[Onboarding] ✅ Workspace ${ws.id} set as current with dashboard`);
-                }
-            } else {
-                const errBody = await createRes.text().catch(() => "");
-                console.warn(`[Onboarding] ⚠️ Could not save workspace to MongoDB: ${createRes.status} ${errBody}`);
-            }
-        } catch (createErr) {
-            console.error("[Onboarding] Error saving workspace to MongoDB:", createErr);
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || "Failed to generate Love Writers workspace");
         }
 
-        // Redirect to admin
-        router.replace(`/admin?workspaceId=${ws.id}`);
+        const resData = await response.json();
+        if (resData.workspace) {
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+
+            try {
+                await useWorkspaceStore.getState().refreshWorkspaces();
+                const freshWorkspace = useWorkspaceStore.getState().workspaces.find(w => w.id === ws.id);
+                if (freshWorkspace) useWorkspaceStore.getState().setCurrentWorkspace(freshWorkspace);
+            } catch (e) {
+                console.warn("[Onboarding] Could not refresh workspaces after Love Writers creation:", e);
+            }
+
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
     };
 
     const handleTradeRankingCreation = async (data: any) => {
