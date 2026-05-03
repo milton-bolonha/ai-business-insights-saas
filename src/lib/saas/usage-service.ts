@@ -86,18 +86,6 @@ export const SAFE_DEFAULT_MEMBER: UsageLimits = {
   creditsTotal: 10000, // Default Pro credits
 };
 
-export const SAFE_DEFAULT_GUEST: UsageLimits = {
-  companiesCount: 0,
-  contactsCount: 0,
-  notesCount: 0,
-  tilesCount: Number(process.env.GUEST_TILES_LIMIT) || 0,
-  tileChatsCount: 0,
-  contactChatsCount: 0,
-  regenerationsCount: 0,
-  assetsCount: 0,
-  tokensUsed: 0,
-  creditsTotal: 100, // Shadow Guests get 100 max equivalent
-};
 
 function getCachedLimits(planId: PlanId): UsageLimits | null {
   const cached = planCache.get(planId);
@@ -130,13 +118,12 @@ async function fetchPlanLimits(planId: PlanId): Promise<UsageLimits> {
   }
 
   // Fallback if DB fetch failed or record is missing
-  if (planId === "guest") return SAFE_DEFAULT_GUEST;
-  if (planId === "business") return SAFE_DEFAULT_MEMBER; // Business fallback to Member
+  if (planId === "business") return SAFE_DEFAULT_MEMBER;
   return SAFE_DEFAULT_MEMBER;
 }
 
 function resolvePlanId(userDocPlan?: string, userId?: string | null): PlanId {
-  if (!userId) return "guest";
+  if (!userId) return "member"; // Default to member for safety if userId is missing but we're in member zone
   if (userDocPlan === "business") return "business";
   return "member";
 }
@@ -300,42 +287,42 @@ export async function getUsage(
     if (!userDoc) {
       // 1. If we have an email, check if a user record already exists for it (Account Linking)
       if (email) {
-          userDoc = await db.findOne("users", { email });
-          if (userDoc) {
-              console.log(`[UsageService] 🔗 Linking existing email profile ${email} to userId ${userId}`);
-              await db.updateOne("users", { _id: userDoc._id }, {
-                  $set: { userId, clerkId: userId, updatedAt: new Date() }
-              });
-              // Refetch with new ID
-              userDoc = await db.findOne("users", { userId });
-          }
+        userDoc = await db.findOne("users", { email });
+        if (userDoc) {
+          console.log(`[UsageService] 🔗 Linking existing email profile ${email} to userId ${userId}`);
+          await db.updateOne("users", { _id: userDoc._id }, {
+            $set: { userId, clerkId: userId, updatedAt: new Date() }
+          });
+          // Refetch with new ID
+          userDoc = await db.findOne("users", { userId });
+        }
       }
 
       // 2. If still no userDoc, auto-provision
       if (!userDoc && userId.startsWith("user_")) {
-          console.log(`[UsageService] 👤 Auto-provisioning new member profile for ${userId}`);
-          const newUser: any = {
-              userId,
-              clerkId: userId,
-              isMember: true,
-              plan: "member",
-              creditsTotal: 0,
-              creditsUsed: 0,
-              createdAt: new Date(),
-              updatedAt: new Date()
-          };
-          if (email) newUser.email = email;
+        console.log(`[UsageService] 👤 Auto-provisioning new member profile for ${userId}`);
+        const newUser: any = {
+          userId,
+          clerkId: userId,
+          isMember: true,
+          plan: "member",
+          creditsTotal: 0,
+          creditsUsed: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        if (email) newUser.email = email;
 
-          try {
-              await db.updateOne("users", { userId }, { $set: newUser }, { upsert: true });
-              userDoc = await db.findOne("users", { userId });
-          } catch (provisionErr: any) {
-              // Final fallback for race conditions or duplicate email during upsert
-              if (provisionErr.code === 11000) {
-                  userDoc = await db.findOne("users", { email });
-                  if (userDoc) await db.updateOne("users", { _id: userDoc._id }, { $set: { userId, clerkId: userId } });
-              }
+        try {
+          await db.updateOne("users", { userId }, { $set: newUser }, { upsert: true });
+          userDoc = await db.findOne("users", { userId });
+        } catch (provisionErr: any) {
+          // Final fallback for race conditions or duplicate email during upsert
+          if (provisionErr.code === 11000) {
+            userDoc = await db.findOne("users", { email });
+            if (userDoc) await db.updateOne("users", { _id: userDoc._id }, { $set: { userId, clerkId: userId } });
           }
+        }
       } else if (!userDoc) {
         return {
           companiesCount: 0,
@@ -356,13 +343,13 @@ export async function getUsage(
     // Auto-reconciliation logic:
     // If user has purchases that aren't reflected in creditsTotal, update it.
     let creditsTotal = userDoc?.creditsTotal || 0;
-    
+
     try {
       const stripeCustomerId = userDoc?.stripeCustomerId;
       const userEmail = userDoc?.email || email;
-      
+
       console.log(`[UsageService] 🔄 Reconciling credits for ${userId} (Email: ${userEmail}, StripeID: ${stripeCustomerId})`);
-      
+
       const purchases = await db.find("purchases", {
         $or: [
           { userId },
@@ -377,32 +364,32 @@ export async function getUsage(
       let totalFromLedger = 0;
       if (userEmail) {
         const ledgerPurchases = await db.find("credit_transactions", {
-            email: userEmail,
-            usageType: "purchase_credits"
+          email: userEmail,
+          usageType: "purchase_credits"
         }) as any[];
-        
+
         if (ledgerPurchases.length > 0) {
-            totalFromLedger = ledgerPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-            console.log(`[UsageService] 🔍 Found ${totalFromLedger} credits in ledger for ${userEmail}`);
+          totalFromLedger = ledgerPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
+          console.log(`[UsageService] 🔍 Found ${totalFromLedger} credits in ledger for ${userEmail}`);
         }
       }
 
       const verifiedTotal = Math.max(totalFromPurchases, totalFromLedger);
-      
+
       // If the verified truth is higher than current total, heal the profile
       if (verifiedTotal > creditsTotal) {
         console.log(`[UsageService] 🟢 Auto-healing credits for ${userId}: ${creditsTotal} -> ${verifiedTotal}`);
-        await db.updateOne("users", { _id: userDoc._id }, { 
-            $set: { 
-                creditsTotal: verifiedTotal,
-                // Ensure email is saved in userDoc if it was missing
-                ...( (!userDoc.email && userEmail) ? { email: userEmail } : {} ),
-                // Also sync stripeCustomerId if we found one in purchases but not in userDoc
-                ...( (!stripeCustomerId && purchases.find(p => p.stripeCustomerId)) ? { stripeCustomerId: purchases.find(p => p.stripeCustomerId).stripeCustomerId } : {} )
-            } 
+        await db.updateOne("users", { _id: userDoc._id }, {
+          $set: {
+            creditsTotal: verifiedTotal,
+            // Ensure email is saved in userDoc if it was missing
+            ...((!userDoc.email && userEmail) ? { email: userEmail } : {}),
+            // Also sync stripeCustomerId if we found one in purchases but not in userDoc
+            ...((!stripeCustomerId && purchases.find(p => p.stripeCustomerId)) ? { stripeCustomerId: purchases.find(p => p.stripeCustomerId).stripeCustomerId } : {})
+          }
         });
         creditsTotal = verifiedTotal;
-        
+
         // Invalidate cache so the next call sees the healed value
         await cache.del(`usage:${userId}`);
       }
