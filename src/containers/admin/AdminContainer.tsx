@@ -70,7 +70,29 @@ export function AdminContainer() {
   const { push } = useToast();
 
   // Zustand stores
-  const { appearance, setBaseColor, modals, openSaaSLimits, closeSaaSLimits } = useUIStore();
+  const { 
+    appearance, 
+    setBaseColor, 
+    modals, 
+    openSaaSLimits, 
+    closeSaaSLimits,
+    openAddPrompt,
+    closeAddPrompt,
+    openAddContact,
+    closeAddContact,
+    openCreateBlankDashboard,
+    closeCreateBlankDashboard,
+    openAddWorkspace,
+    closeAddWorkspace,
+    openBulkUpload,
+    closeBulkUpload,
+    openWorkspaceDetail,
+    closeWorkspaceDetail,
+    setSelectedTile,
+    setSelectedContact,
+    openPreview,
+    closePreview,
+  } = useUIStore();
   const auth = useAuthStore();
   const currentWorkspace = useCurrentWorkspace();
   const currentDashboard = useCurrentDashboard();
@@ -370,25 +392,7 @@ export function AdminContainer() {
   useGuestDataMigration();
 
   // UI actions from stores
-  const { setBaseColor } = useUIStore();
-  const {
-    openAddPrompt,
-    closeAddPrompt,
-    openAddContact,
-    closeAddContact,
-    openCreateBlankDashboard,
-    closeCreateBlankDashboard,
-    openAddWorkspace,
-    closeAddWorkspace,
-    openBulkUpload,
-    closeBulkUpload,
-    openWorkspaceDetail,
-    closeWorkspaceDetail,
-    setSelectedTile,
-    setSelectedContact,
-    openPreview,
-    closePreview,
-  } = useUIStore();
+  // (Consolidated at the top of the component)
 
   // Shared ref for dashboard updates (prevents race conditions)
   const isUpdatingDashboardRef = useRef(false);
