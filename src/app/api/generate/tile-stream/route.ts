@@ -110,10 +110,22 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[api/generate/tile-stream] Error:", error);
+    
+    // Explicitly handle OpenAI Quota errors
+    if (error?.status === 429 || error?.code === 'insufficient_quota') {
+        return new Response(
+            JSON.stringify({ 
+                error: "OpenAI Quota Exceeded: Your OpenAI account has run out of credits or reached its limit. Please check your billing at platform.openai.com.",
+                code: "openai_quota_exceeded"
+            }),
+            { status: 429 }
+        );
+    }
+
     return new Response(
-      JSON.stringify({ error: "Failed to generate tile content" }),
+      JSON.stringify({ error: "Failed to generate tile content: " + (error.message || "Unknown error") }),
       { status: 500 }
     );
   }

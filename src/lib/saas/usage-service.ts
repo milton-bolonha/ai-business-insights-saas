@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/mongodb";
+import { cache } from "@/lib/cache/redis";
 import type { PlanDocument } from "@/lib/db/models/Plan";
 
 type PlanId = "guest" | "member" | "business";
@@ -289,25 +290,44 @@ export async function getUsage(
   }
 
   try {
-    const userDoc = await db.findOne("users", {
+    let userDoc = await db.findOne("users", {
       $or: [{ userId }, { clerkId: userId }]
     }) as any;
 
-    if (!userDoc && userId) {
-      // Se no existe usuário, mas temos ID (clerk/guest), retornamos zerado
-      return {
-        companiesCount: 0,
-        contactsCount: 0,
-        notesCount: 0,
-        tilesCount: 0,
-        tileChatsCount: 0,
-        contactChatsCount: 0,
-        regenerationsCount: 0,
-        assetsCount: 0,
-        tokensUsed: 0,
-        creditsUsed: 0,
-        creditsTotal: 0,
-      };
+    if (!userDoc) {
+      if (userId.startsWith("user_")) {
+          console.log(`[UsageService] 👤 Auto-provisioning new member profile for ${userId}`);
+          await db.updateOne("users", { userId }, {
+              $set: {
+                  userId,
+                  clerkId: userId,
+                  email: email || undefined,
+                  isMember: true,
+                  plan: "member",
+                  creditsTotal: 0,
+                  creditsUsed: 0,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+              }
+          }, { upsert: true });
+          
+          // Re-fetch the newly created doc
+          userDoc = await db.findOne("users", { userId });
+      } else {
+        return {
+          companiesCount: 0,
+          contactsCount: 0,
+          notesCount: 0,
+          tilesCount: 0,
+          tileChatsCount: 0,
+          contactChatsCount: 0,
+          regenerationsCount: 0,
+          assetsCount: 0,
+          tokensUsed: 0,
+          creditsUsed: 0,
+          creditsTotal: 0,
+        };
+      }
     }
 
     // Auto-reconciliation logic:
@@ -318,6 +338,8 @@ export async function getUsage(
       const stripeCustomerId = userDoc?.stripeCustomerId;
       const userEmail = userDoc?.email || email;
       
+      console.log(`[UsageService] 🔄 Reconciling credits for ${userId} (Email: ${userEmail}, StripeID: ${stripeCustomerId})`);
+      
       const purchases = await db.find("purchases", {
         $or: [
           { userId },
@@ -327,34 +349,39 @@ export async function getUsage(
         ]
       }) as any[];
 
-      let totalFromPurchases = purchases.reduce((sum, p) => sum + (p.acquiredCredits || 0), 0);
-      
-      // Fallback: Check credit_transactions ledger by email for purchase_credits
-      if (totalFromPurchases === 0 && userEmail) {
+      const totalFromPurchases = purchases.reduce((sum, p) => sum + (p.acquiredCredits || 0), 0);
+
+      let totalFromLedger = 0;
+      if (userEmail) {
         const ledgerPurchases = await db.find("credit_transactions", {
             email: userEmail,
             usageType: "purchase_credits"
         }) as any[];
         
         if (ledgerPurchases.length > 0) {
-            totalFromPurchases = ledgerPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-            console.log(`[UsageService] 🔍 Found ${totalFromPurchases} credits in ledger via email fallback for ${userEmail}`);
+            totalFromLedger = ledgerPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
+            console.log(`[UsageService] 🔍 Found ${totalFromLedger} credits in ledger for ${userEmail}`);
         }
       }
+
+      const verifiedTotal = Math.max(totalFromPurchases, totalFromLedger);
       
-      // If the ledger has more credits than the profile, heal the profile
-      if (totalFromPurchases > creditsTotal) {
-        console.log(`[UsageService] 🟢 Auto-healing credits for ${userId}: ${creditsTotal} -> ${totalFromPurchases}`);
+      // If the verified truth is higher than current total, heal the profile
+      if (verifiedTotal > creditsTotal) {
+        console.log(`[UsageService] 🟢 Auto-healing credits for ${userId}: ${creditsTotal} -> ${verifiedTotal}`);
         await db.updateOne("users", { _id: userDoc._id }, { 
             $set: { 
-                creditsTotal: totalFromPurchases,
+                creditsTotal: verifiedTotal,
                 // Ensure email is saved in userDoc if it was missing
                 ...( (!userDoc.email && userEmail) ? { email: userEmail } : {} ),
                 // Also sync stripeCustomerId if we found one in purchases but not in userDoc
                 ...( (!stripeCustomerId && purchases.find(p => p.stripeCustomerId)) ? { stripeCustomerId: purchases.find(p => p.stripeCustomerId).stripeCustomerId } : {} )
             } 
         });
-        creditsTotal = totalFromPurchases;
+        creditsTotal = verifiedTotal;
+        
+        // Invalidate cache so the next call sees the healed value
+        await cache.del(`usage:${userId}`);
       }
     } catch (reconcileErr) {
       console.warn("[UsageService] Failed to reconcile credits", reconcileErr);

@@ -217,7 +217,11 @@ export function AdminContainer() {
       }
 
       const tiles = [...dashboardTiles].sort((a, b) => a.orderIndex - b.orderIndex);
-      const nextTile = tiles.find(t => !t.content || t.content.trim().length === 0);
+      const nextTile = tiles.find(t => 
+        (!t.content || t.content.trim().length === 0) && 
+        t.status !== "failed" && 
+        t.status !== "completed"
+      );
 
       if (!nextTile) {
           console.log("[SequentialWriter] ✅ All tiles have content. Loop finished or waiting for next arcs.");
@@ -367,13 +371,36 @@ export function AdminContainer() {
         console.error("[SequentialWriter] Loop Error:", e);
         const errorMsg = e.message || "Erro desconhecido na geração";
         
-        // Stop the loop for any error to prevent flooding/retries
+        // 1. Mark tile as failed in store so it's skipped in next cycle
+        useWorkspaceStore.getState().updateTileInDashboard(
+            capturedWorkspaceId,
+            capturedDashboardId,
+            nextTile.id,
+            { status: "failed" },
+            nextTile
+        );
+
+        // 2. Mark as failed in DB if possible
+        if (auth.user?.id) {
+            updateTileMutation.mutate({
+                tileId: nextTile.id,
+                workspaceId: capturedWorkspaceId,
+                dashboardId: capturedDashboardId,
+                updates: { status: "failed" }
+            });
+        }
+
+        // 3. Stop the loop and alert
         setGenerationError(errorMsg);
         setIsGenerating(false);
         
+        const isQuotaError = errorMsg.toLowerCase().includes("quota") || errorMsg.includes("429");
+
         push({
-            title: "Geração Interrompida",
-            description: errorMsg,
+            title: isQuotaError ? "Saldo OpenAI Insuficiente" : "Geração Interrompida",
+            description: isQuotaError 
+                ? "Sua conta da OpenAI (Platform) está sem saldo ou atingiu o limite. Verifique seu faturamento em platform.openai.com."
+                : errorMsg,
             variant: "destructive"
         });
       } finally {
