@@ -170,6 +170,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         baseColor: state.baseColor,
         theme: state.theme,
+        appearance: state.appearance,
       }),
     }
   )

@@ -70,9 +70,7 @@ export function AdminContainer() {
   const { push } = useToast();
 
   // Zustand stores
-  const appearance = useUIStore((state) => state.appearance);
-  const modals = useUIStore((state) => state.modals);
-  const openSaaSLimits = useUIStore((state) => state.openSaaSLimits);
+  const { appearance, setBaseColor, modals, openSaaSLimits, closeSaaSLimits } = useUIStore();
   const auth = useAuthStore();
   const currentWorkspace = useCurrentWorkspace();
   const currentDashboard = useCurrentDashboard();
@@ -128,6 +126,14 @@ export function AdminContainer() {
   // Navigation State
   const [activeTab, setActiveTab] = useState<NavTab>("arcs");
   const [viewMode, setViewMode] = useState<"chat" | "menu">("chat");
+
+  // Sync Dashboard Background Color with UI Store
+  useEffect(() => {
+    if (currentDashboard?.bgColor && currentDashboard.bgColor !== appearance.baseColor) {
+      console.log(`[AdminContainer] 🎨 Syncing dashboard color: ${currentDashboard.bgColor}`);
+      setBaseColor(currentDashboard.bgColor);
+    }
+  }, [currentDashboard?.id, currentDashboard?.bgColor, setBaseColor, appearance.baseColor]);
 
   // Sync activeTab and template context
   useEffect(() => {

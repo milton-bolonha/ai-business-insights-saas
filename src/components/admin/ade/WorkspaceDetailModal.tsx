@@ -106,6 +106,38 @@ export function WorkspaceDetailModal({
           {/* Details */}
           <div className="space-y-6">
             <div>
+              <h3 className="text-sm font-medium mb-3 uppercase tracking-wider" style={{ color: appearance.headingColor }}>WhatsApp da Empresa (Orçamentos)</h3>
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="text"
+                  placeholder="Ex: 5511999999999"
+                  defaultValue={workspace.promptSettings?.promptVariables?.find((v: string) => v.startsWith("whatsapp:"))?.split(":")[1] || ""}
+                  onChange={(e) => {
+                    const newNumber = e.target.value.replace(/\D/g, "");
+                    const otherVars = workspace.promptSettings?.promptVariables?.filter((v: string) => !v.startsWith("whatsapp:")) || [];
+                    const updatedVars = [...otherVars, `whatsapp:${newNumber}`];
+                    useWorkspaceStore.getState().updateWorkspace(workspace.id, {
+                        promptSettings: {
+                            ...workspace.promptSettings,
+                            templateId: workspace.promptSettings?.templateId || "template_furniture_store",
+                            promptVariables: updatedVars
+                        }
+                    });
+                  }}
+                  className="flex-1 px-4 py-2 rounded-xl border text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-sky-500/20"
+                  style={{ 
+                    backgroundColor: appearance.baseColor, 
+                    color: appearance.textColor,
+                    borderColor: appearance.cardBorderColor 
+                  }}
+                />
+              </div>
+              <p className="text-[10px] mt-2 font-medium" style={{ color: appearance.mutedTextColor }}>
+                Usado para direcionar pedidos de orçamento da Vitrine Pública.
+              </p>
+            </div>
+
+            <div>
               <h3 className="text-sm font-medium mb-3 uppercase tracking-wider" style={{ color: appearance.headingColor }}>Created At</h3>
               <div className="flex items-center space-x-2" style={{ color: appearance.mutedTextColor }}>
                 <Calendar className="h-4 w-4" />

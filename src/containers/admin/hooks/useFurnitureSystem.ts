@@ -29,7 +29,7 @@ interface Order {
     createdAt?: string;
 }
 
-export function useFurnitureSystem(currentDashboard: any, _currentWorkspace: any) {
+export function useFurnitureSystem(currentDashboard: any, currentWorkspace: any) {
   const { push } = useToast();
   const content = useContent();
   const workspaceActions = useWorkspaceActions();
@@ -206,17 +206,17 @@ export function useFurnitureSystem(currentDashboard: any, _currentWorkspace: any
         return;
     }
     
-    // Intelligent Routing based on Assembly requirement
+    // 1. Intelligent Routing based on Assembly requirement
     const initialStatus = "Nova Solicitação";
 
-    // 1. Create Lead Note
+    // 2. Create Lead Note
     await content.createNote(currentDashboard.id, {
         title: `Novo Orçamento: ${product.name}`,
         content: `Lead da Vitrine Pública.\nProduto: ${product.name}\nValor Ofertado: R$ ${product.price}\nMontagem: ${product.requiresAssembly ? "Sim" : "Não"}\nData: ${new Date().toLocaleString()}`,
         category: "lead"
     });
 
-    // 2. Add to KDS (Orders)
+    // 3. Add to KDS (Orders)
     await handleOrderSubmit({
         clientName: "Lead da Vitrine",
         product: product.name,
@@ -227,12 +227,22 @@ export function useFurnitureSystem(currentDashboard: any, _currentWorkspace: any
         orderNumber: Math.floor(100000 + Math.random() * 900000).toString()
     });
 
+    // 4. WhatsApp Integration
+    const whatsappVar = currentWorkspace?.promptSettings?.promptVariables?.find((v: string) => v.startsWith("whatsapp:"));
+    const whatsappNumber = whatsappVar ? whatsappVar.split(":")[1] : null;
+
+    if (whatsappNumber) {
+        const cleanNumber = whatsappNumber.replace(/\D/g, "");
+        const text = encodeURIComponent(`Olá! Tenho interesse no produto: ${product.name} (Valor: R$ ${product.price}). Gostaria de receber um orçamento.`);
+        window.open(`https://wa.me/${cleanNumber}?text=${text}`, "_blank");
+    }
+
     push({ 
         title: "Orçamento Criado", 
-        description: `O pedido de orçamento foi enviado para o painel de vendas.`, 
+        description: whatsappNumber ? "Redirecionando para o WhatsApp..." : "O pedido de orçamento foi enviado para o painel de vendas.", 
         variant: "success" 
     });
-  }, [currentDashboard, content, handleOrderSubmit, push]);
+  }, [currentDashboard, currentWorkspace, content, handleOrderSubmit, push]);
 
   const handleStaffSubmit = useCallback(async (staffData: any) => {
     if (!currentDashboard) {
