@@ -123,13 +123,16 @@ async function fetchPlanLimits(planId: PlanId): Promise<UsageLimits> {
       return record.limits;
     }
   } catch (err) {
-    console.warn("[usage-service] Failed to load plan from DB", {
+    console.warn("[usage-service] Failed to load plan from DB, using fallback", {
       planId,
       err,
     });
   }
 
-  throw new Error(`Plan ${planId} not found in DB and no fallback allowed`);
+  // Fallback if DB fetch failed or record is missing
+  if (planId === "guest") return SAFE_DEFAULT_GUEST;
+  if (planId === "business") return SAFE_DEFAULT_MEMBER; // Business fallback to Member
+  return SAFE_DEFAULT_MEMBER;
 }
 
 function resolvePlanId(userDocPlan?: string, userId?: string | null): PlanId {
@@ -295,25 +298,45 @@ export async function getUsage(
     }) as any;
 
     if (!userDoc) {
-      if (userId.startsWith("user_")) {
+      // 1. If we have an email, check if a user record already exists for it (Account Linking)
+      if (email) {
+          userDoc = await db.findOne("users", { email });
+          if (userDoc) {
+              console.log(`[UsageService] 🔗 Linking existing email profile ${email} to userId ${userId}`);
+              await db.updateOne("users", { _id: userDoc._id }, {
+                  $set: { userId, clerkId: userId, updatedAt: new Date() }
+              });
+              // Refetch with new ID
+              userDoc = await db.findOne("users", { userId });
+          }
+      }
+
+      // 2. If still no userDoc, auto-provision
+      if (!userDoc && userId.startsWith("user_")) {
           console.log(`[UsageService] 👤 Auto-provisioning new member profile for ${userId}`);
-          await db.updateOne("users", { userId }, {
-              $set: {
-                  userId,
-                  clerkId: userId,
-                  email: email || undefined,
-                  isMember: true,
-                  plan: "member",
-                  creditsTotal: 0,
-                  creditsUsed: 0,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
+          const newUser: any = {
+              userId,
+              clerkId: userId,
+              isMember: true,
+              plan: "member",
+              creditsTotal: 0,
+              creditsUsed: 0,
+              createdAt: new Date(),
+              updatedAt: new Date()
+          };
+          if (email) newUser.email = email;
+
+          try {
+              await db.updateOne("users", { userId }, { $set: newUser }, { upsert: true });
+              userDoc = await db.findOne("users", { userId });
+          } catch (provisionErr: any) {
+              // Final fallback for race conditions or duplicate email during upsert
+              if (provisionErr.code === 11000) {
+                  userDoc = await db.findOne("users", { email });
+                  if (userDoc) await db.updateOne("users", { _id: userDoc._id }, { $set: { userId, clerkId: userId } });
               }
-          }, { upsert: true });
-          
-          // Re-fetch the newly created doc
-          userDoc = await db.findOne("users", { userId });
-      } else {
+          }
+      } else if (!userDoc) {
         return {
           companiesCount: 0,
           contactsCount: 0,
