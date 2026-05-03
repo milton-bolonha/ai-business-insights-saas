@@ -315,20 +315,42 @@ export async function getUsage(
     
     try {
       const stripeCustomerId = userDoc?.stripeCustomerId;
+      const email = userDoc?.email;
+      
       const purchases = await db.find("purchases", {
         $or: [
           { userId },
           { clerkId: userId },
-          ...(stripeCustomerId ? [{ stripeCustomerId }] : [])
+          ...(stripeCustomerId ? [{ stripeCustomerId }] : []),
+          ...(email ? [{ email }] : []) // Try by email if it was stored
         ]
       }) as any[];
 
-      const totalFromPurchases = purchases.reduce((sum, p) => sum + (p.acquiredCredits || 0), 0);
+      let totalFromPurchases = purchases.reduce((sum, p) => sum + (p.acquiredCredits || 0), 0);
+      
+      // Fallback: Check credit_transactions ledger by email for purchase_credits
+      if (totalFromPurchases === 0 && email) {
+        const ledgerPurchases = await db.find("credit_transactions", {
+            email: email,
+            usageType: "purchase_credits"
+        }) as any[];
+        
+        if (ledgerPurchases.length > 0) {
+            totalFromPurchases = ledgerPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
+            console.log(`[UsageService] 🔍 Found ${totalFromPurchases} credits in ledger via email fallback for ${email}`);
+        }
+      }
       
       // If the ledger has more credits than the profile, heal the profile
       if (totalFromPurchases > creditsTotal) {
         console.log(`[UsageService] 🟢 Auto-healing credits for ${userId}: ${creditsTotal} -> ${totalFromPurchases}`);
-        await db.updateOne("users", { _id: userDoc._id }, { $set: { creditsTotal: totalFromPurchases } });
+        await db.updateOne("users", { _id: userDoc._id }, { 
+            $set: { 
+                creditsTotal: totalFromPurchases,
+                // Also sync stripeCustomerId if we found one in purchases but not in userDoc
+                ...( (!stripeCustomerId && purchases.find(p => p.stripeCustomerId)) ? { stripeCustomerId: purchases.find(p => p.stripeCustomerId).stripeCustomerId } : {} )
+            } 
+        });
         creditsTotal = totalFromPurchases;
       }
     } catch (reconcileErr) {
