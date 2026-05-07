@@ -40,6 +40,10 @@ interface ProductReference {
     id: string;
     name: string;
     quantity: number;
+    sku?: string;
+    price?: string;
+    condition?: string;
+    description?: string;
 }
 
 interface Spot {
@@ -55,7 +59,6 @@ interface Spot {
 interface MapSection {
     id: string;
     type: "Wall" | "Showcase" | "Rack";
-    layoutMode: "boxed" | "full";
     label: string;
     spots: Spot[];
     rows: number;
@@ -65,9 +68,9 @@ interface MapSection {
 
 const STATUS_MAP = {
     available: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-400', label: 'Vazio' },
-    occupied: { bg: 'bg-emerald-500', border: 'border-emerald-600', text: 'text-white', label: 'Ocupado' },
-    reserved: { bg: 'bg-amber-400', border: 'border-amber-500', text: 'text-white', label: 'Reservado' },
-    blocked: { bg: 'bg-rose-500', border: 'border-rose-600', text: 'text-white', label: 'Bloqueado' },
+    occupied: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-600', label: 'Ocupado' },
+    reserved: { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-600', label: 'Reservado' },
+    blocked: { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-600', label: 'Bloqueado' },
 };
 
 interface StoreLayoutGridProps {
@@ -90,20 +93,30 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
     const [isCompactView, setIsCompactView] = useState(false);
     const [editingSectorId, setEditingSectorId] = useState<string | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<{item: any; index: number} | null>(null);
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
     const [newSector, setNewSector] = useState<{
         name: string;
         rows: number | string;
         cols: number | string;
         orientation: "horizontal" | "vertical";
         type: "Wall" | "Showcase" | "Rack";
-        layoutMode: "boxed" | "full";
     }>({ 
         name: '', 
         rows: 4, 
         cols: 6, 
         orientation: 'horizontal', 
-        type: 'Showcase', 
-        layoutMode: 'boxed' 
+        type: 'Showcase'
+    });
+
+    const [showAddSku, setShowAddSku] = useState(false);
+    const [newProduct, setNewProduct] = useState({
+        name: '',
+        sku: '',
+        price: '',
+        condition: '',
+        description: '',
+        targetCell: ''
     });
 
     const {
@@ -224,8 +237,8 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setIsEditorMode(!isEditorMode)}
-                        className={cn("p-2 rounded-xl border transition-all", isEditorMode ? "bg-slate-800 text-white border-slate-800 shadow-lg" : "bg-slate-50 border-slate-200 text-slate-500 hover:text-blue-600")}
+                        onClick={() => { setIsAssistantOpen(true); setAssistantMode(null); }}
+                        className="p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all"
                         title="Configurar Layout"
                     >
                         <Settings size={18} />
@@ -244,25 +257,22 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                         key={sec.id}
                         onClick={() => { setActiveSectionId(sec.id); setSelectedSpot(null); }}
                         className={cn(
-                            "px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border shrink-0",
+                            "px-4 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 border shrink-0",
                             activeSectionId === sec.id
-                                ? 'bg-slate-800 text-white border-slate-800 shadow-lg scale-105'
-                                : 'bg-slate-50 text-slate-500 hover:bg-white hover:text-blue-600 border-slate-200'
+                                ? 'bg-slate-800 text-white border-slate-800 shadow-md scale-105'
+                                : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border-slate-200'
                         )}
                     >
-                        {sec.orientation === 'vertical' ? <GripVertical size={14} /> : <GripHorizontal size={14} />}
-                        {sec.label || sec.id}
-                        <span className="opacity-40 text-[8px]">{sec.rows}x{sec.cols}</span>
+                        {sec.orientation === 'vertical' ? <GripVertical size={12} /> : <GripHorizontal size={12} />}
+                        {sec.id}
                     </button>
                 ))}
-                {isEditorMode && (
-                    <button
-                        onClick={() => { setIsAssistantOpen(true); setAssistantMode(null); }}
-                        className="px-4 py-1.5 rounded-xl font-bold text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all flex items-center gap-1.5 shrink-0"
-                    >
-                        <Plus size={12} /> Novo Setor
-                    </button>
-                )}
+                <button
+                    onClick={() => { setIsAssistantOpen(true); setAssistantMode(null); setEditingSectorId(null); setNewSector({ name: '', rows: 4, cols: 6, orientation: 'horizontal', type: 'Showcase' }); }}
+                    className="px-3 py-1.5 rounded-xl font-bold text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all flex items-center gap-1.5 shrink-0"
+                >
+                    <Plus size={12} /> Novo Setor
+                </button>
             </div>
         </div>
     );
@@ -278,21 +288,31 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
 
         return (
             <div className="w-full flex justify-center flex-1 min-h-0 relative animate-fade-in">
-                <div className="relative flex items-stretch group transition-all duration-300 w-full">
+                <div
+                    className="relative flex items-stretch group transition-all duration-300 w-full"
+                    onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+                    onTouchEnd={(e) => {
+                        if (touchStartX === null) return;
+                        const delta = touchStartX - e.changedTouches[0].clientX;
+                        if (delta > 50) handleNext();
+                        else if (delta < -50) handlePrev();
+                        setTouchStartX(null);
+                    }}
+                >
                     {/* Carousel Navigation */}
                     {sections.length > 1 && (
                         <>
                             <button
                                 onClick={handlePrev}
                                 disabled={!hasPrev}
-                                className="absolute top-1/2 -translate-y-1/2 -left-4 z-40 p-2 bg-white shadow-xl rounded-full text-slate-600 hover:text-blue-600 opacity-0 group-hover:opacity-100 disabled:hidden transition-all"
+                                className="absolute top-1/2 -translate-y-1/2 left-2 z-40 p-2 bg-white shadow-xl rounded-full text-slate-600 hover:text-blue-600 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 disabled:hidden transition-all"
                             >
                                 <ChevronLeft size={24} />
                             </button>
                             <button
                                 onClick={handleNext}
                                 disabled={!hasNext}
-                                className="absolute top-1/2 -translate-y-1/2 -right-4 z-40 p-2 bg-white shadow-xl rounded-full text-slate-600 hover:text-blue-600 opacity-0 group-hover:opacity-100 disabled:hidden transition-all"
+                                className="absolute top-1/2 -translate-y-1/2 right-2 z-40 p-2 bg-white shadow-xl rounded-full text-slate-600 hover:text-blue-600 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 disabled:hidden transition-all"
                             >
                                 <ChevronRight size={24} />
                             </button>
@@ -301,46 +321,48 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
 
                     {/* Grid Canvas */}
                     <div className={cn(
-                        "bg-white border border-slate-200 rounded-[2rem] p-4 shadow-sm flex flex-col transition-all duration-500",
-                        activeSection.layoutMode === 'full' ? 'w-full' : 'max-w-4xl mx-auto w-full',
-                        isCompactView ? 'overflow-hidden h-full' : 'overflow-auto custom-scrollbar'
+                        "bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col transition-all duration-300 w-full",
+                        isCompactView
+                            ? 'overflow-hidden flex-1 min-h-0 p-2'
+                            : 'overflow-auto custom-scrollbar p-4'
                     )}>
                         <div
                             className={cn(
                                 "grid",
-                                isCompactView ? 'gap-1 flex-1 min-h-0 w-full h-full' : 'gap-3 min-w-max min-h-max w-full',
+                                isCompactView ? 'gap-1 flex-1 min-h-0 w-full h-full' : 'gap-3',
                                 activeSection.orientation === 'vertical' ? 'grid-flow-col' : 'grid-flow-row'
                             )}
                             style={{
-                                gridTemplateColumns: `repeat(${activeSection.cols}, ${isCompactView ? 'minmax(0, 1fr)' : 'minmax(80px, 1fr)'})`,
-                                gridTemplateRows: `repeat(${activeSection.rows}, ${isCompactView ? 'minmax(0, 1fr)' : 'minmax(80px, 1fr)'})`
+                                gridTemplateColumns: isCompactView
+                                    ? `repeat(${activeSection.cols}, minmax(0, 1fr))`
+                                    : `repeat(${activeSection.cols}, minmax(80px, 1fr))`,
+                                gridTemplateRows: isCompactView
+                                    ? `repeat(${activeSection.rows}, minmax(0, 1fr))`
+                                    : `repeat(${activeSection.rows}, minmax(80px, auto))`
                             }}
                         >
                             {activeSection.spots.map(spot => {
                                 const isSelected = selectedSpot?.id === spot.id;
                                 const status = (spot.products && spot.products.length > 0) ? "occupied" : spot.status;
-                                const styles = STATUS_MAP[status as keyof typeof STATUS_MAP] || STATUS_MAP.available;
-
-                                return (
+                                const styles = STATUS_MAP[status as keyof typeof STATUS_MAP] || STATUS_MAP.available;                                return (
                                     <button
                                         key={spot.id}
                                         onClick={() => setSelectedSpot(spot)}
                                         className={cn(
-                                            "relative flex flex-col items-center justify-center transition-all duration-300 w-full h-full",
-                                            isCompactView ? 'rounded-xl border-2 gap-0.5' : 'rounded-2xl border-2 gap-1 p-2',
+                                            "relative flex flex-col items-center justify-center transition-all duration-200 w-full h-full",
+                                            isCompactView ? 'rounded-md border gap-0.5' : 'rounded-xl border-2 gap-1 p-2',
                                             styles.bg, styles.border, styles.text,
-                                            isSelected ? 'ring-8 ring-blue-500/10 z-10 border-blue-500 scale-105 shadow-xl' : 'hover:scale-[1.03] hover:shadow-lg hover:z-10'
+                                            isSelected ? 'ring-4 ring-blue-500/30 z-10 !border-blue-500 scale-105' : 'hover:brightness-95'
                                         )}
                                     >
                                         <span className={cn(
                                             "font-bold opacity-70",
-                                            isCompactView ? 'text-[8px] leading-none' : 'text-[10px] uppercase tracking-tighter'
+                                            isCompactView ? 'text-[9px] sm:text-[10px] leading-none' : 'text-xs sm:text-sm'
                                         )}>
                                             {spot.code || `${spot.row}-${spot.col}`}
                                         </span>
-
-                                        {status === 'occupied' && <Box size={isCompactView ? 14 : 20} strokeWidth={2.5} />}
-                                        {status === 'blocked' && <AlertTriangle size={isCompactView ? 14 : 20} strokeWidth={2.5} />}
+                                        {status === 'occupied' && <Box size={isCompactView ? 16 : 24} strokeWidth={isCompactView ? 2 : 2.5} />}
+                                        {status === 'blocked' && <AlertTriangle size={isCompactView ? 16 : 24} strokeWidth={isCompactView ? 2 : 2.5} />}
 
                                         {spot.products && spot.products.length > 1 && (
                                             <span className={cn(
@@ -356,11 +378,11 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                         </div>
 
                         {/* Legend */}
-                        <div className="mt-6 flex flex-wrap gap-6 justify-center text-[9px] font-black uppercase tracking-widest shrink-0 border-t border-slate-50 pt-4">
+                        <div className="mt-4 flex flex-wrap gap-4 justify-center text-[10px] font-semibold shrink-0 border-t border-slate-50 pt-3">
                             {Object.entries(STATUS_MAP).map(([key, val]) => (
-                                <div key={key} className="flex items-center gap-2 group cursor-help">
-                                    <span className={cn("w-3 h-3 rounded-full border-2 shadow-sm transition-transform group-hover:scale-125", val.bg, val.border)} />
-                                    <span className="text-slate-400 group-hover:text-slate-600 transition-colors">{val.label}</span>
+                                <div key={key} className="flex items-center gap-1.5">
+                                    <span className={cn("w-2.5 h-2.5 rounded-full border shadow-sm", val.bg, val.border)} />
+                                    <span className="text-slate-500 uppercase tracking-tight">{val.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -376,42 +398,19 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
 
             {renderMapGrid()}
 
-            {/* Editor Actions Overlay */}
-            <AnimatePresence>
-                {isEditorMode && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
-                    >
-                        <button
-                            onClick={handleSave}
-                            className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-xl hover:bg-emerald-700 hover:scale-105 transition-all"
-                        >
-                            <CheckCircle2 size={18} /> Salvar Alterações
-                        </button>
-                        <button
-                            onClick={() => setIsEditorMode(false)}
-                            className="bg-white text-slate-600 px-4 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest border border-slate-200 shadow-lg hover:bg-slate-50 transition-all"
-                        >
-                            Cancelar
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
             {/* GAVETA LATERAL (Detalhes do Slot) */}
             <AnimatePresence>
                 {selectedSpot && (
                     <>
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            onClick={() => setSelectedSpot(null)}
-                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+                            onClick={() => { setSelectedSpot(null); setSelectedProduct(null); }}
+                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90]"
                         />
                         <motion.div
                             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-slate-50 border-l border-slate-200 z-[101] flex flex-col sm:rounded-l-3xl shadow-2xl overflow-hidden"
+                            className="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-slate-50 border-l border-slate-200 z-[91] flex flex-col sm:rounded-l-3xl shadow-2xl overflow-hidden"
                         >
                             {/* Drawer Header */}
                             <div className="p-6 bg-white border-b border-slate-200 shrink-0 flex justify-between items-start z-10 shadow-sm">
@@ -439,42 +438,34 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     <div className="flex justify-between mb-4 items-center border-b border-slate-50 pb-2">
                                         <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Conteúdo do Slot ({selectedSpot.products?.length || 0})</h4>
                                         <button
-                                            onClick={() => setIsListOpen(true)}
+                                            onClick={() => setShowAddSku(true)}
                                             className="text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
                                         >
-                                            <Plus size={14} /> Vincular Produto
+                                            <Plus size={14} /> Novo Produto
+                                        </button>
+                                        <button
+                                            onClick={() => setIsListOpen(true)}
+                                            className="text-slate-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors ml-2"
+                                        >
+                                            <Plus size={14} /> Vincular Catálogo
                                         </button>
                                     </div>
                                     <div className="space-y-3">
                                         {selectedSpot.products && selectedSpot.products.length > 0 ? (
                                             selectedSpot.products.map((item, index) => (
-                                                <div key={index} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 group hover:border-blue-300 transition-all">
+                                                <div
+                                                    key={index}
+                                                    className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 group hover:border-blue-300 transition-all cursor-pointer"
+                                                    onClick={() => setSelectedProduct({ item, index })}
+                                                >
                                                     <div className="flex items-center gap-3">
                                                         <div className="bg-white text-blue-600 p-2 rounded-lg shadow-sm border border-slate-100"><Box size={20} /></div>
                                                         <div>
                                                             <span className="font-bold text-slate-800 block text-sm line-clamp-1">{item.name}</span>
-                                                            <span className="text-[10px] font-mono text-slate-400">SKU: {item.id.slice(0, 8)}</span>
+                                                            <span className="text-[10px] font-mono text-slate-400">SKU: {item.id?.slice(0, 8) ?? item.sku ?? '—'}</span>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            const updated = sections.map(s => ({
-                                                                ...s,
-                                                                spots: s.spots.map(sp => {
-                                                                    if (sp.id === selectedSpot.id) {
-                                                                        const nextProducts = sp.products.filter((_, i) => i !== index);
-                                                                        return { ...sp, products: nextProducts, status: nextProducts.length === 0 ? "available" : sp.status };
-                                                                    }
-                                                                    return sp;
-                                                                })
-                                                            }));
-                                                            setSections(updated);
-                                                            setSelectedSpot(updated.flatMap(s => s.spots).find(sp => sp.id === selectedSpot.id) || null);
-                                                        }}
-                                                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-400 transition-all" />
                                                 </div>
                                             ))
                                         ) : (
@@ -539,6 +530,53 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 </div>
                             </div>
                         </motion.div>
+
+                        {/* SEGUNDA GAVETA: Detalhe do Produto ("Folha") */}
+                        <AnimatePresence>
+                            {selectedProduct && (
+                                <motion.div
+                                    initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+                                    transition={{ type: "spring", damping: 28, stiffness: 220 }}
+                                    className="fixed top-0 right-0 bottom-0 w-full sm:w-[400px] bg-white z-[101] flex flex-col shadow-[-30px_0_60px_rgba(0,0,0,0.18)] sm:rounded-l-3xl overflow-hidden"
+                                >
+                                    <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                                        <div>
+                                            <h3 className="font-black text-slate-800 text-lg">{selectedProduct.item.name}</h3>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">SKU: {selectedProduct.item.id?.slice(0,8) ?? selectedProduct.item.sku ?? '—'}</p>
+                                        </div>
+                                        <button onClick={() => setSelectedProduct(null)} className="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-all"><X size={18} /></button>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
+                                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
+                                            {selectedProduct.item.price && <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Preço</span><span className="font-black text-slate-800">{selectedProduct.item.price}</span></div>}
+                                            {selectedProduct.item.condition && <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Condição</span><span className="font-black text-slate-800">{selectedProduct.item.condition}</span></div>}
+                                            <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Slot</span><span className="font-black text-slate-800">{selectedSpot?.code}</span></div>
+                                            <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Qtd</span><span className="font-black text-slate-800">{selectedProduct.item.quantity ?? 1}</span></div>
+                                        </div>
+                                        {selectedProduct.item.description && (
+                                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Detalhes</p>
+                                                <p className="text-sm text-slate-700 leading-relaxed">{selectedProduct.item.description}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-4 border-t border-slate-100 shrink-0">
+                                        <button
+                                            onClick={() => {
+                                                const idx = selectedProduct.index;
+                                                const updated = sections.map(s => ({ ...s, spots: s.spots.map(sp => { if (sp.id === selectedSpot!.id) { const np = sp.products.filter((_,i) => i !== idx); return { ...sp, products: np, status: np.length === 0 ? 'available' as const : sp.status }; } return sp; }) }));
+                                                setSections(updated);
+                                                setSelectedSpot(updated.flatMap(s=>s.spots).find(sp=>sp.id===selectedSpot!.id)||null);
+                                                setSelectedProduct(null);
+                                            }}
+                                            className="w-full py-3 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl hover:bg-rose-100 transition-all flex items-center justify-center gap-2 text-sm"
+                                        >
+                                            <Trash2 size={16} /> Remover deste Slot
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </>
                 )}
             </AnimatePresence>
@@ -546,153 +584,167 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
             {/* MODAL CONFIGURAÇÃO (LAYOUT EDITOR) */}
             <AnimatePresence>
                 {isAssistantOpen && assistantMode === null && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4 animate-fade-in">
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in">
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                             className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
                         >
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <h3 className="font-black text-slate-800 text-xl flex items-center gap-2"><Settings size={22} className="text-slate-400" /> Configuração</h3>
-                                <button onClick={() => { setIsAssistantOpen(false); setEditingSectorId(null); }} className="p-2 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all"><X size={18} /></button>
+                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Settings size={20} className="text-slate-500" /> Configurar Layout</h3>
+                                <button onClick={() => { setIsAssistantOpen(false); setEditingSectorId(null); }} className="p-1.5 bg-slate-200 rounded-full text-slate-500 hover:bg-slate-300 transition-all"><X size={18} /></button>
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
                                 {/* New Section Form */}
-                                <div className="bg-blue-50/30 border-2 border-blue-100 p-6 rounded-[2rem] space-y-4">
-                                    <h4 className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
-                                        {editingSectorId ? <Edit size={14} /> : <Plus size={14} />} {editingSectorId ? 'Editar Setor' : 'Novo Setor'}
+                                <div className="bg-blue-50/50 border border-blue-100 p-5 rounded-2xl mb-6 space-y-4">
+                                    <h4 className="text-xs font-black text-blue-800 uppercase tracking-wider flex items-center gap-1">
+                                        <Plus size={14} /> {editingSectorId ? 'Editar Setor' : 'Novo Setor'}
                                     </h4>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Identificador (Ex: A1)</label>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Identificador (Ex: A1)</label>
                                         <input
                                             type="text"
                                             value={newSector.name}
                                             disabled={!!editingSectorId}
                                             onChange={(e) => setNewSector({ ...newSector, name: e.target.value.toUpperCase() })}
-                                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-black uppercase outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 font-bold uppercase outline-none focus:border-blue-500 transition-all"
                                             maxLength={6}
                                         />
                                     </div>
                                     <div className="flex gap-3">
                                         <div className="flex-1">
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Fileiras</label>
-                                            <input type="number" min="1" max="20" value={newSector.rows} onChange={(e) => setNewSector({ ...newSector, rows: e.target.value })} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold outline-none focus:border-blue-500" />
+                                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Fileiras</label>
+                                            <input type="number" min="1" max="20" value={newSector.rows ?? 4} onChange={(e) => setNewSector({ ...newSector, rows: e.target.value })} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 font-bold outline-none focus:border-blue-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Colunas</label>
-                                            <input type="number" min="1" max="20" value={newSector.cols} onChange={(e) => setNewSector({ ...newSector, cols: e.target.value })} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold outline-none focus:border-blue-500" />
+                                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Colunas</label>
+                                            <input type="number" min="1" max="20" value={newSector.cols ?? 6} onChange={(e) => setNewSector({ ...newSector, cols: e.target.value })} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 font-bold outline-none focus:border-blue-500" />
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Orientação do Grid</label>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setNewSector({ ...newSector, orientation: 'horizontal' })} className={cn("flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest transition-all", newSector.orientation === 'horizontal' ? 'border-blue-500 bg-blue-500 text-white shadow-lg' : 'border-slate-100 bg-white text-slate-400')}>Horizontal</button>
-                                            <button onClick={() => setNewSector({ ...newSector, orientation: 'vertical' })} className={cn("flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest transition-all", newSector.orientation === 'vertical' ? 'border-blue-500 bg-blue-500 text-white shadow-lg' : 'border-slate-100 bg-white text-slate-400')}>Vertical</button>
-                                        </div>
+                                    <label className="block text-xs font-bold text-slate-600 mb-1 mt-2">Orientação</label>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setNewSector({ ...newSector, orientation: 'horizontal' })} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-colors", newSector.orientation === 'horizontal' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500')}><GripHorizontal size={16} /> Horiz</button>
+                                        <button onClick={() => setNewSector({ ...newSector, orientation: 'vertical' })} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-colors", newSector.orientation === 'vertical' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500')}><GripVertical size={16} /> Vert</button>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Tipo de Expositor</label>
-                                        <div className="flex gap-2">
-                                            {["Showcase", "Wall", "Rack"].map(t => (
-                                                <button
-                                                    key={t}
-                                                    onClick={() => setNewSector({ ...newSector, type: t as any })}
-                                                    className={cn(
-                                                        "flex-1 py-3 rounded-xl border-2 font-black text-[9px] uppercase tracking-tighter transition-all",
-                                                        newSector.type === t ? 'border-blue-500 bg-blue-500 text-white shadow-lg' : 'border-slate-100 bg-white text-slate-400'
-                                                    )}
-                                                >
-                                                    {t === "Showcase" ? "Expositor" : t === "Wall" ? "Parede" : "Rack"}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <div className="flex gap-2 mt-2">
+                                        {["Showcase", "Wall", "Rack"].map(t => (
+                                            <button
+                                                key={t}
+                                                onClick={() => setNewSector({ ...newSector, type: t as any })}
+                                                className={cn(
+                                                    "flex-1 py-2.5 rounded-xl border-2 font-bold text-xs transition-all",
+                                                    newSector.type === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'
+                                                )}
+                                            >
+                                                {t === "Showcase" ? "Expositor" : t === "Wall" ? "Parede" : "Rack"}
+                                            </button>
+                                        ))}
                                     </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1.5 ml-1">Modo de Exibição</label>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setNewSector({ ...newSector, layoutMode: 'boxed' })} className={cn("flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest transition-all", newSector.layoutMode === 'boxed' ? 'border-blue-500 bg-blue-500 text-white shadow-lg' : 'border-slate-100 bg-white text-slate-400')}>Boxed</button>
-                                            <button onClick={() => setNewSector({ ...newSector, layoutMode: 'full' })} className={cn("flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest transition-all", newSector.layoutMode === 'full' ? 'border-blue-500 bg-blue-500 text-white shadow-lg' : 'border-slate-100 bg-white text-slate-400')}>Full Width</button>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            if (!newSector.name.trim()) return;
-                                            if (editingSectorId) {
-                                                setSections(prev => prev.map(s => s.id === editingSectorId ? {
-                                                    ...s,
-                                                    rows: Number(newSector.rows),
-                                                    cols: Number(newSector.cols),
-                                                    orientation: newSector.orientation as "horizontal" | "vertical",
-                                                    type: newSector.type as any,
-                                                    layoutMode: newSector.layoutMode as any
-                                                } : s));
-                                                setEditingSectorId(null);
-                                            } else {
-                                                const id = newSector.name.trim().toUpperCase();
-                                                const spots: Spot[] = [];
-                                                for (let r = 1; r <= Number(newSector.rows); r++) {
-                                                    for (let c = 1; c <= Number(newSector.cols); c++) {
-                                                        spots.push({ id: `${id}-${r}-${c}`, code: `${id}-${r}-${c}`, row: r, col: c, status: "available", products: [], updatedAt: new Date().toISOString() });
+                                    <div className="flex gap-2 mt-2 pt-2">
+                                        {editingSectorId && <button onClick={() => setEditingSectorId(null)} className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors">Cancelar</button>}
+                                        <button
+                                            onClick={() => {
+                                                if (!newSector.name.trim()) return;
+                                                if (editingSectorId) {
+                                                    // Smart resize: preserve existing spots, only add/remove
+                                                    setSections(prev => prev.map(s => {
+                                                        if (s.id !== editingSectorId) return s;
+                                                        const newRows = Number(newSector.rows);
+                                                        const newCols = Number(newSector.cols);
+                                                        const existingSpotMap = new Map(s.spots.map(sp => [sp.id, sp]));
+                                                        const nextSpots: Spot[] = [];
+                                                        for (let r = 1; r <= newRows; r++) {
+                                                            for (let c = 1; c <= newCols; c++) {
+                                                                const sid = `${s.id}-${r}-${c}`;
+                                                                nextSpots.push(existingSpotMap.get(sid) || { id: sid, code: sid, row: r, col: c, status: 'available', products: [], updatedAt: new Date().toISOString() });
+                                                            }
+                                                        }
+                                                        return { ...s, rows: newRows, cols: newCols, orientation: newSector.orientation as any, type: newSector.type as any, spots: nextSpots };
+                                                    }));
+                                                    setEditingSectorId(null);
+                                                } else {
+                                                    const id = newSector.name.trim().toUpperCase();
+                                                    const spots: Spot[] = [];
+                                                    for (let r = 1; r <= Number(newSector.rows); r++) {
+                                                        for (let c = 1; c <= Number(newSector.cols); c++) {
+                                                            spots.push({ id: `${id}-${r}-${c}`, code: `${id}-${r}-${c}`, row: r, col: c, status: "available", products: [], updatedAt: new Date().toISOString() });
+                                                        }
                                                     }
+                                                    setSections([...sections, { id, label: `Setor ${id}`, rows: Number(newSector.rows), cols: Number(newSector.cols), orientation: newSector.orientation as any, type: newSector.type as any, spots }]);
+                                                    setActiveSectionId(id);
                                                 }
-                                                setSections([...sections, {
-                                                    id,
-                                                    label: `Setor ${id}`,
-                                                    rows: Number(newSector.rows),
-                                                    cols: Number(newSector.cols),
-                                                    orientation: newSector.orientation as "horizontal" | "vertical",
-                                                    type: newSector.type as any,
-                                                    layoutMode: newSector.layoutMode as any,
-                                                    spots
-                                                }]);
-                                                setActiveSectionId(id);
-                                            }
-                                            setNewSector({ name: '', rows: 4, cols: 6, orientation: 'horizontal', type: 'Showcase', layoutMode: 'boxed' });
-                                            setIsAssistantOpen(false);
-                                        }}
-                                        disabled={!newSector.name.trim()}
-                                        className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-200 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2"
-                                    >
-                                        {editingSectorId ? <Save size={18} /> : <Plus size={18} />}
-                                        {editingSectorId ? 'Salvar Setor' : 'Criar Setor'}
-                                    </button>
+                                                setNewSector({ name: '', rows: 4, cols: 6, orientation: 'horizontal', type: 'Showcase' });
+                                            }}
+                                            disabled={!newSector.name.trim()}
+                                            className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md"
+                                        >
+                                            {editingSectorId ? <Save size={16} /> : <Plus size={16} />}
+                                            {editingSectorId ? 'Salvar' : 'Adicionar'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Active Sectors List */}
                                 <div className="space-y-3">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Setores Atuais ({sections.length})</h4>
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Setores Ativos ({sections.length})</h4>
+                                <div className="space-y-2">
                                     {sections.map(sec => (
-                                        <div key={sec.id} className="bg-white border border-slate-200 p-4 rounded-2xl flex justify-between items-center group hover:border-blue-300 transition-all">
+                                        <div key={sec.id} className={cn(
+                                            "flex justify-between items-center bg-white border p-3 rounded-2xl shadow-sm transition-all",
+                                            editingSectorId === sec.id ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md' : 'border-slate-200'
+                                        )}>
                                             <div>
-                                                <span className="font-black text-slate-800 block">Setor {sec.label || sec.id}</span>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{sec.rows}x{sec.cols} • {sec.orientation}</span>
+                                                <span className="font-black text-slate-800 block text-lg">Setor {sec.id}</span>
+                                                <span className="text-xs text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded uppercase mt-1 inline-block">{sec.rows}x{sec.cols} • {sec.orientation}</span>
                                             </div>
-                                            <div className="flex gap-1">
+                                            <div className="flex gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100">
                                                 <button onClick={() => { 
                                                     setEditingSectorId(sec.id); 
                                                     setNewSector({ 
                                                         name: sec.id, 
-                                                        rows: sec.rows, 
-                                                        cols: sec.cols, 
-                                                        orientation: sec.orientation || 'horizontal',
-                                                        type: sec.type || 'Showcase',
-                                                        layoutMode: sec.layoutMode || 'boxed'
+                                                        rows: sec.rows ?? 4, 
+                                                        cols: sec.cols ?? 6, 
+                                                        orientation: (sec.orientation as any) || 'horizontal',
+                                                        type: (sec.type as any) || 'Showcase'
                                                     }); 
-                                                }} className="p-2 text-slate-400 hover:text-blue-600 transition-all"><Edit size={16} /></button>
+                                                }} className="text-slate-400 hover:text-blue-600 bg-white p-2 rounded-lg shadow-sm transition-all"><Edit size={16} /></button>
                                                 <button onClick={() => {
                                                     const next = sections.filter(s => s.id !== sec.id);
                                                     setSections(next);
                                                     if (activeSectionId === sec.id) setActiveSectionId(next[0]?.id || null);
-                                                }} className="p-2 text-slate-400 hover:text-rose-600 transition-all"><Trash2 size={16} /></button>
+                                                }} className="text-slate-400 hover:text-rose-600 bg-white p-2 rounded-lg shadow-sm transition-all"><Trash2 size={16} /></button>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
+                                {/* Export Buttons */}
+                                {onExport && (
+                                    <div className="pt-4 border-t border-slate-100 space-y-2">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Exportar Dados</h4>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => onExport('store_layout', 'json')} className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:border-blue-400 hover:text-blue-600 transition-all flex items-center justify-center gap-2">
+                                                <Box size={14} /> JSON
+                                            </button>
+                                            <button onClick={() => onExport('store_layout', 'csv')} className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:border-emerald-400 hover:text-emerald-600 transition-all flex items-center justify-center gap-2">
+                                                <Grid size={14} /> CSV
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>{/* end space-y-3 */}
+                            {/* Save Layout Button */}
+                            <div className="p-4 border-t border-slate-100 shrink-0">
+                                <button
+                                    onClick={() => { handleSave(); setIsAssistantOpen(false); }}
+                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md transition-all text-sm"
+                                >
+                                    <Save size={16} /> Salvar Layout
+                                </button>
                             </div>
+                            </div>{/* end scrollable */}
                         </motion.div>
                     </div>
                 )}
@@ -767,6 +819,70 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
 
             {/* Assistant UI Component Integration */}
             <AnimatePresence>
+                {/* MODAL ADICIONAR ITEM MANUALMENTE */}
+                {showAddSku && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[180] flex items-center justify-center p-4 animate-fade-in">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden p-8"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-black text-slate-800 text-xl">Adicionar Produto</h3>
+                                <button onClick={() => setShowAddSku(false)} className="text-slate-400 bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-all"><X size={18} /></button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} placeholder="Nome do Produto" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                <div className="flex gap-3">
+                                    <input type="text" value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} placeholder="SKU (Opcional)" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                    <input type="text" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} placeholder="Preço (Opc.)" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                </div>
+                                <input type="text" value={newProduct.condition} onChange={e => setNewProduct({...newProduct, condition: e.target.value})} placeholder="Condição (Ex: A Vista, Usado...)" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} placeholder="Detalhes adicionais..." className="w-full border border-slate-200 p-3.5 rounded-xl h-24 bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none font-medium transition-all"></textarea>
+
+                                <button
+                                    onClick={() => {
+                                        if (!newProduct.name.trim()) return;
+                                        const targetSpot = selectedSpot || sections.flatMap(s => s.spots).find(sp => sp.id === newProduct.targetCell);
+                                        if (!targetSpot) {
+                                            push({ title: "Erro", description: "Selecione um slot para o produto.", variant: "destructive" });
+                                            return;
+                                        }
+
+                                        const updated = sections.map(s => ({
+                                            ...s,
+                                            spots: s.spots.map(sp => {
+                                                if (sp.id === targetSpot.id) {
+                                                    const existing = sp.products || [];
+                                                    return { 
+                                                        ...sp, 
+                                                        products: [...existing, { 
+                                                            id: `prod_${Date.now()}`, 
+                                                            name: newProduct.name, 
+                                                            sku: newProduct.sku,
+                                                            price: newProduct.price,
+                                                            quantity: 1 
+                                                        }], 
+                                                        status: "occupied" as const 
+                                                    };
+                                                }
+                                                return sp;
+                                            })
+                                        }));
+                                        setSections(updated);
+                                        if (selectedSpot) setSelectedSpot(updated.flatMap(s => s.spots).find(sp => sp.id === selectedSpot.id) || null);
+                                        setShowAddSku(false);
+                                        setNewProduct({ name: '', sku: '', price: '', condition: '', description: '', targetCell: '' });
+                                        push({ title: "Produto Criado", description: `${newProduct.name} foi adicionado ao slot ${targetSpot.code}.`, variant: "success" });
+                                    }}
+                                    className="w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Plus size={18} /> Adicionar ao Armazém
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
                 {isAssistantOpen && assistantMode !== null && (
                     <div className="fixed inset-0 z-[200]">
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => { setIsAssistantOpen(false); setAssistantMode(null); }} />

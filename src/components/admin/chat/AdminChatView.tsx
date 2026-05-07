@@ -106,6 +106,7 @@ export function AdminChatView({
     const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string | ReactNode }>>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [isWorkspaceChooserOpen, setIsWorkspaceChooserOpen] = useState(false);
+    const [isNavChooserOpen, setIsNavChooserOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [pendingImages, setPendingImages] = useState<any[]>([]);
     const [isListening, setIsListening] = useState(false);
@@ -161,6 +162,21 @@ export function AdminChatView({
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }
     }, [isWorkspaceChooserOpen]);
+
+    // Close nav chooser when clicking outside
+    const navChooserRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (navChooserRef.current && !navChooserRef.current.contains(event.target as Node)) {
+                setIsNavChooserOpen(false);
+            }
+        };
+
+        if (isNavChooserOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [isNavChooserOpen]);
 
     const handleSend = async () => {
         if (!inputValue.trim() && pendingImages.length === 0) return;
@@ -329,23 +345,26 @@ export function AdminChatView({
                         >
                             <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-white/40 to-transparent backdrop-blur-md pointer-events-none -z-10 dark:from-black/60 dark:via-black/40" />
 
-                            <div className="container mx-auto px-6">
-                    <div className="mb-3 flex items-center gap-3">
-                        <div className="relative" ref={chooserRef}>
+                            <div className="container mx-auto px-3 sm:px-6">
+                    {/* Row 1: Workspace chooser */}
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                        <div className="relative flex-1" ref={chooserRef}>
                             <button
                                 onClick={() => setIsWorkspaceChooserOpen(!isWorkspaceChooserOpen)}
                                 className={cn(
-                                    "flex items-center gap-2 rounded-xl bg-[#333] px-4 py-2 text-white shadow-lg ring-1 ring-white/10 transition-all hover:bg-[#404040] cursor-pointer",
+                                    "flex w-full items-center justify-between gap-2 rounded-xl bg-[#333] px-3 py-3 text-white shadow-lg ring-1 ring-white/10 transition-all hover:bg-[#404040] cursor-pointer",
                                     isWorkspaceChooserOpen && "ring-2 ring-white/20"
                                 )}
                             >
-                                <span style={{ color: currentColor }}>
-                                    {getTemplateIcon(currentWorkspace?.promptSettings?.templateId)}
-                                </span>
-                                <span className="font-medium text-sm max-w-[150px] truncate">
-                                    {currentWorkspace?.name || "Select Workspace"}
-                                </span>
-                                <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" />
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span style={{ color: currentColor }} className="shrink-0">
+                                        {getTemplateIcon(currentWorkspace?.promptSettings?.templateId)}
+                                    </span>
+                                    <span className="font-medium text-sm truncate">
+                                        {currentWorkspace?.name || "Workspace"}
+                                    </span>
+                                </div>
+                                <ChevronUp className={cn("h-4 w-4 text-gray-400 shrink-0 transition-transform", isWorkspaceChooserOpen && "rotate-180")} />
                             </button>
 
                             <AnimatePresence>
@@ -376,6 +395,17 @@ export function AdminChatView({
                                             </button>
                                         ))}
                                         <div className="my-2 border-t border-white/10" />
+
+                                        {/* Layout shortcut — visible only for furniture template */}
+                                        {currentWorkspace?.promptSettings?.templateId?.startsWith('template_furniture') && (
+                                            <button
+                                                onClick={() => { onTabChange('layout' as NavTab); setIsWorkspaceChooserOpen(false); setIsCollapsed(true); }}
+                                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/10 cursor-pointer"
+                                            >
+                                                <MapIcon className="h-4 w-4 text-sky-400" />
+                                                <span>Configurar Layout</span>
+                                            </button>
+                                        )}
                                         
                                         {/* Credits */}
                                         <button onClick={onOpenSaaSLimits} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/10 cursor-pointer">
@@ -408,6 +438,14 @@ export function AdminChatView({
 
                                         <div className="my-2 border-t border-white/10" />
                                         
+                                        {/* Menu Mode Toggle */}
+                                        <button onClick={() => { onSwitchToMenu(); setIsWorkspaceChooserOpen(false); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/10 cursor-pointer">
+                                            <LayoutGrid className="h-4 w-4 text-blue-400" />
+                                            <span>Modo Menu (Mosaico)</span>
+                                        </button>
+
+                                        <div className="my-2 border-t border-white/10" />
+
                                         {/* User Profile */}
                                         <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg">
                                             <span>Meu Perfil</span>
@@ -417,62 +455,72 @@ export function AdminChatView({
                                 )}
                             </AnimatePresence>
                         </div>
-
-                        {currentNavItems.length > 0 && (
-                            <div 
-                                ref={scrollContainerRef}
-                                className={cn(
-                                    "flex flex-1 items-center gap-2 overflow-x-auto py-1 mask-linear-fade select-none",
-                                    isDragging ? "cursor-grabbing" : "cursor-grab"
-                                )}
-                                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                                onMouseDown={onMouseDown}
-                                onMouseLeave={onMouseLeaveDrag}
-                                onMouseUp={onMouseUp}
-                                onMouseMove={onMouseMove}
-                            >
-                                {currentNavItems.map((item) => {
-                                    const Icon = item.icon;
-                                    const isActive = activeTab === item.id;
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => {
-                                                if (isDragging) return;
-                                                onTabChange(item.id as NavTab);
-                                                setIsCollapsed(true);
-                                                // Removed setMessages as requested
-                                            }}
-                                            className={cn(
-                                                "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-all cursor-pointer border flex items-center gap-2 group",
-                                                isActive
-                                                    ? "bg-[#333] text-white border-[#333]"
-                                                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                                            )}
-                                        >
-                                            <Icon className={cn("h-3.5 w-3.5", isActive ? "text-white" : "text-gray-400 group-hover:text-blue-500")} />
-                                            {item.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        <button
-                            onClick={onSwitchToMenu}
-                            className="ml-auto shrink-0 flex items-center justify-center h-9 w-9 rounded-xl bg-blue-50 text-blue-600 font-medium hover:bg-blue-100 transition-colors shadow-sm ring-1 ring-blue-100 cursor-pointer"
-                            title="Modo Menu"
-                        >
-                            <LayoutGrid className="w-5 h-5" />
-                        </button>
                     </div>
+
+                    {/* Row 2: Nav Tab Light Chooser */}
+                    {currentNavItems.length > 0 && (
+                        <div className="mb-3 flex items-center justify-end">
+                            <div className="relative" ref={navChooserRef}>
+                                <button
+                                    onClick={() => setIsNavChooserOpen(!isNavChooserOpen)}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-xl bg-white/90 backdrop-blur-md px-4 py-2 text-gray-700 shadow-sm border border-gray-200 transition-all hover:bg-white cursor-pointer",
+                                        isNavChooserOpen && "ring-2 ring-blue-500/50 border-blue-300"
+                                    )}
+                                >
+                                    {(() => {
+                                        const currentTab = currentNavItems.find(t => t.id === activeTab);
+                                        const Icon = currentTab?.icon || LayoutGrid;
+                                        return (
+                                            <>
+                                                <Icon className="h-4 w-4 text-blue-600" />
+                                                <span className="font-bold text-xs uppercase tracking-widest">{currentTab?.label || "Selecione"}</span>
+                                                <ChevronUp className={cn("h-4 w-4 text-gray-400 shrink-0 transition-transform ml-2", isNavChooserOpen && "rotate-180")} />
+                                            </>
+                                        );
+                                    })()}
+                                </button>
+
+                                <AnimatePresence>
+                                    {isNavChooserOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute bottom-full right-0 mb-2 w-56 max-h-[300px] overflow-y-auto rounded-xl bg-white p-2 shadow-xl border border-gray-100 z-50"
+                                        >
+                                            <div className="mb-2 px-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Navegação</div>
+                                            {currentNavItems.map((item) => {
+                                                const Icon = item.icon;
+                                                const isActive = activeTab === item.id;
+                                                return (
+                                                    <button
+                                                        key={item.id}
+                                                        onClick={() => {
+                                                            onTabChange(item.id as NavTab);
+                                                            setIsNavChooserOpen(false);
+                                                            setIsCollapsed(true);
+                                                        }}
+                                                        className={cn(
+                                                            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer",
+                                                            isActive ? "bg-blue-50 text-blue-700 font-bold" : "text-gray-600 hover:bg-gray-50"
+                                                        )}
+                                                    >
+                                                        <Icon className={cn("h-4 w-4", isActive ? "text-blue-600" : "text-gray-400")} />
+                                                        <span>{item.label}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Chat Input Area */}
                     <div className="relative rounded-2xl bg-white shadow-xl ring-1 ring-gray-900/5 focus-within:ring-2 focus-within:ring-blue-500/50">
-                        <div className="flex items-center px-4 py-3">
-                            <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                                <Sparkles className="h-4 w-4" />
-                            </div>
+                        <div className="flex items-center px-3 py-2.5">
                             <input
                                 ref={inputRef}
                                 type="text"
@@ -480,10 +528,10 @@ export function AdminChatView({
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={isListening ? "Ouvindo..." : "Escreva um comando ou converse..."}
-                                className="flex-1 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none cursor-text"
+                                className="flex-1 bg-transparent text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none cursor-text pl-2"
                             />
                             
-                            <div className="flex items-center gap-2 pr-1">
+                            <div className="flex items-center gap-1 shrink-0">
                                 <button 
                                     onClick={toggleVoice}
                                     className={cn("p-2 rounded-lg transition-colors", isListening ? "bg-rose-100 text-rose-600 animate-pulse" : "text-gray-400 hover:bg-gray-100 hover:text-blue-600")}
@@ -497,20 +545,19 @@ export function AdminChatView({
                                     <ImageIcon className="h-4 w-4" />
                                     <input type="file" id="chat-img-upload" className="hidden" onChange={handleImageUpload} accept="image/*" />
                                 </button>
+                                <button
+                                    onClick={handleSend}
+                                    disabled={(!inputValue.trim() && pendingImages.length === 0) || isAIThinking}
+                                    className={cn(
+                                        "ml-1 flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                                        (inputValue.trim() || pendingImages.length > 0) && !isAIThinking
+                                            ? "bg-blue-600 text-white shadow-md hover:bg-blue-500 cursor-pointer"
+                                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    )}
+                                >
+                                    {isAIThinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                </button>
                             </div>
-
-                            <button
-                                onClick={handleSend}
-                                disabled={(!inputValue.trim() && pendingImages.length === 0) || isAIThinking}
-                                className={cn(
-                                    "ml-3 flex h-8 w-8 items-center justify-center rounded-full transition-all",
-                                    (inputValue.trim() || pendingImages.length > 0) && !isAIThinking
-                                        ? "bg-blue-600 text-white shadow-md hover:bg-blue-500 cursor-pointer"
-                                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                )}
-                            >
-                                {isAIThinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                            </button>
                         </div>
                     </div>
                             </div>

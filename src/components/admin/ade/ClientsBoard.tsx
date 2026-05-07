@@ -66,8 +66,8 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                     <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Robust portfolio and protocol management</p>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                    <div className="relative group">
+                <div className="flex flex-col sm:flex-row sm:items-center w-full md:w-auto gap-3 mt-4 md:mt-0">
+                    <div className="relative group w-full sm:w-auto">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-sky-600 transition-colors" />
                         <input 
                             type="text" 
@@ -79,7 +79,7 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                     </div>
                     <button 
                         onClick={() => { setEditingClient(null); setIsModalOpen(true); }}
-                        className="bg-gray-900 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-xl cursor-pointer"
+                        className="bg-sky-600 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-sky-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-sky-100 cursor-pointer w-full sm:w-auto"
                     >
                         <UserPlus className="h-4 w-4" /> New Client
                     </button>

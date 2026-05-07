@@ -58,7 +58,7 @@ export function AdminShellAde({
       }}
     >
       <AuthSync />
-      
+
       {/* Desktop Sidebar / Mobile Floating Menu */}
       {navigation}
 
@@ -80,8 +80,8 @@ export function AdminShellAde({
         >
           <div
             className={cn(
-              "container mx-auto min-h-full px-6",
-              chatOverlay ? "pb-48" : "pb-24 md:pb-8"
+              "container mx-auto min-h-full px-2",
+              chatOverlay ? "pb-8" : "pb-8 md:pb-8"
             )}
             style={{ color: appearance.textColor }}
           >

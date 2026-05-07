@@ -141,7 +141,7 @@ export function StaffBoard({ tiles, onStaffSubmit }: StaffBoardProps) {
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="relative max-w-lg w-full bg-white rounded-[3rem] p-10 shadow-2xl overflow-hidden"
+                        className="relative max-w-lg w-full bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 shadow-2xl overflow-hidden"
                     >
                         <div className="mb-8 flex items-center gap-4">
                             <div className="p-3 bg-indigo-100 rounded-2xl">
@@ -159,7 +159,7 @@ export function StaffBoard({ tiles, onStaffSubmit }: StaffBoardProps) {
                                 <input name="name" defaultValue={editingStaff?.name} required className="w-full bg-gray-50 rounded-2xl px-5 py-4 text-sm font-semibold border-none focus:ring-2 focus:ring-indigo-100 outline-none shadow-inner" />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Role / Function</label>
                                     <input name="role" defaultValue={editingStaff?.role} required placeholder="e.g. Master Assembler" className="w-full bg-gray-50 rounded-2xl px-5 py-4 text-sm font-semibold border-none focus:ring-2 focus:ring-indigo-100 outline-none shadow-inner" />

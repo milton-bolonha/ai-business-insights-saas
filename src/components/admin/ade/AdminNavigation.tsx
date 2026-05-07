@@ -160,8 +160,9 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
             </aside>
 
             {/* Mobile Bottom Menu (Floating) */}
-            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
-                <nav className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-2 flex justify-between items-center px-4">
+            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-sm">
+                <div className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-2 px-4 overflow-x-auto hide-scrollbar mask-linear-fade flex items-center gap-2">
+                    <nav className="flex justify-start sm:justify-between items-center w-max sm:w-full min-w-full gap-2">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = activeTab === item.id;
@@ -199,7 +200,8 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                             </button>
                         </>
                     )}
-                </nav>
+                    </nav>
+                </div>
             </div>
         </>
     );

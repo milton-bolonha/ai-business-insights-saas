@@ -85,7 +85,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                     </div>
                     <div>
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Faturamento Fechado</div>
-                        <div className="text-4xl font-black text-gray-900">R$ {totalRevenue.toLocaleString()}</div>
+                        <div className="text-3xl sm:text-4xl font-black text-gray-900">R$ {totalRevenue.toLocaleString()}</div>
                     </div>
                 </motion.div>
 
@@ -105,7 +105,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                     </div>
                     <div>
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Receita Pendente (Orçamentos)</div>
-                        <div className="text-4xl font-black text-gray-900">R$ {pendingRevenue.toLocaleString()}</div>
+                        <div className="text-3xl sm:text-4xl font-black text-gray-900">R$ {pendingRevenue.toLocaleString()}</div>
                     </div>
                 </motion.div>
 
@@ -122,7 +122,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                     </div>
                     <div>
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Itens no Catálogo Ativo</div>
-                        <div className="text-4xl font-black text-gray-900">{products.filter((p: any) => !p.archived).length}</div>
+                        <div className="text-3xl sm:text-4xl font-black text-gray-900">{products.filter((p: any) => !p.archived).length}</div>
                     </div>
                 </motion.div>
             </div>
