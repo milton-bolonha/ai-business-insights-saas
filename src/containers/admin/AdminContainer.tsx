@@ -37,6 +37,9 @@ import { ClientsBoard } from "@/components/admin/ade/ClientsBoard";
 import { StaffBoard } from "@/components/admin/ade/StaffBoard";
 import { FurnitureAnalyticsBoard } from "@/components/admin/ade/FurnitureAnalyticsBoard";
 import { AdminChatView } from "@/components/admin/chat/AdminChatView";
+import { ChatBoard } from "@/components/admin/ade/ChatBoard";
+import { VoiceAssistantOverlay } from "@/components/admin/chat/VoiceAssistantOverlay";
+import { SaaSLimitsModal } from "@/components/admin/ade/SaaSLimitsModal";
 
 // Zustand stores
 import {
@@ -146,7 +149,13 @@ export function AdminContainer() {
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<NavTab>("arcs");
-  const [viewMode, setViewMode] = useState<"chat" | "menu">("chat");
+
+  const viewMode = currentDashboard?.layoutMode || "menu";
+  const setViewMode = (mode: "chat" | "menu") => {
+    if (currentWorkspace && currentDashboard) {
+      workspaceActions.updateDashboard(currentWorkspace.id, currentDashboard.id, { layoutMode: mode });
+    }
+  };
 
   // Sync Dashboard Background Color with UI Store
   useEffect(() => {
@@ -701,32 +710,30 @@ export function AdminContainer() {
     <AdminShellAde
       appearance={appearance}
       chatOverlay={
-        viewMode === "chat" ? (
-          <AdminChatView
-            workspaces={workspaces}
-            currentWorkspace={currentWorkspace}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onSetActiveWorkspace={(id) => {
-                const ws = workspaces.find((w) => w.id === id);
-                if (ws) workspaceActions.setCurrentWorkspace(ws);
-            }}
-            onSwitchToMenu={() => setViewMode("menu")}
-            onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
-            onSetSpecificColor={handleSetBackground}
-            onOpenSaaSLimits={openSaaSLimits}
-          />
-        ) : null
+        <AdminChatView
+          workspaces={workspaces}
+          currentWorkspace={currentWorkspace}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onSetActiveWorkspace={(id) => {
+              const ws = workspaces.find((w) => w.id === id);
+              if (ws) workspaceActions.setCurrentWorkspace(ws);
+          }}
+          viewMode={viewMode}
+          onSwitchToMenu={() => setViewMode("menu")}
+          onSwitchToChat={() => setViewMode("chat")}
+          onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
+          onSetSpecificColor={handleSetBackground}
+          onOpenSaaSLimits={openSaaSLimits}
+        />
       }
       navigation={
-        viewMode === "chat" ? null : (
-          <AdminNavigation 
-            activeTab={activeTab} 
-            onTabChange={setActiveTab} 
-            templateId={currentWorkspace?.promptSettings?.templateId}
-            onSwitchToChat={() => setViewMode("chat")}
-          />
-        )
+        <AdminNavigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          templateId={currentWorkspace?.promptSettings?.templateId}
+          onSwitchToChat={() => setViewMode("chat")}
+        />
       }
       // Top Header Props
       onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
@@ -926,6 +933,12 @@ export function AdminContainer() {
               {activeTab === "files" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <FilesPlaceholderAde appearance={appearance} />
+                </div>
+              )}
+
+              {activeTab === "chat_history" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-120px)]">
+                  <ChatBoard workspace={currentWorkspace} dashboard={currentDashboard} />
                 </div>
               )}
 
@@ -1286,6 +1299,15 @@ export function AdminContainer() {
         limits={payment.limits}
         stripeCheckoutUrl={payment.stripeCheckoutUrl}
       />
+
+      {/* Modals */}
+      <SaaSLimitsModal
+        isOpen={modals.isSaaSLimitsOpen}
+        onClose={closeSaaSLimits}
+        appearance={appearance}
+      />
+
+      <VoiceAssistantOverlay workspace={currentWorkspace} dashboard={currentDashboard} />
 
       {/* Book Reader Preview */}
       <BookReaderModal

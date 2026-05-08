@@ -21,6 +21,7 @@ export interface Dashboard {
   createdAt: string;
   updatedAt: string;
   isActive?: boolean; // Dashboard atualmente ativo
+  layoutMode?: "menu" | "chat"; // Preferência de layout (menu ou bottom-sheet chat)
 }
 
 /**

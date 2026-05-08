@@ -14,6 +14,7 @@ export interface DashboardDocument extends Document {
   bgColor?: string;
   templateId?: string;
   isActive?: boolean;
+  layoutMode?: "menu" | "chat";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +33,7 @@ export function dashboardToDocument(
     name: dashboard.name,
     bgColor: dashboard.bgColor,
     templateId: dashboard.templateId,
+    layoutMode: dashboard.layoutMode,
   };
 }
 
@@ -40,13 +42,14 @@ export function dashboardToDocument(
  */
 export function dashboardDocumentToDashboard(
   doc: DashboardDocument
-): Pick<Dashboard, "id" | "workspaceId" | "name" | "bgColor" | "templateId" | "createdAt" | "updatedAt"> {
+): Pick<Dashboard, "id" | "workspaceId" | "name" | "bgColor" | "templateId" | "layoutMode" | "createdAt" | "updatedAt"> {
   return {
     id: doc.id || doc._id?.toString() || `dashboard_${Date.now()}`,
     workspaceId: doc.workspaceId,
     name: doc.name,
     bgColor: doc.bgColor,
     templateId: doc.templateId,
+    layoutMode: doc.layoutMode,
     createdAt: doc.createdAt instanceof Date 
       ? doc.createdAt.toISOString() 
       : typeof doc.createdAt === 'string' 
