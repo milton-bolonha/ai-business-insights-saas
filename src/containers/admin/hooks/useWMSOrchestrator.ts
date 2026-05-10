@@ -226,6 +226,7 @@ export function useWMSOrchestrator(
       2. { "action": "AUTO_PUTAWAY", "item": { "name": "...", "sku": "...", "price": "...", "condition": "...", "description": "..." } }
       3. { "action": "PUTAWAY", "targetId": "A1-1-1", "item": { ... } }
       4. { "action": "PICKING", "targetId": "A1-1-1", "sku": "...", "reason": "..." }
+      5. { "action": "CREATE_PRODUCT", "item": { "name": "...", "price": 100, "category": "...", "description": "..." } } (Usa esta para adicionar ao catálogo geral)
       
       Aja naturalmente na chave "reply" e extraia os dados ricamente.`;
 
@@ -240,13 +241,15 @@ export function useWMSOrchestrator(
       if (!response.ok) throw new Error("AI Service Unavailable");
       
       const data = await response.json();
-      const logs = executeCommands(data.commands || []);
+      const commands = data.commands || [];
+      const logs = executeCommands(commands);
       
       // Consume credits locally for UI sync
       auth.consumeUsage("wmsAiAssistant");
 
       return {
         reply: data.reply,
+        commands,
         logs
       };
     } catch (error) {

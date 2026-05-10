@@ -24,7 +24,9 @@ import {
     Mic,
     Image as ImageIcon,
     Loader2,
-    CheckCircle2
+    CheckCircle2,
+    HelpCircle,
+    X
 } from "lucide-react";
 import { useWMSOrchestrator } from "@/containers/admin/hooks/useWMSOrchestrator";
 import { UserButton } from "@clerk/nextjs";
@@ -132,6 +134,9 @@ export function AdminChatView({
     const [isDragging, setIsDragging] = useState(false);
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
+
+    // Voice Help Modal State
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
     const chooserRef = useRef<HTMLDivElement>(null);
@@ -316,9 +321,22 @@ export function AdminChatView({
 
     return (
         <AnimatePresence>
+            {/* Click Outside Backdrop */}
+            {isExpanded && (
+                <motion.div 
+                    key="chat-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[100]" 
+                    onClick={() => onSwitchToMenu()}
+                />
+            )}
+
             {/* The Expanded Chat Sheet */}
             <motion.div
-                className="fixed bottom-0 left-0 right-0 z-[110] flex flex-col shadow-[0_-20px_50px_rgba(0,0,0,0.1)] rounded-t-[2.5rem] h-[85vh] md:h-[80vh] border border-gray-100/20"
+                key="chat-sheet"
+                className="fixed bottom-0 left-0 right-0 z-[110] flex flex-col shadow-[0_-20px_50px_rgba(0,0,0,0.1)] rounded-t-[2.5rem] h-auto max-h-[85vh] border border-gray-100/20"
                 initial={{ y: "100%" }}
                 animate={{
                     y: isExpanded ? "0%" : "100%",
@@ -330,45 +348,8 @@ export function AdminChatView({
                 {/* Glassy Background */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/80 to-white/60 backdrop-blur-xl pointer-events-none -z-10 dark:from-black/90 dark:via-black/80 dark:to-black/60" />
 
-                {/* Drag Handle (Only visible when expanded) */}
-                <div
-                    onClick={() => onSwitchToMenu()}
-                    className="w-full h-[48px] flex items-center justify-center cursor-pointer group hover:bg-black/5 rounded-t-[2.5rem] transition-colors shrink-0"
-                >
-                    <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full group-hover:bg-gray-400 transition-colors" />
-                </div>
-
-                {/* Expanded Content */}
+                {/* Expanded Content (Just Input Area) */}
                 <div className="flex-1 flex flex-col min-h-0">
-                    {/* Chat Messages Area */}
-                    <div className="flex-1 overflow-y-auto px-4 pb-4 scrollbar-hide">
-                        <div className="mx-auto max-w-5xl w-full space-y-6 pt-4">
-                            {messages.map((msg, idx) => (
-                                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={
-                                        msg.role === 'user'
-                                            ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-[80%] shadow-lg"
-                                            : "bg-white border border-gray-100 shadow-xl text-gray-900 rounded-2xl rounded-tl-sm px-5 py-3 max-w-[90%]"
-                                    }>
-                                        {msg.content}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {isTyping && (
-                                <div className="flex justify-start">
-                                    <div className="bg-gray-800 border border-gray-700 shadow-xl rounded-2xl rounded-tl-sm px-5 py-4">
-                                        <div className="flex space-x-1.5">
-                                            <div className="w-2.5 h-2.5 bg-gray-500 rounded-full animate-bounce delay-0" />
-                                            <div className="w-2.5 h-2.5 bg-gray-500 rounded-full animate-bounce delay-150" />
-                                            <div className="w-2.5 h-2.5 bg-gray-500 rounded-full animate-bounce delay-300" />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={messagesEndRef} />
-                        </div>
-                    </div>
 
                     {/* Chat Input Area Wrapper */}
                     <div className="shrink-0 bg-white/60 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-100/50 py-4 pb-8 sm:pb-6">
@@ -560,7 +541,7 @@ export function AdminChatView({
 
                                     <div className="flex items-center gap-1 shrink-0">
                                         <button
-                                            onClick={toggleVoice}
+                                            onClick={() => window.dispatchEvent(new CustomEvent('start-voice-chat'))}
                                             className={cn("p-2 rounded-lg transition-colors", isListening ? "bg-rose-100 text-rose-600 animate-pulse" : "text-gray-400 hover:bg-gray-100 hover:text-blue-600")}
                                         >
                                             <Mic className="h-4 w-4" />
@@ -592,20 +573,107 @@ export function AdminChatView({
                 </div>
             </motion.div>
 
-            {/* Floating Indicator when collapsed */}
+            {/* Small Pull Tab when collapsed */}
             {!isExpanded && (
-                <motion.button
-                    initial={{ scale: 0, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0, opacity: 0, y: 20 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                <motion.div
+                    key="pull-tab"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 20, opacity: 0 }}
                     onClick={() => onSwitchToChat?.()}
-                    className="fixed bottom-8 right-8 pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-500/30 hover:bg-blue-500 transition-colors z-50 cursor-pointer"
+                    className="fixed bottom-0 left-1/2 -translate-x-1/2 z-[110] w-32 h-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-t-2xl shadow-[0_-5px_15px_rgba(0,0,0,0.1)] border border-gray-200 dark:border-gray-800 border-b-0 cursor-pointer flex items-center justify-center group"
                 >
-                    <Mic className="h-6 w-6" />
-                </motion.button>
+                    <div className="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full group-hover:bg-gray-400 transition-colors" />
+                </motion.div>
             )}
+
+            {/* Floating Indicator (Mic) and Help when collapsed */}
+            {!isExpanded && (
+                <motion.div 
+                    key="floating-actions"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed bottom-8 right-8 z-[120] flex items-end gap-2"
+                >
+                    {/* Help/Commands Button */}
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsHelpModalOpen(true)}
+                        className="mb-10 -mr-4 w-8 h-8 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
+                    >
+                        <HelpCircle className="w-4 h-4" />
+                    </motion.button>
+                    
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0, opacity: 0, y: 20 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => window.dispatchEvent(new CustomEvent('start-voice-chat'))}
+                        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-500/30 hover:bg-blue-500 transition-colors cursor-pointer"
+                    >
+                        <Mic className="h-6 w-6" />
+                    </motion.button>
+                </motion.div>
+            )}
+
+            {/* Voice Help Modal */}
+            <AnimatePresence>
+                {isHelpModalOpen && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsHelpModalOpen(false)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Mic className="w-5 h-5 text-blue-500" />
+                                    Comandos de Voz
+                                </h3>
+                                <button onClick={() => setIsHelpModalOpen(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">
+                                    <X className="w-4 h-4 text-gray-500" />
+                                </button>
+                            </div>
+                            
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                                Você pode usar sua voz para interagir e executar ações diretamente no sistema. Diga algo como:
+                            </p>
+                            
+                            <div className="space-y-3">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                                    <span className="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Ações Rápidas</span>
+                                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 font-medium">
+                                        <li>"Adicionar novo produto"</li>
+                                        <li>"Mudar para cor escura"</li>
+                                        <li>"Consultar estoque da loja"</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                                    <span className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Confirmação (Duplex)</span>
+                                    <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 font-medium">
+                                        <li>Responda "Sim" ou "Não" quando o assistente te perguntar sobre uma ação.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </AnimatePresence>
     );
 }

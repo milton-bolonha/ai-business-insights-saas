@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Mic, Info, History } from "lucide-react";
+import { Mic, Info, History, CheckCircle2 } from "lucide-react";
 import { useChatStore } from "@/lib/stores/chatStore";
 import type { Dashboard, WorkspaceWithDashboards } from "@/lib/types/dashboard";
 import { cn } from "@/lib/utils";
@@ -74,8 +74,20 @@ export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
               )}>
                 <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                 {msg.metadata?.action && (
-                  <div className="mt-2 text-xs font-medium px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg inline-block border border-emerald-200">
-                    Ação: {msg.metadata.action}
+                  <div className="mt-2 group relative inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 cursor-default transition-colors hover:bg-emerald-100">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">{msg.metadata.action}</span>
+                    
+                    {/* Hover tooltip for metadata details */}
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-max max-w-xs bg-gray-900 text-white text-xs p-3 rounded-xl shadow-xl z-50">
+                        <div className="font-bold mb-1 border-b border-gray-700 pb-1 flex items-center gap-1">
+                           <Info className="w-3.5 h-3.5" /> Detalhes da Ação
+                        </div>
+                        <pre className="text-[10px] overflow-x-auto whitespace-pre-wrap font-mono mt-1 text-gray-300">
+                            {JSON.stringify(msg.metadata, null, 2)}
+                        </pre>
+                        <div className="absolute left-4 top-full w-0 h-0 border-l-[6px] border-l-transparent border-t-[6px] border-t-gray-900 border-r-[6px] border-r-transparent" />
+                    </div>
                   </div>
                 )}
                 <div className={cn(

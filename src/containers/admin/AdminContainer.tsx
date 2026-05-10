@@ -136,8 +136,16 @@ export function AdminContainer() {
   useEffect(() => {
     if (currentWorkspace?.promptSettings?.templateId?.startsWith("template_furniture")) {
         furniture.populateDefaults();
+        
+        // Expose handlers to window for AI access
+        (window as any).handleProductSubmitAI = furniture.handleProductSubmit;
+        (window as any).handleOrderSubmitAI = furniture.handleOrderSubmit;
     }
-  }, [currentWorkspace?.id]);
+    return () => {
+        delete (window as any).handleProductSubmitAI;
+        delete (window as any).handleOrderSubmitAI;
+    };
+  }, [currentWorkspace?.id, furniture.handleProductSubmit, furniture.handleOrderSubmit]);
 
   // Sequential Writer Logic (Client-Side Orchestration)
   const [isGenerating, setIsGenerating] = useState(false);
@@ -149,13 +157,30 @@ export function AdminContainer() {
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<NavTab>("arcs");
+  const [localViewMode, setLocalViewMode] = useState<"chat" | "menu" | null>(null);
 
-  const viewMode = currentDashboard?.layoutMode || "menu";
+  const viewMode = localViewMode || currentDashboard?.layoutMode || "menu";
   const setViewMode = (mode: "chat" | "menu") => {
+    setLocalViewMode(mode);
     if (currentWorkspace && currentDashboard) {
       workspaceActions.updateDashboard(currentWorkspace.id, currentDashboard.id, { layoutMode: mode });
     }
   };
+
+  // Expose setViewMode to window for voice assistant access
+  useEffect(() => {
+    (window as any).setViewModeAI = setViewMode;
+    return () => {
+      delete (window as any).setViewModeAI;
+    };
+  }, [setViewMode]);
+
+  // Sync local view mode when dashboard changes
+  useEffect(() => {
+    if (currentDashboard?.layoutMode) {
+      setLocalViewMode(currentDashboard.layoutMode);
+    }
+  }, [currentDashboard?.id, currentDashboard?.layoutMode]);
 
   // Sync Dashboard Background Color with UI Store
   useEffect(() => {
@@ -721,7 +746,10 @@ export function AdminContainer() {
           }}
           viewMode={viewMode}
           onSwitchToMenu={() => setViewMode("menu")}
-          onSwitchToChat={() => setViewMode("chat")}
+          onSwitchToChat={() => {
+              setViewMode("chat");
+              setActiveTab("chat_history" as NavTab);
+          }}
           onOpenWorkspaceDetail={() => openWorkspaceDetail(currentWorkspace?.id || "")}
           onSetSpecificColor={handleSetBackground}
           onOpenSaaSLimits={openSaaSLimits}
@@ -1307,7 +1335,11 @@ export function AdminContainer() {
         appearance={appearance}
       />
 
-      <VoiceAssistantOverlay workspace={currentWorkspace} dashboard={currentDashboard} />
+      <VoiceAssistantOverlay 
+        workspace={currentWorkspace} 
+        dashboard={currentDashboard} 
+        onTabChange={setActiveTab}
+      />
 
       {/* Book Reader Preview */}
       <BookReaderModal

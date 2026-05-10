@@ -11,6 +11,10 @@ export interface UIState {
   theme: ThemeType;
   appearance: AdeAppearanceTokens;
 
+  // Layout preferences
+  isDesktopSidebarOpen: boolean;
+  toggleDesktopSidebar: () => void;
+
   // Estado de modais
   modals: {
     isAddPromptOpen: boolean;
@@ -59,6 +63,9 @@ export const useUIStore = create<UIState>()(
       theme: 'ade',
       appearance: computeAdeAppearanceTokens('#f7f7f7'),
 
+      // Layout
+      isDesktopSidebarOpen: false,
+
       modals: {
         isAddPromptOpen: false,
         isAddContactOpen: false,
@@ -85,6 +92,8 @@ export const useUIStore = create<UIState>()(
       },
 
       setTheme: (theme: ThemeType) => set({ theme }),
+
+      toggleDesktopSidebar: () => set(state => ({ isDesktopSidebarOpen: !state.isDesktopSidebarOpen })),
 
       // Ações de modais
       openAddPrompt: () => set(state => ({
@@ -171,6 +180,7 @@ export const useUIStore = create<UIState>()(
         baseColor: state.baseColor,
         theme: state.theme,
         appearance: state.appearance,
+        isDesktopSidebarOpen: state.isDesktopSidebarOpen,
       }),
     }
   )
