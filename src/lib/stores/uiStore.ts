@@ -14,6 +14,7 @@ export interface UIState {
   // Layout preferences
   isDesktopSidebarOpen: boolean;
   toggleDesktopSidebar: () => void;
+  setDesktopSidebarOpen: (isOpen: boolean) => void;
 
   // Estado de modais
   modals: {
@@ -94,6 +95,7 @@ export const useUIStore = create<UIState>()(
       setTheme: (theme: ThemeType) => set({ theme }),
 
       toggleDesktopSidebar: () => set(state => ({ isDesktopSidebarOpen: !state.isDesktopSidebarOpen })),
+      setDesktopSidebarOpen: (isOpen: boolean) => set({ isDesktopSidebarOpen: isOpen }),
 
       // Ações de modais
       openAddPrompt: () => set(state => ({

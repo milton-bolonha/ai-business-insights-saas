@@ -43,13 +43,14 @@ interface AdminNavigationProps {
 export function AdminNavigation({ activeTab, onTabChange, templateId = "template_1", onSwitchToChat }: AdminNavigationProps) {
     const isDesktopSidebarOpen = useUIStore(state => state.isDesktopSidebarOpen);
     const toggleDesktopSidebar = useUIStore(state => state.toggleDesktopSidebar);
+    const setDesktopSidebarOpen = useUIStore(state => state.setDesktopSidebarOpen);
     
     const sidebarRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
     // Click outside to close sidebar
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
+        function handleClickOutside(event: MouseEvent | PointerEvent | TouchEvent) {
             if (
                 isDesktopSidebarOpen && 
                 sidebarRef.current && 
@@ -57,13 +58,17 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                 buttonRef.current &&
                 !buttonRef.current.contains(event.target as Node)
             ) {
-                toggleDesktopSidebar();
+                setDesktopSidebarOpen(false);
             }
         }
 
+        document.addEventListener("pointerdown", handleClickOutside);
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isDesktopSidebarOpen, toggleDesktopSidebar]);
+        return () => {
+            document.removeEventListener("pointerdown", handleClickOutside);
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isDesktopSidebarOpen, setDesktopSidebarOpen]);
 
     // Resolve Configuration based on Template
     const isWriters = templateId === "template_love_writers";

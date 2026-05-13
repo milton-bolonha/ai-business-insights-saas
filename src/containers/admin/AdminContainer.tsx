@@ -175,6 +175,47 @@ export function AdminContainer() {
     };
   }, [setViewMode]);
 
+  // AI Voice Commands Event Listeners
+  useEffect(() => {
+    const handleNavigate = (e: CustomEvent) => {
+      const dest = e.detail?.destination;
+      if (!dest) return;
+      if (dest === 'chat') {
+        setViewMode('chat');
+        setActiveTab("chat_history" as NavTab);
+      } else if (dest === 'menu') {
+        setViewMode('menu');
+      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking'].includes(dest)) {
+        setActiveTab(dest as NavTab);
+        setViewMode('menu');
+      } else if (dest === 'credits') {
+        openSaaSLimits();
+      } else if (dest === 'profile') {
+        const userBtn = document.querySelector('.cl-userButtonTrigger');
+        if (userBtn) (userBtn as HTMLElement).click();
+      }
+    };
+
+    const handleCreateClient = (e: CustomEvent) => {
+      setActiveTab('clients');
+      setViewMode('menu');
+      openAddContact();
+      push({
+         title: "Assistente de Voz",
+         description: `Iniciando cadastro do cliente: ${e.detail?.name}. Complete as informações.`,
+         variant: "default"
+      });
+    };
+
+    window.addEventListener('ai-navigate', handleNavigate as EventListener);
+    window.addEventListener('ai-create-client', handleCreateClient as EventListener);
+
+    return () => {
+      window.removeEventListener('ai-navigate', handleNavigate as EventListener);
+      window.removeEventListener('ai-create-client', handleCreateClient as EventListener);
+    };
+  }, [setViewMode, setActiveTab, openSaaSLimits, openAddContact, push]);
+
   // Sync local view mode when dashboard changes
   useEffect(() => {
     if (currentDashboard?.layoutMode) {

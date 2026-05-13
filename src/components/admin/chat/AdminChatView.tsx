@@ -656,17 +656,21 @@ export function AdminChatView({
                             
                             <div className="space-y-3">
                                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                                    <span className="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Ações Rápidas</span>
+                                    <span className="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Navegação & Interface</span>
                                     <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 font-medium">
-                                        <li>"Adicionar novo produto"</li>
-                                        <li>"Mudar para cor escura"</li>
-                                        <li>"Consultar estoque da loja"</li>
+                                        <li>"Abrir chat IA", "Recolher chat"</li>
+                                        <li>"Mudar cor para escuro", "Alterar cor para vermelho"</li>
+                                        <li>"Abrir navegação", "Selecionar workspace X"</li>
+                                        <li>"Ver meus créditos", "Abrir meu perfil"</li>
                                     </ul>
                                 </div>
                                 <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-                                    <span className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Confirmação (Duplex)</span>
+                                    <span className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Operações do Sistema</span>
                                     <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 font-medium">
-                                        <li>Responda "Sim" ou "Não" quando o assistente te perguntar sobre uma ação.</li>
+                                        <li>"Adicionar cliente chamado Carlos", "Registrar nova cliente chamada Ana"</li>
+                                        <li>"Adicionar novo produto (Mesa, R$200)"</li>
+                                        <li>"Colocar item no setor B2", "Fazer picking do SKU 123"</li>
+                                        <li>"Criar relatório de vendas"</li>
                                     </ul>
                                 </div>
                             </div>
