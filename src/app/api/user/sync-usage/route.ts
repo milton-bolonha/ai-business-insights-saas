@@ -14,6 +14,11 @@ export async function POST(req: NextRequest) {
 
         const planInfo = await getPlanForUser(targetUserId);
         const usage = await getUsage(targetUserId ?? "", email);
+        
+        // Fetch the user's global role from MongoDB
+        const { db } = await import("@/lib/db/mongodb");
+        const userDoc = targetUserId ? await db.findOne("users", { userId: targetUserId }) as any : null;
+        const globalRole = userDoc?.role || (targetUserId ? "user" : "guest");
 
         return new NextResponse(
             JSON.stringify({
@@ -21,6 +26,7 @@ export async function POST(req: NextRequest) {
                 limits: planInfo.limits,
                 plan: planInfo.plan,
                 isMember: !!targetUserId,
+                globalRole,
             }),
             {
                 status: 200,
@@ -39,6 +45,7 @@ export async function POST(req: NextRequest) {
             limits: null,
             plan: "guest",
             isMember: false,
+            globalRole: "guest",
         }, { status: 200 });
     }
 }

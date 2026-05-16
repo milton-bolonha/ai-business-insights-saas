@@ -10,6 +10,7 @@ import { usePaymentFlow } from "@/containers/admin/hooks/usePaymentFlow";
 interface AdminHeaderAdeProps {
   appearance: AdeAppearanceTokens;
   workspaceId?: string;
+  userAccessLevel?: string;
   currentDashboardId?: string;
   dashboards?: Array<{ id: string; name: string; isActive?: boolean }>;
   onCustomizeBackground?: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -24,6 +25,7 @@ interface AdminHeaderAdeProps {
 
 export function AdminHeaderAde({
   appearance,
+  userAccessLevel,
   dashboards = [],
   onCustomizeBackground,
   onSetSpecificColor,
@@ -125,41 +127,45 @@ export function AdminHeaderAde({
 
       {/* Right side - Actions */}
       <div className="flex items-center space-x-2">
-        {/* Background color picker */}
-        <div className="relative">
-          <button
-            onClick={onCustomizeBackground}
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-black/5"
-            style={{ color: appearance.actionColor }}
-            title="Customize background"
-          >
-            <Droplet className="h-5 w-5" />
-          </button>
-        </div>
+        {/* Background color picker - Hide for viewers */}
+        {userAccessLevel !== "viewer" && (
+          <div className="relative">
+            <button
+              onClick={onCustomizeBackground}
+              className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-black/5"
+              style={{ color: appearance.actionColor }}
+              title="Customize background"
+            >
+              <Droplet className="h-5 w-5" />
+            </button>
+          </div>
+        )}
 
-        {/* Quick color presets */}
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={() => handleColorChange("#f7f7f7")}
-            className="h-6 w-6 rounded-full border-2 border-white bg-[#f7f7f7] shadow-sm"
-            title="Beige"
-          />
-          <button
-            onClick={() => handleColorChange("#e8f4fd")}
-            className="h-6 w-6 rounded-full border-2 border-white bg-[#e8f4fd] shadow-sm"
-            title="Blue"
-          />
-          <button
-            onClick={() => handleColorChange("#f0f9e8")}
-            className="h-6 w-6 rounded-full border-2 border-white bg-[#f0f9e8] shadow-sm"
-            title="Green"
-          />
-          <button
-            onClick={() => handleColorChange("#fef7ed")}
-            className="h-6 w-6 rounded-full border-2 border-white bg-[#fef7ed] shadow-sm"
-            title="Orange"
-          />
-        </div>
+        {/* Quick color presets - Hide for viewers */}
+        {userAccessLevel !== "viewer" && (
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => handleColorChange("#f7f7f7")}
+              className="h-6 w-6 rounded-full border-2 border-white bg-[#f7f7f7] shadow-sm"
+              title="Beige"
+            />
+            <button
+              onClick={() => handleColorChange("#e8f4fd")}
+              className="h-6 w-6 rounded-full border-2 border-white bg-[#e8f4fd] shadow-sm"
+              title="Blue"
+            />
+            <button
+              onClick={() => handleColorChange("#f0f9e8")}
+              className="h-6 w-6 rounded-full border-2 border-white bg-[#f0f9e8] shadow-sm"
+              title="Green"
+            />
+            <button
+              onClick={() => handleColorChange("#fef7ed")}
+              className="h-6 w-6 rounded-full border-2 border-white bg-[#fef7ed] shadow-sm"
+              title="Orange"
+            />
+          </div>
+        )}
 
         {/* Wallet UI */}
         <div

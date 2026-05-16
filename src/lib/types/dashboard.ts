@@ -37,6 +37,8 @@ export interface WorkspaceWithDashboards {
   dashboards: Dashboard[]; // Múltiplos dashboards por workspace
   createdAt: string;
   updatedAt: string;
+  userId?: string;
+  userAccessLevel?: string;
   promptSettings?: WorkspacePromptSettings;
 }
 

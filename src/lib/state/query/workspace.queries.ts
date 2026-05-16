@@ -61,3 +61,72 @@ export function useDeleteWorkspace() {
     },
   });
 }
+
+// MEMBERSHIP QUERIES
+
+export function useWorkspaceMembers(workspaceId?: string) {
+  return useQuery({
+    queryKey: ["workspace-members", workspaceId],
+    queryFn: async () => {
+      const response = await fetch(`/api/workspace/members?workspaceId=${workspaceId}`);
+      if (!response.ok) throw new Error("Failed to fetch members");
+      return response.json();
+    },
+    enabled: !!workspaceId,
+  });
+}
+
+export function useAddWorkspaceMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { workspaceId: string; email: string; accessLevel: string }) => {
+      const response = await fetch(`/api/workspace/members?workspaceId=${payload.workspaceId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Failed to add member");
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-members", variables.workspaceId] });
+    },
+  });
+}
+
+export function useUpdateWorkspaceMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { workspaceId: string; memberId: string; accessLevel: string }) => {
+      const response = await fetch(`/api/workspace/members/${payload.memberId}?workspaceId=${payload.workspaceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessLevel: payload.accessLevel }),
+      });
+      if (!response.ok) throw new Error("Failed to update member");
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-members", variables.workspaceId] });
+    },
+  });
+}
+
+export function useRemoveWorkspaceMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { workspaceId: string; memberId: string }) => {
+      const response = await fetch(`/api/workspace/members/${payload.memberId}?workspaceId=${payload.workspaceId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to remove member");
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-members", variables.workspaceId] });
+    },
+  });
+}

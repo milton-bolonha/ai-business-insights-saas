@@ -34,9 +34,18 @@ export function AuthSync() {
                 email: user.primaryEmailAddress?.emailAddress 
               })
             }).then(res => res.json()).then(data => {
-              if (data.usage) {
-                console.log("[AuthSync] ✅ Member usage synced from DB:", data.usage);
-                useAuthStore.getState().setUsage(data.usage);
+              if (data.globalRole || data.usage) {
+                console.log("[AuthSync] ✅ Member synced from DB:", data);
+                if (data.usage) useAuthStore.getState().setUsage(data.usage);
+                
+                // Update user with globalRole
+                const storeUser = useAuthStore.getState().user;
+                if (storeUser) {
+                  setUser({
+                    ...storeUser,
+                    globalRole: data.globalRole || "user"
+                  });
+                }
                 hasClearedMemberCache.current = true;
               }
             }).catch(err => console.error("[AuthSync] Member usage sync failed:", err));

@@ -19,6 +19,7 @@ export interface UserDocument {
     membershipStartedAt?: Date;
 
     // System
+    role?: "admin" | "special" | "user";
     createdAt: Date;
     updatedAt: Date;
     migrationNeeded?: boolean;
@@ -44,8 +45,8 @@ export function userDocumenttoSnapshot(doc: UserDocument) {
         id: doc.userId,
         email: doc.email,
         name: doc.fullName || `${doc.firstName || ''} ${doc.lastName || ''}`.trim(),
-        role: doc.plan || 'guest',
-        plan: doc.plan,
+        role: doc.role || 'user',
+        plan: doc.plan || 'guest',
         isMember: doc.isMember,
         imageUrl: doc.imageUrl
     };

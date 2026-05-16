@@ -13,9 +13,21 @@ function AdminFallback() {
 
 import { AdminOnboardingHandler } from "@/components/admin/AdminOnboardingHandler";
 
-// ... existing code ...
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db/mongodb";
+import { isAdmin } from "@/lib/auth/permissions";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    redirect("/");
+  }
+
+  // Note: /admin is the main application interface for all users, not just global admins.
+  // We don't restrict this route by global role.
+
   return (
     <Suspense fallback={<AdminFallback />}>
       <AdminOnboardingHandler />

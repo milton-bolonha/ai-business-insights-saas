@@ -24,6 +24,8 @@ export interface WorkspaceDocument extends Document {
   tilesToGenerate: number;
   promptSettings?: WorkspacePromptSettings;
   appearance?: WorkspaceAppearance;
+  visibility?: "public" | "private";
+  createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +53,8 @@ export function workspaceSnapshotToDocument(
     tilesToGenerate: snapshot.tilesToGenerate ?? 0,
     promptSettings: snapshot.promptSettings,
     appearance: snapshot.appearance,
+    visibility: snapshot.visibility || "private",
+    createdBy: snapshot.createdBy,
   };
 }
 
@@ -74,6 +78,8 @@ export function workspaceDocumentToSnapshot(
     tilesToGenerate: doc.tilesToGenerate,
     promptSettings: doc.promptSettings,
     appearance: doc.appearance,
+    visibility: doc.visibility,
+    createdBy: doc.createdBy,
   };
 }
 

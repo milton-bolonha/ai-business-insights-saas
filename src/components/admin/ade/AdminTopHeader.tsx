@@ -228,7 +228,8 @@ export function AdminTopHeader({
                         <div className="h-6 w-px bg-gray-200/20 mx-1" />
 
                         {/* Color Picker (Droplet) */}
-                        <div className="relative">
+                        {currentWorkspace?.userAccessLevel !== "viewer" && (
+                            <div className="relative">
                             <button
                                 onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
                                 className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-black/5 text-gray-500 transition-colors cursor-pointer"
@@ -286,7 +287,8 @@ export function AdminTopHeader({
                                     </>
                                 )}
                             </AnimatePresence>
-                        </div>
+                            </div>
+                        )}
 
                         <div className="h-6 w-px bg-gray-200/20 mx-1" />
 

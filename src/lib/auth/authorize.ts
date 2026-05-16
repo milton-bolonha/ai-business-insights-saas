@@ -10,7 +10,7 @@ import { monitorUnauthorizedAccess } from "@/lib/monitoring/security";
 export async function authorizeWorkspaceAccess(
   workspaceId: string,
   userId: string | null
-): Promise<{ authorized: boolean; error?: string }> {
+): Promise<{ authorized: boolean; error?: string; workspace?: any }> {
   if (!workspaceId) {
     return { authorized: false, error: "Workspace ID is required" };
   }
@@ -21,26 +21,40 @@ export async function authorizeWorkspaceAccess(
     console.log(`[authorizeWorkspaceAccess] Querying DB for workspaceId: ${workspaceId}, userId: ${userId}`);
     const workspace = await db.findOne("workspaces", {
       $or: [{ sessionId: workspaceId }, { _id: workspaceId as any }],
-      userId,
     });
     console.log(`[authorizeWorkspaceAccess] DB result:`, workspace ? `Found workspace with ID: ${workspace._id}` : `Not found`);
 
     if (!workspace) {
+      return { authorized: false, error: "Workspace not found" };
+    }
+
+    // Check if user is owner or has membership
+    let hasAccess = workspace.userId === userId;
+    
+    if (!hasAccess) {
+      const membership = await db.findOne("workspacememberships", {
+        workspaceId: workspace.sessionId || workspace._id?.toString(),
+        userId,
+      });
+      if (membership) hasAccess = true;
+    }
+
+    if (!hasAccess) {
       // Security monitoring
       await monitorUnauthorizedAccess(
         `workspace:${workspaceId}`,
         userId,
         undefined,
-        "Workspace not found or access denied"
+        "Workspace access denied"
       );
 
       return {
         authorized: false,
-        error: "Workspace not found or access denied",
+        error: "Workspace access denied",
       };
     }
 
-    return { authorized: true };
+    return { authorized: true, workspace };
   } else {
     // 🟡 GUEST: Verify workspace exists in localStorage
     const workspaces = loadWorkspacesWithDashboards();
@@ -83,7 +97,7 @@ export async function authorizeDashboardAccess(
     // 🟢 MEMBER: Verify dashboard belongs to user in MongoDB
     const dashboard = await db.findOne("dashboards", {
       $or: [{ _id: dashboardId as any }, { id: dashboardId }],
-      userId,
+      workspaceId: workspaceId,
     });
 
     if (!dashboard) {
@@ -157,11 +171,10 @@ export async function authorizeResourceAccess(
   if (userId) {
     // 🟢 MEMBER: Verify resource belongs to user in MongoDB
     const query = {
-      $or: [
-        { _id: resourceId as any }, 
-        { id: resourceId }
-      ],
-      userId,
+      $and: [
+        { $or: [{ _id: resourceId as any }, { id: resourceId }] },
+        { $or: [{ dashboardId: dashboardId }, { workspaceId: workspaceId }] }
+      ]
     };
     
     console.log(`[authorizeResourceAccess] Relaxed Querying ${resourceType}:`, JSON.stringify(query, null, 2));

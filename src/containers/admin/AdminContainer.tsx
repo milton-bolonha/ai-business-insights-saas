@@ -40,6 +40,8 @@ import { AdminChatView } from "@/components/admin/chat/AdminChatView";
 import { ChatBoard } from "@/components/admin/ade/ChatBoard";
 import { VoiceAssistantOverlay } from "@/components/admin/chat/VoiceAssistantOverlay";
 import { SaaSLimitsModal } from "@/components/admin/ade/SaaSLimitsModal";
+import { GlobalUsersBoard } from "@/components/admin/ade/GlobalUsersBoard";
+import { MembersBoard } from "@/components/admin/ade/MembersBoard";
 
 // Zustand stores
 import {
@@ -802,6 +804,7 @@ export function AdminContainer() {
           onTabChange={setActiveTab} 
           templateId={currentWorkspace?.promptSettings?.templateId}
           onSwitchToChat={() => setViewMode("chat")}
+          userRole={auth.user?.globalRole || "user"}
         />
       }
       // Top Header Props
@@ -1093,6 +1096,15 @@ export function AdminContainer() {
                       furniture.setEditingOrder(data);
                       furniture.setOrderModalOpen(true);
                     }}
+                  />
+                </div>
+              )}
+
+               {(activeTab as any) === "members" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <MembersBoard 
+                    workspaceId={currentWorkspace.id} 
+                    userRole={auth.user?.globalRole}
                   />
                 </div>
               )}

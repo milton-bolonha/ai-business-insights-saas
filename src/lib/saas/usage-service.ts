@@ -329,11 +329,14 @@ export async function getUsage(
       // 2. If still no userDoc, auto-provision
       if (!userDoc && userId.startsWith("user_")) {
         console.log(`[UsageService] 👤 Auto-provisioning new member profile for ${userId}`);
+        const isSuperAdmin = email && process.env.SUPER_ADMIN_EMAIL && email === process.env.SUPER_ADMIN_EMAIL;
+
         const newUser: any = {
           userId,
           clerkId: userId,
           isMember: true,
           plan: "member",
+          role: isSuperAdmin ? "admin" : "user",
           creditsTotal: 0,
           creditsUsed: 0,
           createdAt: new Date(),
@@ -344,11 +347,31 @@ export async function getUsage(
         try {
           await db.updateOne("users", { userId }, { $set: newUser }, { upsert: true });
           userDoc = await db.findOne("users", { userId });
+
+          // NEW: Link any pending invitations
+          if (email) {
+            console.log(`[UsageService] 🔗 Linking pending invitations for ${email}`);
+            await db.updateMany("workspacememberships", 
+              { email: email, userId: null as any }, 
+              { $set: { userId: userId, status: 'active', updatedAt: new Date() } }
+            );
+          }
         } catch (provisionErr: any) {
           // Final fallback for race conditions or duplicate email during upsert
           if (provisionErr.code === 11000) {
             userDoc = await db.findOne("users", { email });
-            if (userDoc) await db.updateOne("users", { _id: userDoc._id }, { $set: { userId, clerkId: userId } });
+            if (userDoc) {
+              await db.updateOne("users", { _id: userDoc._id }, { $set: { userId, clerkId: userId } });
+            
+              // NEW: Link any pending invitations
+              if (email) {
+                console.log(`[UsageService] 🔗 Linking pending invitations for ${email}`);
+                await db.updateMany("workspacememberships", 
+                  { email: email, userId: null as any }, 
+                  { $set: { userId: userId, status: 'active', updatedAt: new Date() } }
+                );
+              }
+            }
           }
         }
       } else if (!userDoc) {

@@ -1,8 +1,9 @@
 "use client";
 
 import { X, Building2, Calendar, FileText, Users, LayoutDashboard, StickyNote } from "lucide-react";
-import { useWorkspaceStore } from "@/lib/stores";
-import { useUIStore } from "@/lib/stores";
+import { useUIStore, useAuthStore, useWorkspaceStore } from "@/lib/stores";
+import { ManageMembersModal } from "./ManageMembersModal";
+import { useState } from "react";
 
 interface WorkspaceDetailModalProps {
   open: boolean;
@@ -17,6 +18,9 @@ export function WorkspaceDetailModal({
 }: WorkspaceDetailModalProps) {
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const appearance = useUIStore((state) => state.appearance);
+  const user = useAuthStore((state) => state.user);
+  
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
 
   if (!open || !workspaceId) return null;
 
@@ -34,6 +38,8 @@ export function WorkspaceDetailModal({
   const isLoveWriters = workspace.promptSettings?.templateId === "template_love_writers";
   const tilesLabel = isLoveWriters ? "Arcs" : "Tiles";
   const contactsLabel = isLoveWriters ? "Characters" : "Contacts";
+  
+  const isViewer = workspace.userAccessLevel === "viewer";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -124,7 +130,8 @@ export function WorkspaceDetailModal({
                         }
                     });
                   }}
-                  className="flex-1 px-4 py-2 rounded-xl border text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-sky-500/20"
+                  disabled={isViewer}
+                  className="flex-1 px-4 py-2 rounded-xl border text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-sky-500/20 disabled:opacity-50"
                   style={{ 
                     backgroundColor: appearance.baseColor, 
                     color: appearance.textColor,
@@ -178,7 +185,18 @@ export function WorkspaceDetailModal({
           </div>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t flex justify-end" style={{ borderColor: appearance.cardBorderColor }}>
+          <div className="mt-8 pt-6 border-t flex justify-between items-center" style={{ borderColor: appearance.cardBorderColor }}>
+            <div>
+              {(workspace.userId === user?.id || (user?.role as any) === "admin") && (
+                <button
+                  onClick={() => setIsMembersModalOpen(true)}
+                  className="px-4 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium flex items-center gap-2 text-sm"
+                >
+                  <Users className="w-4 h-4" />
+                  Equipe / Membros
+                </button>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-lg hover:bg-black/5 transition-colors font-medium"
@@ -189,6 +207,12 @@ export function WorkspaceDetailModal({
           </div>
         </div>
       </div>
+
+      <ManageMembersModal
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
+        workspaceId={workspaceId}
+      />
     </div>
   );
 }

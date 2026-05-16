@@ -115,6 +115,8 @@ export interface WorkspaceSnapshot {
   promptSettings?: WorkspacePromptSettings;
   appearance?: WorkspaceAppearance;
   tiles?: Tile[]; // Opcional: usado durante criação, depois movido para dashboard
+  visibility?: "public" | "private";
+  createdBy?: string;
   // Nota: notes e contacts são sempre armazenados em dashboards
 }
 

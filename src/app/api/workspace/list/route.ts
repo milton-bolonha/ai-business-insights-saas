@@ -23,6 +23,7 @@ import {
   type NoteDocument,
 } from "@/lib/db/models/Note";
 import type { Dashboard, WorkspaceWithDashboards } from "@/lib/types/dashboard";
+import { type WorkspaceMembershipDocument } from "@/lib/db/models/WorkspaceMembership";
 
 export const runtime = "nodejs";
 
@@ -41,14 +42,52 @@ export async function GET() {
       return NextResponse.json({ workspaces: [] });
     }
 
-    const [workspaceDocs, dashboardDocs, tileDocs, contactDocs, noteDocs] =
-      await Promise.all([
-        db.find<WorkspaceDocument>("workspaces", { userId }),
-        db.find<DashboardDocument>("dashboards", { userId }),
-        db.find<TileDocument>("tiles", { userId }),
-        db.find<ContactDocument>("contacts", { userId }),
-        db.find<NoteDocument>("notes", { userId }),
-      ]);
+    // 1. Find workspaces the user owns
+    const ownedWorkspaces = await db.find<WorkspaceDocument>("workspaces", { userId });
+    
+    // 2. Find workspaces the user is a member of
+    const memberships = await db.find<WorkspaceMembershipDocument>("workspaces_memberships", { userId }); // Note: wait, is it 'workspacememberships' or 'workspaces_memberships'? The membership route used 'workspacememberships'.
+    
+    // Let me check what I named it. Ah, in route.ts I used "workspacememberships".
+    const memberWorkspaces = await db.find<WorkspaceMembershipDocument>("workspacememberships", { userId });
+    
+    const memberWorkspaceIds = memberWorkspaces.map(m => m.workspaceId);
+    
+    let sharedWorkspaces: WorkspaceDocument[] = [];
+    if (memberWorkspaceIds.length > 0) {
+        sharedWorkspaces = await db.find<WorkspaceDocument>("workspaces", { 
+            $or: [
+                { sessionId: { $in: memberWorkspaceIds } },
+                { _id: { $in: memberWorkspaceIds as any } }
+            ]
+        });
+    }
+
+    // Combine and deduplicate
+    const allWorkspaceDocs = [...ownedWorkspaces];
+    for (const sw of sharedWorkspaces) {
+        if (!allWorkspaceDocs.some(w => w.sessionId === sw.sessionId || w._id?.toString() === sw._id?.toString())) {
+            allWorkspaceDocs.push(sw);
+        }
+    }
+
+    const allWorkspaceSessionIds = allWorkspaceDocs.map(w => w.sessionId);
+    // Also include _id strings for safety
+    const allWorkspaceObjectIds = allWorkspaceDocs.map(w => w._id?.toString() || "");
+
+    const dashboardDocs = await db.find<DashboardDocument>("dashboards", { 
+        $or: [
+            { workspaceId: { $in: allWorkspaceSessionIds } },
+            { workspaceId: { $in: allWorkspaceObjectIds } }
+        ]
+    });
+    
+    // Extract dashboard IDs to fetch tiles, contacts, notes
+    const dashboardIds = dashboardDocs.map(d => (d as any).id || d._id?.toString());
+
+    const tileDocs = dashboardIds.length > 0 ? await db.find<TileDocument>("tiles", { dashboardId: { $in: dashboardIds } }) : [];
+    const contactDocs = dashboardIds.length > 0 ? await db.find<ContactDocument>("contacts", { dashboardId: { $in: dashboardIds } }) : [];
+    const noteDocs = dashboardIds.length > 0 ? await db.find<NoteDocument>("notes", { dashboardId: { $in: dashboardIds } }) : [];
 
     const dashboardsByWorkspace = new Map<string, Dashboard[]>();
     const dashboardsById = new Map<string, Dashboard>();
@@ -110,7 +149,7 @@ export async function GET() {
       );
     });
 
-    const workspaces: WorkspaceWithDashboards[] = workspaceDocs.map((doc) => {
+    const workspaces: WorkspaceWithDashboards[] = allWorkspaceDocs.map((doc) => {
       const snapshot = workspaceDocumentToSnapshot(doc);
       const dashboards =
         dashboardsByWorkspace.get(doc.sessionId) ??
@@ -119,6 +158,17 @@ export async function GET() {
 
       if (dashboards.length > 0 && !dashboards.some((d) => d.isActive)) {
         dashboards[0].isActive = true;
+      }
+
+      // Determine user access level
+      let accessLevel = "viewer";
+      if (doc.userId === userId) {
+          accessLevel = "owner";
+      } else {
+          const membership = memberWorkspaces.find(m => m.workspaceId === doc.sessionId || m.workspaceId === doc._id?.toString());
+          if (membership) {
+              accessLevel = membership.accessLevel;
+          }
       }
 
       return {
@@ -131,6 +181,8 @@ export async function GET() {
         dashboards,
         createdAt: toIso(doc.createdAt ?? snapshot.generatedAt ?? new Date()),
         updatedAt: toIso(doc.updatedAt ?? snapshot.generatedAt ?? new Date()),
+        userId: doc.userId,
+        userAccessLevel: accessLevel,
       };
     });
 

@@ -28,7 +28,7 @@ type UsageCounts = Record<GuestAction, number> & {
 
 interface AuthState {
   // Estado de usuário
-  user: { id?: string; role: 'guest' | 'member'; isPaid?: boolean; plan?: string } | null;
+  user: { id?: string; role: 'guest' | 'member'; globalRole?: string; isPaid?: boolean; plan?: string } | null;
   isAuthenticated: boolean;
 
   // Limites de uso (definidos por role)
@@ -43,7 +43,7 @@ interface AuthState {
   consumeUsage: (action: GuestAction) => UsageResult;
   setUsage: (newUsage: Partial<UsageCounts>) => void;
   resetUsage: () => void;
-  setUser: (user: { id?: string; role: 'guest' | 'member'; isPaid?: boolean; plan?: string } | null) => void;
+  setUser: (user: { id?: string; role: 'guest' | 'member'; globalRole?: string; isPaid?: boolean; plan?: string } | null) => void;
   startCheckout: () => boolean;
 
   // Legacy compatibility
