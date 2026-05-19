@@ -878,6 +878,7 @@ export function AdminContainer() {
           templateId={currentWorkspace?.promptSettings?.templateId}
           onSwitchToChat={() => setViewMode("chat")}
           userRole={auth.user?.globalRole || "user"}
+          currentUserRole={currentWorkspace?.userId === auth.user?.id ? "mentor" : "mentee"}
         />
       }
       // Top Header Props

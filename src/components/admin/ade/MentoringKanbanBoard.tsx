@@ -17,7 +17,8 @@ import {
   Target,
   Edit3,
   Sparkles,
-  User
+  User,
+  CheckSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/lib/state/toast-context";
@@ -26,7 +27,7 @@ interface Task {
   _id: string;
   title: string;
   description?: string;
-  status: 'todo' | 'doing' | 'done';
+  status: 'todo' | 'doing' | 'approval' | 'done';
   dueDate?: string;
   importance?: number;
   assigneeId?: string;
@@ -42,6 +43,7 @@ interface MentoringKanbanBoardProps {
 const COLUMNS = [
   { id: 'todo', label: 'A Fazer', color: 'bg-slate-100 text-slate-600 border-slate-200/60', icon: Circle },
   { id: 'doing', label: 'Em Andamento', color: 'bg-amber-100/80 text-amber-700 border-amber-200/40', icon: Clock },
+  { id: 'approval', label: 'Aprovação', color: 'bg-indigo-100/80 text-indigo-700 border-indigo-200/40', icon: CheckSquare },
   { id: 'done', label: 'Concluído', color: 'bg-emerald-100/80 text-emerald-700 border-emerald-200/40', icon: CheckCircle2 },
 ];
 
@@ -51,7 +53,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingTask, setIsAddingTask] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [activeColumnMobile, setActiveColumnMobile] = useState<'todo' | 'doing' | 'done'>('todo');
+  const [activeColumnMobile, setActiveColumnMobile] = useState<'todo' | 'doing' | 'approval' | 'done'>('todo');
 
   // Members & Assignment state
   const [members, setMembers] = useState<any[]>([]);
@@ -65,7 +67,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
   const [editDueDate, setEditDueDate] = useState("");
   const [editImportance, setEditImportance] = useState<number>(0);
   const [isSavingTask, setIsSavingTask] = useState(false);
-  const [editStatus, setEditStatus] = useState<'todo' | 'doing' | 'done'>('todo');
+  const [editStatus, setEditStatus] = useState<'todo' | 'doing' | 'approval' | 'done'>('todo');
 
   const fetchTasks = async () => {
     try {
@@ -120,6 +122,22 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
+    // Find the task in state to check its importance
+    const task = tasks.find(t => t._id === taskId);
+    if (!task) return;
+
+    const isSideQuest = task.importance === 0;
+
+    // A mentee (non-owner) can only move to 'done' if it is a side-quest (importance 0)
+    if (!isOwner && newStatus === 'done' && !isSideQuest) {
+      push({
+        title: "Acesso Negado",
+        description: "Apenas o Mentor pode marcar tarefas estratégicas como concluídas. Mova para 'Aprovação'.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const res = await fetch("/api/mentoring/tasks", {
         method: "PATCH",
@@ -145,7 +163,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
     setEditAssigneeName(task.assigneeName || "");
   };
 
-  const handleModalStatusChange = async (newStatus: 'todo' | 'doing' | 'done') => {
+  const handleModalStatusChange = async (newStatus: 'todo' | 'doing' | 'approval' | 'done') => {
     if (!selectedTask) return;
     setEditStatus(newStatus);
     await handleUpdateStatus(selectedTask._id, newStatus);
@@ -155,6 +173,16 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
   const handleSaveTaskDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask) return;
+
+    const isSideQuest = selectedTask.importance === 0;
+    if (!isOwner && !isSideQuest) {
+      push({
+        title: "Acesso Negado",
+        description: "Mentees só podem editar Side-quests.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsSavingTask(true);
     try {
@@ -236,7 +264,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
       </div>
 
       {/* Columns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full pb-10">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full pb-10">
         {COLUMNS.map(column => {
           const isVisibleOnMobile = activeColumnMobile === column.id;
           
@@ -339,7 +367,12 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation(); // Avoid triggering details modal open
-                                  handleUpdateStatus(task._id, task.status === 'done' ? 'todo' : 'done');
+                                  const isSideQuest = task.importance === 0;
+                                  if (task.status === 'done') {
+                                    handleUpdateStatus(task._id, 'todo');
+                                  } else {
+                                    handleUpdateStatus(task._id, (isOwner || isSideQuest) ? 'done' : 'approval');
+                                  }
                                 }}
                                 className="mt-0.5 shrink-0 text-slate-300 hover:text-indigo-600 transition-colors cursor-pointer"
                               >
@@ -460,20 +493,26 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 {/* Status Column Switcher (Manual Move) */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Coluna / Status da Tarefa</label>
-                  <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/20">
+                  <div className="grid grid-cols-4 gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/20">
                     {COLUMNS.map(col => {
                       const Icon = col.icon;
                       const isSel = editStatus === col.id;
+                      const isDoneCol = col.id === 'done';
+                      const isSideQuest = selectedTask?.importance === 0;
+                      const disabledForMentee = !isOwner && isDoneCol && !isSideQuest;
+
                       return (
                         <button
                           key={col.id}
                           type="button"
+                          disabled={disabledForMentee}
                           onClick={() => handleModalStatusChange(col.id as any)}
                           className={cn(
-                            "flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer",
+                            "flex items-center justify-center gap-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
                             isSel 
                               ? "bg-white text-indigo-600 shadow-md border-indigo-100 border animate-in fade-in zoom-in-95 duration-200" 
-                              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50/50"
+                              : "text-slate-400 hover:text-slate-600 hover:bg-slate-50/50",
+                            disabledForMentee && "opacity-40 cursor-not-allowed"
                           )}
                         >
                           <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -487,7 +526,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 {/* Title */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Título</label>
-                  {isOwner ? (
+                  {(isOwner || (selectedTask?.importance === 0)) ? (
                     <input
                       required
                       type="text"
@@ -497,7 +536,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     />
                   ) : (
                     <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-bold text-slate-800">
-                      {selectedTask.title}
+                      {selectedTask?.title}
                     </div>
                   )}
                 </div>
@@ -505,7 +544,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 {/* Description */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Roteiro & Descrição</label>
-                  {isOwner ? (
+                  {(isOwner || (selectedTask?.importance === 0)) ? (
                     <textarea
                       rows={5}
                       value={editDescription}
@@ -514,7 +553,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     />
                   ) : (
                     <div className="px-4 py-4 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
-                      {selectedTask.description || "Nenhuma descrição detalhada informada."}
+                      {selectedTask?.description || "Nenhuma descrição detalhada informada."}
                     </div>
                   )}
                 </div>
@@ -549,7 +588,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
 
                 {/* Display Reference Badges (YouTube/PDFs parsed dynamically) */}
                 {(() => {
-                  const { video, pdf } = getResourceLinks(selectedTask.description);
+                  const { video, pdf } = getResourceLinks(selectedTask?.description);
                   if (!video && !pdf) return null;
 
                   return (
@@ -589,7 +628,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 {/* Due Date */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data de Entrega / Prazo</label>
-                  {isOwner ? (
+                  {(isOwner || (selectedTask?.importance === 0)) ? (
                     <input
                       type="date"
                       value={editDueDate}
@@ -598,7 +637,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     />
                   ) : (
                     <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-bold text-slate-800">
-                      {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString('pt-BR') : "Sem prazo definido."}
+                      {selectedTask?.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString('pt-BR') : "Sem prazo definido."}
                     </div>
                   )}
                 </div>
@@ -634,9 +673,9 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     )
                   ) : (
                     <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-bold text-slate-800">
-                      {selectedTask.importance === 0 || selectedTask.importance === undefined
+                      {selectedTask?.importance === 0 || selectedTask?.importance === undefined
                         ? "Quest Secundária (Side-quest)"
-                        : `★ Importância: ${selectedTask.importance} de 10 (+${(selectedTask.importance || 0) * 10} XP)`
+                        : `★ Importância: ${selectedTask?.importance} de 10 (+${(selectedTask?.importance || 0) * 10} XP)`
                       }
                     </div>
                   )}
@@ -651,7 +690,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                   >
                     Fechar
                   </button>
-                  {isOwner && (
+                  {(isOwner || (selectedTask?.importance === 0)) && (
                     <button
                       type="submit"
                       disabled={isSavingTask}

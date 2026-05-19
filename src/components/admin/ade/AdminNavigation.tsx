@@ -43,9 +43,10 @@ interface AdminNavigationProps {
     templateId?: string;
     onSwitchToChat?: () => void;
     userRole?: string;
+    currentUserRole?: 'mentor' | 'mentee';
 }
 
-export function AdminNavigation({ activeTab, onTabChange, templateId = "template_1", onSwitchToChat, userRole = "user" }: AdminNavigationProps) {
+export function AdminNavigation({ activeTab, onTabChange, templateId = "template_1", onSwitchToChat, userRole = "user", currentUserRole = "mentor" }: AdminNavigationProps) {
     const isDesktopSidebarOpen = useUIStore(state => state.isDesktopSidebarOpen);
     const toggleDesktopSidebar = useUIStore(state => state.toggleDesktopSidebar);
     const setDesktopSidebarOpen = useUIStore(state => state.setDesktopSidebarOpen);
@@ -95,6 +96,9 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
 
     const LogoIcon = isTrade ? FaGavel : isWriters ? BookOpen : isFurniture ? ShoppingBag : PieChart;
 
+    const isMentoring = templateId === "template_io_mentoring";
+    const isMentee = isMentoring && currentUserRole === "mentee";
+
     const navItems = [
         ...(isWriters ? [{ id: "library", label: "Biblioteca", icon: Library }] : []),
         ...(isTrade ? [{ id: "ranking", label: "Ranking", icon: FaGavel }] : []),
@@ -108,37 +112,37 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
             { id: "chat_history", label: "Histórico IA", icon: MessageSquare },
         ] : []),
 
-        ...(templateId === "template_io_mentoring" ? [
-            { id: "mentoring_profile", label: "Evolução & Perfil", icon: User },
+        ...(isMentoring ? [
+            { id: "mentoring_profile", label: "Painel de Evolução", icon: User },
             { id: "mentoring_tasks", label: "Tarefas (Kanban)", icon: ClipboardList },
             { id: "mentoring_schedule", label: "Agenda Sessões", icon: CalendarDays },
         ] : []),
 
-        {
+        ...(!isMentee ? [{
             id: "arcs",
             label: isTrade ? "Análise" : isWriters ? "Arcos" : isFurniture ? "Insights" : "Dashboard",
             icon: LayoutGrid
-        },
-        ...(!isFurniture ? [{
+        }] : []),
+        ...((!isFurniture && !isMentee) ? [{
             id: "characters",
             label: isWriters ? "Elenco" : "Contatos",
             icon: isTrade ? Shapes : Users
         }] : []),
-        ...((!isFurniture && templateId !== "template_io_mentoring") ? [{
+        ...((!isFurniture && !isMentoring) ? [{
             id: "notes",
             label: "Notas",
             icon: FileText
-        }] : isFurniture ? [{
+        }] : (isFurniture && !isMentee) ? [{
             id: "notes",
             label: "Relatórios",
             icon: FileText
         }] : []),
-        { id: "files", label: "Arquivos", icon: FolderOpen },
-        { 
+        ...(!isMentee ? [{ id: "files", label: "Arquivos", icon: FolderOpen }] : []),
+        ...(!isMentee ? [{ 
             id: "members", 
             label: "Cadastros", 
             icon: Users 
-        },
+        }] : []),
         ...(userRole === "admin" ? [{
             id: "global_users" as any,
             label: "Global Admin",

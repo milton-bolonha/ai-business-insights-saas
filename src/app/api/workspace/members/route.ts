@@ -61,12 +61,14 @@ export async function GET(request: NextRequest) {
       
       if (member.userId) {
         const user = await db.findOne("users", { userId: member.userId });
-        if (user) {
+        const profile = await db.findOne("mentoring_profiles", { userId: member.userId });
+        if (user || profile) {
+          const name = profile?.name || (user ? (user.fullName || user.firstName) : null) || "Membro";
           membersList.push({
             id: member._id?.toString(),
             userId: member.userId,
-            email: user.email || member.email,
-            name: user.fullName || user.firstName || "Membro",
+            email: (user?.email || member.email) || "",
+            name: name,
             accessLevel: member.accessLevel,
             status: member.status || 'active',
             isOwner: false,

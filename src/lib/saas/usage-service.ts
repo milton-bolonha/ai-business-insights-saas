@@ -337,7 +337,7 @@ export async function getUsage(
           isMember: true,
           plan: "member",
           role: isSuperAdmin ? "admin" : "user",
-          creditsTotal: 0,
+          creditsTotal: 200,
           creditsUsed: 0,
           createdAt: new Date(),
           updatedAt: new Date()
@@ -393,7 +393,11 @@ export async function getUsage(
 
     // Auto-reconciliation logic:
     // If user has purchases that aren't reflected in creditsTotal, update it.
-    let creditsTotal = userDoc?.creditsTotal || 0;
+    let creditsTotal = userDoc?.creditsTotal !== undefined ? userDoc.creditsTotal : 0;
+    if (creditsTotal < 200 && userDoc?._id) {
+      creditsTotal = 200;
+      await db.updateOne("users", { _id: userDoc._id }, { $set: { creditsTotal: 200 } });
+    }
 
     try {
       const stripeCustomerId = userDoc?.stripeCustomerId;

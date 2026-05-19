@@ -8,18 +8,16 @@ export const maxDuration = 60; // 1 minute timeout
 export async function POST(req: NextRequest) {
     try {
         const { userId } = await getAuth();
+        const body = await req.json();
+        const { fileData, folder = "ade/products" } = body;
         
-        // Enforce credit limit for assets
-        if (userId) {
+        // Enforce credit limit for assets, unless it's a profile avatar upload!
+        if (userId && folder !== "ade/avatars") {
             const limit = await enforceAssetLimit(userId);
             if (!limit.allowed) {
                 return NextResponse.json({ error: limit.reason }, { status: 402 });
             }
         }
-        
-        const body = await req.json();
-        const { fileData, folder = "ade/products" } = body;
-
 
         if (!fileData) {
             return NextResponse.json({ error: "fileData is required" }, { status: 400 });

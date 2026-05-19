@@ -258,8 +258,14 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
       if (res.ok) {
         const data = await res.json();
         if (data.tasks) {
-          const completed = data.tasks.filter((t: any) => t.status === 'done').length;
-          const total = data.tasks.length;
+          const targetUserId = userId || authUser?.id;
+          // Filter tasks assigned strictly to this user if they are a mentee
+          const userTasks = role === 'mentor'
+            ? data.tasks
+            : data.tasks.filter((t: any) => t.assigneeId === targetUserId);
+
+          const completed = userTasks.filter((t: any) => t.status === 'done').length;
+          const total = userTasks.length;
           const engagement = total > 0 ? Math.round((completed / total) * 100) : 0;
           setStats({ total, completed, engagement });
         }
@@ -382,7 +388,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           setMenteesCount(p.menteesCount || 0);
 
           // Load gamification attributes
-          setXp(p.xp !== undefined ? p.xp : 250);
+          setXp(p.xp !== undefined ? p.xp : 0);
           setEquippedGear(p.equippedGear || {
             jacket: "Jaqueta Corta-Vento Minimalist",
             sneakers: "Sneakers Knit Tech",
@@ -410,6 +416,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           const defaultRole = isOwner ? "mentor" : "mentee";
           setRole(defaultRole);
           setViewMode("owner");
+          setXp(0);
           
           if (clerkUser) {
             setName(clerkUser.fullName || clerkUser.firstName || "");
@@ -535,8 +542,15 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
     setIsUploading(true);
     try {
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, "ade/avatars");
       setPhotoUrl(url);
+
+      // Sync avatar natively to Clerk client-side
+      if (clerkUser && typeof (clerkUser as any).setProfileImage === "function") {
+        console.log("[Clerk] Syncing profile image to Clerk natively...");
+        await (clerkUser as any).setProfileImage({ file });
+      }
+
       push({ title: "Foto de perfil enviada!", variant: "success" });
     } catch (err: any) {
       push({ title: "Erro no upload: " + err.message, variant: "destructive" });
@@ -895,11 +909,11 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   {/* Tensão Cognitiva HUD Badge */}
                   <div className="flex items-center gap-1.5 bg-white border border-[#e8e5dd] text-slate-700 px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider cursor-help group/hud relative shadow-3xs">
                     <Activity className="w-3 h-3 text-indigo-500 shrink-0" />
-                    <span>Tensão: {(diaryLogs.length > 0 ? (diaryLogs[diaryLogs.length - 1].CC / diaryLogs[diaryLogs.length - 1].TE) : 1.0).toFixed(2)}</span>
+                    <span>Foco: {(diaryLogs.length > 0 ? (diaryLogs[diaryLogs.length - 1].CC / diaryLogs[diaryLogs.length - 1].TE) : 1.0).toFixed(2)}</span>
                     
                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover/hud:flex flex-col bg-slate-900 text-white text-[8px] p-2 rounded-lg shadow-md w-48 text-center z-30 pointer-events-none normal-case">
-                      <span className="font-black uppercase tracking-wider mb-0.5 text-indigo-400">Tensão Cognitiva</span>
-                      <span className="text-slate-300 leading-normal font-semibold">Balanço de esforço diário (Carga Cognitiva / Tempo Executado) nos diários de bordo recentes.</span>
+                      <span className="font-black uppercase tracking-wider mb-0.5 text-indigo-400">Índice de Foco</span>
+                      <span className="text-slate-300 leading-normal font-semibold">Métrica de foco diário (Esforço Mental / Tempo Dedicado) calculada dos seus diários de bordo recentes.</span>
                     </div>
                   </div>
 
@@ -1127,98 +1141,96 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
             )}
           </div>
 
-          {/* Premium AI Secretary Results Box directly on the page! */}
-          {workspaceId && viewMode === "owner" && (
-            <div className="bg-white border border-[#e8e5dd] p-6 rounded-xl shadow-3xs flex flex-col gap-4 text-left font-sans mt-2">
-              <div className="flex items-center justify-between border-b border-[#f0ede4] pb-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Secretaria IA (I/O) • Relatório de Evolução</h4>
-                    <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Diretrizes estratégicas e próximos passos operacionais</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleOpenSecretary()}
-                  className="text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-850 hover:underline transition-colors bg-indigo-50 px-2.5 py-1 rounded"
-                >
-                  Ver Histórico
-                </button>
-              </div>
-
-              {secretaryText ? (
-                <div 
-                  onClick={() => setIsSecretaryExpanded(!isSecretaryExpanded)}
-                  className="group/sec bg-[#fcfbf9] hover:bg-[#f5f2eb] border border-[#e8e5dd] p-5 rounded-lg border-l-4 border-l-slate-900 shadow-3xs hover:shadow-2xs transition-all duration-300 cursor-pointer flex flex-col gap-3 text-left relative"
-                >
-                  <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
-                    <span className="flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/50 font-black">
-                      📄 Relatório de Evolução
-                    </span>
-                    {secretaryHistory[0]?.createdAt && (
-                      <span className="text-slate-500 font-bold bg-[#eae6db]/60 px-2 py-0.5 rounded">
-                        Criado em: {new Date(secretaryHistory[0].createdAt).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="text-xs font-semibold text-slate-700 leading-relaxed font-sans whitespace-pre-line select-none">
-                    {isSecretaryExpanded ? (
-                      secretaryText
-                    ) : (
-                      <>
-                        {secretaryText.length > 240 ? `${secretaryText.slice(0, 240)}...` : secretaryText}
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="border-t border-[#f0ede4]/60 pt-2.5 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-indigo-600 group-hover/sec:text-indigo-800">
-                    <span>
-                      {isSecretaryExpanded ? "↑ recolher relatório" : "↓ clique para expandir relatório completo"}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="border border-dashed border-slate-200 rounded-lg p-6 text-center text-slate-400 flex flex-col items-center gap-2 bg-slate-50/50">
-                  <Sparkles className="w-6 h-6 text-slate-350" />
-                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nenhum relatório de evolução gerado para este ciclo.</p>
-                  <button
-                    type="button"
-                    onClick={handleGenerateSecretarySuggestion}
-                    disabled={isGeneratingSecretary}
-                    className="mt-2 flex items-center gap-1.5 bg-slate-900 hover:bg-[#4338ca] text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-3xs border-none"
-                  >
-                    {isGeneratingSecretary ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Compilando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Gerar Relatório de Evolução</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-
-
           {/* SUB-TAB CONTENTS */}
 
           {/* 1. DASHBOARD DE EVOLUÇÃO */}
           {mentoringSubTab === "dashboard" && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+
+              {/* Premium AI Secretary Results Box inside Evolution Dashboard! */}
+              {workspaceId && viewMode === "owner" && (
+                <div className="bg-white border border-[#e8e5dd] p-6 rounded-xl shadow-3xs flex flex-col gap-4 text-left font-sans mt-2">
+                  <div className="flex items-center justify-between border-b border-[#f0ede4] pb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Secretaria IA (I/O) • Relatório de Evolução</h4>
+                        <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Diretrizes estratégicas e próximos passos operacionais</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSecretary()}
+                      className="text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-850 hover:underline transition-colors bg-indigo-50 px-2.5 py-1 rounded"
+                    >
+                      Ver Histórico
+                    </button>
+                  </div>
+
+                  {secretaryText ? (
+                    <div 
+                      onClick={() => setIsSecretaryExpanded(!isSecretaryExpanded)}
+                      className="group/sec bg-[#fcfbf9] hover:bg-[#f5f2eb] border border-[#e8e5dd] p-5 rounded-lg border-l-4 border-l-slate-900 shadow-3xs hover:shadow-2xs transition-all duration-300 cursor-pointer flex flex-col gap-3 text-left relative"
+                    >
+                      <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        <span className="flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/50 font-black">
+                          📄 Relatório de Evolução
+                        </span>
+                        {secretaryHistory[0]?.createdAt && (
+                          <span className="text-slate-500 font-bold bg-[#eae6db]/60 px-2 py-0.5 rounded">
+                            Criado em: {new Date(secretaryHistory[0].createdAt).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="text-xs font-semibold text-slate-700 leading-relaxed font-sans whitespace-pre-line select-none">
+                        {isSecretaryExpanded ? (
+                          secretaryText
+                        ) : (
+                          <>
+                            {secretaryText.length > 240 ? `${secretaryText.slice(0, 240)}...` : secretaryText}
+                          </>
+                        )}
+                      </div>
+                      
+                      <div className="border-t border-[#f0ede4]/60 pt-2.5 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-indigo-600 group-hover/sec:text-indigo-800">
+                        <span>
+                          {isSecretaryExpanded ? "↑ recolher relatório" : "↓ clique para expandir relatório completo"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border border-dashed border-slate-200 rounded-lg p-6 text-center text-slate-400 flex flex-col items-center gap-2 bg-slate-50/50">
+                      <Sparkles className="w-6 h-6 text-slate-350" />
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nenhum relatório de evolução gerado para este ciclo.</p>
+                      <button
+                        type="button"
+                        onClick={handleGenerateSecretarySuggestion}
+                        disabled={isGeneratingSecretary}
+                        className="mt-2 flex items-center gap-1.5 bg-slate-900 hover:bg-[#4338ca] text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-3xs border-none"
+                      >
+                        {isGeneratingSecretary ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Compilando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Gerar Relatório de Evolução</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Unified Strategic bottom card: Diretrizes & Alinhamento de Evolução */}
               {viewMode !== "public" && (
@@ -1444,7 +1456,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="flex flex-col gap-2">
                       <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                         <Activity className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Carga Cognitiva (CC): {diaryCC}</span>
+                        <span>Esforço Mental / Foco: {diaryCC} / 10</span>
                       </label>
                       <input
                         type="range"
@@ -1455,7 +1467,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                       />
                       <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                        <span>Foco Leve</span>
+                        <span>Tranquilo</span>
                         <span>Sobrecarga</span>
                       </div>
                     </div>
@@ -1464,7 +1476,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="flex flex-col gap-2">
                       <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                         <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Tempo Esperado (TE): {diaryTE}</span>
+                        <span>Tempo Dedicado / Foco: {diaryTE} / 10</span>
                       </label>
                       <input
                         type="range"
