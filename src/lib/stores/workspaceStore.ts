@@ -240,12 +240,17 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           // Then if Member, validate/update against Server
           const authState = useAuthStore.getState();
           const isMember = authState.user?.role === 'member';
+          const loggedInUserId = authState.user?.id;
+
           const localWorkspaces = loadWorkspacesWithDashboards().filter(w => {
-            if (!isMember) return true;
-            // If they are a member, only load workspaces they own locally
-            // (or if it doesn't have a userId yet/guest data, we can keep it for migration).
-            // But if it has a userId and it is NOT this user's ID, it belongs to another logged-in user on this browser, so exclude it!
-            return !w.userId || w.userId === authState.user?.id;
+            if (!isMember || !loggedInUserId) return true;
+            // Strict isolation: if a workspace has a userId, it MUST match the logged-in user.
+            // If it doesn't have a userId, we only load it if guest data is not migrated yet (for onboarding).
+            if (w.userId) {
+              return w.userId === loggedInUserId;
+            }
+            const isMigrated = typeof window !== "undefined" && localStorage.getItem("guest_data_migrated") === "true";
+            return !isMigrated;
           });
 
           set((state) => {
@@ -348,8 +353,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               const localOnly = localWorkspaces.filter(lw => {
                 const notInServer = !workspacesFromServer.find(sw => sw.id === lw.id);
                 if (!notInServer) return false;
-                if (isMember) {
-                  return !lw.userId || lw.userId === authState.user?.id;
+                if (isMember && loggedInUserId) {
+                  if (lw.userId) {
+                    return lw.userId === loggedInUserId;
+                  }
+                  const isMigrated = typeof window !== "undefined" && localStorage.getItem("guest_data_migrated") === "true";
+                  return !isMigrated;
                 }
                 return true;
               });

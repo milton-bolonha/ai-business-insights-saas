@@ -3,7 +3,7 @@
  * Handles image uploads to Cloudinary using the provided credentials.
  */
 
-export async function uploadToCloudinary(file: File, folder = "ade/products"): Promise<string> {
+export async function uploadToCloudinary(file: File, folder = "ade/products", workspaceId?: string): Promise<string> {
     // Convert file to base64
     const fileData = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -22,6 +22,7 @@ export async function uploadToCloudinary(file: File, folder = "ade/products"): P
             body: JSON.stringify({
                 fileData,
                 folder,
+                workspaceId,
             }),
         });
 

@@ -20,9 +20,10 @@ interface AddProductModalProps {
     displayStatus?: "Na Caixa" | "Montado no Showroom";
   }) => void;
   initialData?: any;
+  workspaceId?: string;
 }
 
-export function AddProductModal({ open, onClose, onSubmit, initialData }: AddProductModalProps) {
+export function AddProductModal({ open, onClose, onSubmit, initialData, workspaceId }: AddProductModalProps) {
   const { push } = useToast();
   const [name, setName] = useState("");
   const [price, setPrice] = useState<number>(0);
@@ -55,7 +56,7 @@ export function AddProductModal({ open, onClose, onSubmit, initialData }: AddPro
 
     setUploading(true);
     try {
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, "ade/products", workspaceId);
       setImageUrl(url);
       push({
         title: "Image Uploaded",

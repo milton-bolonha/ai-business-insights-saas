@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     try {
         const { userId } = await getAuth();
         const body = await req.json();
-        const { fileData, folder = "ade/products" } = body;
+        const { fileData, folder = "ade/products", workspaceId } = body;
         
         // Enforce credit limit for assets, unless it's a profile avatar upload!
         if (userId && folder !== "ade/avatars") {
@@ -19,12 +19,26 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // Dynamically build a premium organized Cloudinary folder hierarchy!
+        let targetFolder = folder;
+        if (folder === "ade/avatars" && userId) {
+            targetFolder = `ai-saas/users/${userId}/avatar`;
+        } else if (workspaceId) {
+            const sub = folder.replace("ade/", "");
+            targetFolder = `ai-saas/workspaces/${workspaceId}/${sub}`;
+        } else if (userId) {
+            const sub = folder.replace("ade/", "");
+            targetFolder = `ai-saas/users/${userId}/${sub}`;
+        } else {
+            targetFolder = `ai-saas/${folder}`;
+        }
+
         if (!fileData) {
             return NextResponse.json({ error: "fileData is required" }, { status: 400 });
         }
 
-        console.log("[POST /api/upload] Uploading image to Cloudinary...");
-        const imageUrl = await uploadToCloudinary(fileData, folder);
+        console.log(`[POST /api/upload] Uploading image to Cloudinary folder: ${targetFolder}`);
+        const imageUrl = await uploadToCloudinary(fileData, targetFolder);
         console.log("[POST /api/upload] Cloudinary upload success:", imageUrl);
 
         return NextResponse.json({ url: imageUrl, success: true });

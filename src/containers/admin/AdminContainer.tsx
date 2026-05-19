@@ -1533,6 +1533,7 @@ export function AdminContainer() {
         }}
         onSubmit={furniture.handleProductSubmit}
         initialData={furniture.editingProduct}
+        workspaceId={currentWorkspace?.id}
       />
 
     </AdminShellAde >

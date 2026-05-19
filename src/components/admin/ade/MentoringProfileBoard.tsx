@@ -546,7 +546,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
     setIsUploading(true);
     try {
-      const url = await uploadToCloudinary(file, "ade/avatars");
+      const url = await uploadToCloudinary(file, "ade/avatars", workspaceId);
       setPhotoUrl(url);
 
       // Sync avatar natively to Clerk client-side
@@ -568,7 +568,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
     if (!file) return;
     try {
       setIsUploading(true);
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, "ade/products", workspaceId);
       setProjectImageUrl(url);
       push({ title: "Imagem do projeto carregada com sucesso!", variant: "success" });
     } catch (err) {
