@@ -90,7 +90,7 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
   }
 
   // RPG level math
-  const xp = profile.xp !== undefined ? profile.xp : 250;
+  const xp = profile.xp !== undefined ? profile.xp : 0;
   const currentLevel = Math.floor(Math.sqrt(xp / 50)) + 1;
   const totalHearts = 6 + currentLevel;
   const engagement = profile.engagement !== undefined ? profile.engagement : 75;

@@ -159,7 +159,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const [termSidequest, setTermSidequest] = useState("Side-quest");
 
   // Profile Fields State
-  const [role, setRole] = useState<"mentor" | "mentee">("mentor");
+  const [role, setRole] = useState<"mentor" | "mentee">(isOwner ? "mentor" : "mentee");
   const [name, setName] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [tagline, setTagline] = useState("");
@@ -219,7 +219,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const [featuredProjectIds, setFeaturedProjectIds] = useState<string[]>([]);
 
   // Gamification & Cognitive State Declared
-  const [xp, setXp] = useState(250);
+  const [xp, setXp] = useState(0);
   const [equippedGear, setEquippedGear] = useState<Record<string, string>>({
     jacket: "Jaqueta Corta-Vento Minimalist",
     sneakers: "Sneakers Knit Tech",
@@ -252,7 +252,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const xpNeededForNextLevel = nextLevelBaseXp - currentLevelBaseXp;
   const levelProgressPercent = Math.min(100, Math.max(0, Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100)));
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (currentRole?: 'mentor' | 'mentee') => {
     if (!workspaceId) return;
     try {
       const res = await fetch(`/api/mentoring/tasks?workspaceId=${workspaceId}`);
@@ -260,8 +260,9 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
         const data = await res.json();
         if (data.tasks) {
           const targetUserId = userId || authUser?.id;
+          const activeRole = currentRole || role;
           // Filter tasks assigned strictly to this user if they are a mentee
-          const userTasks = role === 'mentor'
+          const userTasks = activeRole === 'mentor'
             ? data.tasks
             : data.tasks.filter((t: any) => t.assigneeId === targetUserId);
 
@@ -346,14 +347,15 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
       setIsLoading(true);
       const url = `/api/mentoring/profile${userId ? `?userId=${userId}` : ""}`;
       const res = await fetch(url);
+      let resolvedRole: 'mentor' | 'mentee' = isOwner ? 'mentor' : 'mentee';
       if (res.ok) {
         const data = await res.json();
         if (data.profile) {
           const p = data.profile;
           
           // Auto configure default role and viewMode
-          const defaultRole = p.role || (isOwner ? "mentor" : "mentee");
-          setRole(defaultRole);
+          resolvedRole = p.role || (isOwner ? "mentor" : "mentee");
+          setRole(resolvedRole);
           
           setName(p.name || "");
           setPhotoUrl(p.photoUrl || "");
@@ -407,7 +409,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           if (isOwnProfile) {
             setViewMode("owner");
           } else {
-            if (isOwner && defaultRole === "mentee") {
+            if (isOwner && resolvedRole === "mentee") {
               setViewMode("tracking");
             } else {
               setViewMode("public");
@@ -415,8 +417,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           }
         } else {
           // Profile does not exist yet! Set smart defaults based on workspace ownership
-          const defaultRole = isOwner ? "mentor" : "mentee";
-          setRole(defaultRole);
+          resolvedRole = isOwner ? "mentor" : "mentee";
+          setRole(resolvedRole);
           setViewMode("owner");
           setXp(0);
           
@@ -427,7 +429,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
         }
       }
       // Also load real tasks statistics
-      await fetchTasks();
+      await fetchTasks(resolvedRole);
     } catch (err) {
       console.error("Error loading profile:", err);
     } finally {
