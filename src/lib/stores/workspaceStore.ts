@@ -238,9 +238,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           // Strategy: Try to load from Local Storage first for immediate UI
           // Then if Member, validate/update against Server
-          const localWorkspaces = loadWorkspacesWithDashboards();
           const authState = useAuthStore.getState();
           const isMember = authState.user?.role === 'member';
+          const localWorkspaces = loadWorkspacesWithDashboards().filter(w => {
+            if (!isMember) return true;
+            // If they are a member, only load workspaces they own locally
+            // (or if it doesn't have a userId yet/guest data, we can keep it for migration).
+            // But if it has a userId and it is NOT this user's ID, it belongs to another logged-in user on this browser, so exclude it!
+            return !w.userId || w.userId === authState.user?.id;
+          });
 
           set((state) => {
             // Initial load from local (fast)
@@ -338,8 +344,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 };
               });
 
-              // Add local-only workspaces not yet in server
-              const localOnly = localWorkspaces.filter(lw => !workspacesFromServer.find(sw => sw.id === lw.id));
+              // Add local-only workspaces not yet in server (e.g. pending guest migration)
+              const localOnly = localWorkspaces.filter(lw => {
+                const notInServer = !workspacesFromServer.find(sw => sw.id === lw.id);
+                if (!notInServer) return false;
+                if (isMember) {
+                  return !lw.userId || lw.userId === authState.user?.id;
+                }
+                return true;
+              });
               if (localOnly.length > 0) {
                 finalWorkspaces = [...finalWorkspaces, ...localOnly];
               }

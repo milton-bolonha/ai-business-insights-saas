@@ -45,6 +45,7 @@ import { useToast } from "@/lib/state/toast-context";
 import { cn } from "@/lib/utils";
 import { uploadToCloudinary } from "@/lib/services/cloudinary";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useUser } from "@clerk/nextjs";
 import { MentoringKanbanBoard } from "./MentoringKanbanBoard";
 import { MentoringScheduleBoard } from "./MentoringScheduleBoard";
 
@@ -91,6 +92,7 @@ interface MentoringProfileBoardProps {
 
 export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: MentoringProfileBoardProps) {
   const { push } = useToast();
+  const { user: clerkUser } = useUser();
   const authUser = useAuthStore((state) => state.user);
   const [activeSubTab, setActiveSubTab] = useState<"portfolio" | "edit">("portfolio");
   const [mentoringSubTab, setMentoringSubTab] = useState<"dashboard" | "inventory" | "diary" | "tasks" | "schedule" | "projects" | "admin_controls">("dashboard");
@@ -409,9 +411,9 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           setRole(defaultRole);
           setViewMode("owner");
           
-          if (authUser) {
-            setName(authUser.fullName || authUser.firstName || "");
-            setEmail(authUser.email || "");
+          if (clerkUser) {
+            setName(clerkUser.fullName || clerkUser.firstName || "");
+            setEmail(clerkUser.primaryEmailAddress?.emailAddress || "");
           }
         }
       }
