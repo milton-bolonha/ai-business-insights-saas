@@ -12,7 +12,19 @@ const clerkEnabled =
 export async function getAuth(): Promise<{ userId: string | null }> {
   console.log("[Auth] Checking clerkEnabled:", { clerkEnabled, secret: !!process.env.CLERK_SECRET_KEY, pub: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY });
 
-  // Treat as guest on auth errors, but check for the synthetic anonymous token in cookies
+  if (clerkEnabled) {
+    try {
+      const { userId } = await auth();
+      console.log("[Auth] Clerk auth() returned userId:", userId);
+      if (userId) {
+        return { userId };
+      }
+    } catch (error) {
+      console.error("[Auth] Authentication error:", error);
+    }
+  }
+
+  // Only check guest cookie if Clerk is not signed in
   try {
     const cookieStore = await cookies();
     const guestId = cookieStore.get("guest_user_id")?.value;
@@ -27,18 +39,6 @@ export async function getAuth(): Promise<{ userId: string | null }> {
     // Clerk not configured (local/dev guest mode)
     console.log("[Auth] Clerk not enabled, returning default 'guest_temp'");
     return { userId: "guest_temp" };
-  }
-
-  try {
-    const { userId } = await auth();
-    console.log("[Auth] Clerk auth() returned userId:", userId);
-
-    if (userId) {
-      return { userId };
-    }
-
-  } catch (error) {
-    console.error("[Auth] Authentication error:", error);
   }
 
   return { userId: null };

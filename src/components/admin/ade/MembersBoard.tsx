@@ -188,7 +188,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
               className="px-3 py-2.5 bg-slate-50 rounded-lg border-none focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold uppercase tracking-wider appearance-none cursor-pointer text-slate-600"
             >
               <option value="manager">Manager</option>
-              <option value="member">Member</option>
+              <option value="member">Mentorado/a</option>
               <option value="viewer">Viewer</option>
             </select>
             <button
@@ -290,7 +290,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                                 className="pl-2 pr-6 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg border-none text-[9px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-indigo-100 outline-none transition-all appearance-none cursor-pointer"
                               >
                                 <option value="manager">Manager</option>
-                                <option value="member">Member</option>
+                                <option value="member">Mentorado/a</option>
                                 <option value="viewer">Viewer</option>
                               </select>
                               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
