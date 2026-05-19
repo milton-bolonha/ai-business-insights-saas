@@ -80,7 +80,8 @@ export default function RankingPage() {
       ...proj,
       authorName: p.name,
       authorId: p.userId,
-      authorUsername: p.username
+      authorUsername: p.username,
+      authorGenderTerm: p.genderTerm
     })));
 
   // Separate featured vs other projects
@@ -187,6 +188,7 @@ export default function RankingPage() {
                           <th className="py-5 px-6">Avatar & Nome</th>
                           <th className="py-5 px-6">Classe</th>
                           {activeTab === "mentores" && <th className="py-5 px-6 text-center w-28">Mentorados</th>}
+                          {activeTab === "mentorados" && <th className="py-5 px-6 text-center w-40">Projetos & Sessões</th>}
                           <th className="py-5 px-6 text-center w-24">Nível</th>
                           <th className="py-5 px-6 text-right w-32">EXP</th>
                         </tr>
@@ -198,7 +200,7 @@ export default function RankingPage() {
                           const isTop3 = rank <= 3;
                           const profileUrl = player.role === "mentor"
                             ? `/mentor/${player.username || player.userId}`
-                            : `/mentorado/${player.username || player.userId}`;
+                            : `/${player.genderTerm || "mentorado"}/${player.username || player.userId}`;
 
                           return (
                             <tr key={player.userId} className="hover:bg-slate-50/50 transition-colors">
@@ -242,15 +244,9 @@ export default function RankingPage() {
                                         </span>
                                       </div>
                                     ) : (
-                                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                      <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest">
                                           {player.tagline || "Mentorado I/O"}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-100/60 text-emerald-700 text-[8.5px] font-black uppercase tracking-wider">
-                                          ✓ {player.completedProjectsCount || 0} {player.completedProjectsCount === 1 ? "Projeto" : "Projetos"}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 border border-sky-100/60 text-sky-700 text-[8.5px] font-black uppercase tracking-wider">
-                                          📅 {player.completedSessionsCount || 0} {player.completedSessionsCount === 1 ? "Sessão" : "Sessões"}
                                         </span>
                                       </div>
                                     )}
@@ -267,6 +263,20 @@ export default function RankingPage() {
                               {activeTab === "mentores" && (
                                 <td className="py-5 px-6 text-center font-bold text-slate-700">
                                   {player.menteesCount || 0}
+                                </td>
+                              )}
+
+                              {/* Projetos & Sessões Column */}
+                              {activeTab === "mentorados" && (
+                                <td className="py-5 px-6 text-center">
+                                  <div className="flex items-center justify-center gap-3">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100/60 text-emerald-700 text-[10px] font-black uppercase tracking-wider cursor-help" title={`${player.completedProjectsCount || 0} Projetos`}>
+                                      📁 {player.completedProjectsCount || 0}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100/60 text-indigo-700 text-[10px] font-black uppercase tracking-wider cursor-help" title={`${player.completedSessionsCount || 0} Sessões`}>
+                                      📅 {player.completedSessionsCount || 0}
+                                    </span>
+                                  </div>
                                 </td>
                               )}
 
@@ -300,7 +310,7 @@ export default function RankingPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {sortedProjects.map((proj) => {
                       const isFeatured = featuredProjectIds.includes(proj.id);
-                      const authorProfileUrl = `/mentorado/${proj.authorUsername || proj.authorId}`;
+                      const authorProfileUrl = `/${proj.authorGenderTerm || "mentorado"}/${proj.authorUsername || proj.authorId}`;
 
                       return (
                         <div

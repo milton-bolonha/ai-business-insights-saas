@@ -62,7 +62,8 @@ export async function GET(req: Request) {
       websiteUrl: profile.websiteUrl || "",
       
       // Gamification parameters (safe for public leaderboards)
-      xp: profile.xp !== undefined ? profile.xp : 250,
+      xp: profile.xp !== undefined ? profile.xp : 0,
+      genderTerm: profile.genderTerm || "mentorado",
       equippedGear: profile.equippedGear || {
         jacket: "Jaqueta Corta-Vento Minimalist",
         sneakers: "Sneakers Knit Tech",

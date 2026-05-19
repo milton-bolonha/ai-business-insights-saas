@@ -60,6 +60,7 @@ export async function POST(req: Request) {
       username,
       socialLinks, 
       motivationalQuote,
+      genderTerm,
       // Contacts and Socials
       phone,
       email,
@@ -131,6 +132,7 @@ export async function POST(req: Request) {
       username: finalUsername,
       socialLinks: socialLinks || { instagram: "", website: "", twitter: "" },
       motivationalQuote: motivationalQuote || "",
+      genderTerm: genderTerm || "mentorado",
       // Socials and Contacts
       phone: phone || "",
       email: email || "",
@@ -152,7 +154,7 @@ export async function POST(req: Request) {
       mediumTermGoals: mediumTermGoals || "",
       professionalDream: professionalDream || "",
       // Gamification attributes saved to DB
-      xp: xp !== undefined ? Number(xp) : 250,
+      xp: xp !== undefined ? Number(xp) : 0,
       equippedGear: equippedGear || {
         jacket: "Jaqueta Corta-Vento Minimalist",
         sneakers: "Sneakers Knit Tech",

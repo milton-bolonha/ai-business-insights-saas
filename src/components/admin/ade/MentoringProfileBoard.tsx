@@ -198,6 +198,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const [shortTermGoals, setShortTermGoals] = useState("");
   const [mediumTermGoals, setMediumTermGoals] = useState("");
   const [professionalDream, setProfessionalDream] = useState("");
+  const [genderTerm, setGenderTerm] = useState("mentorado");
 
   // AI Secretary States
   const [isSecretaryOpen, setIsSecretaryOpen] = useState(false);
@@ -384,6 +385,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           setShortTermGoals(p.shortTermGoals || "");
           setMediumTermGoals(p.mediumTermGoals || "");
           setProfessionalDream(p.professionalDream || "");
+          setGenderTerm(p.genderTerm || "mentorado");
           setProjects(p.projects || []);
           setMenteesCount(p.menteesCount || 0);
 
@@ -681,7 +683,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           githubUrl,
           instagramUrl,
           websiteUrl,
-          personalGoal,
+           personalGoal,
           careerGoal,
           futureVision,
           attributes,
@@ -692,7 +694,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           mentorshipExpectations,
           shortTermGoals,
           mediumTermGoals,
-          professionalDream
+          professionalDream,
+          genderTerm
         })
       });
 
@@ -2261,6 +2264,21 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
+
+              {role === "mentee" && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Gênero / Tratamento do Perfil</label>
+                  <select
+                    value={genderTerm}
+                    onChange={(e) => setGenderTerm(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+                  >
+                    <option value="mentorado">Masculino (Mentorado)</option>
+                    <option value="mentorada">Feminino (Mentorada)</option>
+                    <option value="mentoradx">Neutro (Mentoradx)</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

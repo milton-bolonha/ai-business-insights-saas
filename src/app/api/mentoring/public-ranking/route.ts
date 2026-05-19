@@ -68,7 +68,8 @@ export async function GET(req: Request) {
         name: p.name || "Sem Nome",
         photoUrl: p.photoUrl || "",
         tagline: p.tagline || "",
-        xp: p.xp !== undefined ? p.xp : 250,
+        xp: p.xp !== undefined ? p.xp : 0,
+        genderTerm: p.genderTerm || "mentorado",
         projects: p.projects || [],
         // Evaluated Dominant Class for visual flavor in tables
         careerGoal: p.careerGoal || "",
