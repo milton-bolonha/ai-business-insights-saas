@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Shield, User, Search, Settings } from "lucide-react";
+import { Users, Shield, User, Search, Settings, Bell, Loader2, Send } from "lucide-react";
 import { useAllUsers, useUpdateUserRole } from "@/lib/state/query/user.queries";
 import { useToast } from "@/lib/state/toast-context";
 import { useUIStore } from "@/lib/stores";
@@ -13,6 +13,42 @@ export function GlobalUsersBoard() {
   const appearance = useUIStore((state) => state.appearance);
 
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Broadcast State variables
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastIcon, setBroadcastIcon] = useState("bell");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastMessage.trim()) return;
+
+    setIsBroadcasting(true);
+    try {
+      const res = await fetch("/api/mentoring/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId: "global",
+          recipientId: "all",
+          title: broadcastTitle,
+          message: broadcastMessage,
+          icon: broadcastIcon
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to broadcast message");
+      push({ title: "Comunicado enviado a todos os usuários!", variant: "success" });
+      setBroadcastTitle("");
+      setBroadcastMessage("");
+      setBroadcastIcon("bell");
+    } catch (err) {
+      push({ title: "Erro ao enviar comunicado", variant: "destructive" });
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
 
   const users = usersData?.users || [];
   
@@ -85,6 +121,70 @@ export function GlobalUsersBoard() {
             }}
           />
         </div>
+      </div>
+
+      {/* Broadcast System Card */}
+      <div className="mb-8 p-6 bg-slate-50 border border-slate-200/50 rounded-3xl relative overflow-hidden group shadow-sm flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-600 text-white rounded-2xl shadow-md shadow-indigo-100 shrink-0">
+            <Bell className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight">Broadcast: Enviar Comunicado Global</h3>
+            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Notifique todos os usuários da plataforma instantaneamente</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleBroadcast} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mt-2">
+          <div className="md:col-span-1 flex flex-col gap-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Título / Assunto</label>
+            <input
+              required
+              type="text"
+              placeholder="Ex: Manutenção agendada ou novidade"
+              value={broadcastTitle}
+              onChange={(e) => setBroadcastTitle(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100 transition-all"
+            />
+          </div>
+
+          <div className="md:col-span-2 flex flex-col gap-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Mensagem Curta</label>
+            <input
+              required
+              type="text"
+              placeholder="Escreva a mensagem de aviso que será exibida no sino de todos os usuários..."
+              value={broadcastMessage}
+              onChange={(e) => setBroadcastMessage(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 transition-all"
+            />
+          </div>
+
+          <div className="md:col-span-1 flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+              <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Ícone</label>
+              <select
+                value={broadcastIcon}
+                onChange={(e) => setBroadcastIcon(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-black uppercase text-slate-500 cursor-pointer"
+              >
+                <option value="bell">🔔 Geral</option>
+                <option value="sparkles">✨ Destaque</option>
+                <option value="award">🏆 Sucesso</option>
+                <option value="alert">⚠️ Alerta</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isBroadcasting}
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-100 shrink-0 self-end"
+            >
+              {isBroadcasting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              <span>Transmitir</span>
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="flex-1 overflow-hidden rounded-2xl border bg-white shadow-sm flex flex-col" style={{ borderColor: appearance.cardBorderColor }}>

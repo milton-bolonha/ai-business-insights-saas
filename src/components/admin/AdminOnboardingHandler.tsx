@@ -30,7 +30,7 @@ export function AdminOnboardingHandler() {
 
                 // Duplicate guard: if we already have a workspace with this name, skip
                 const existingWorkspaces = useWorkspaceStore.getState().workspaces;
-                const workspaceName = data.coupleName || data.company || "";
+                const workspaceName = data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || "";
                 if (workspaceName && existingWorkspaces.some(w => w.name === workspaceName)) {
                     console.log(`[Onboarding] Workspace "${workspaceName}" already exists, skipping duplicate creation.`);
                     setIsProcessing(false);
@@ -51,6 +51,8 @@ export function AdminOnboardingHandler() {
                     await handleTradeRankingCreation(data);
                 } else if (type === "furniture_logistics" || type === "furniture_layout" || type === "furniture_store") {
                     await handleFurnitureCreation(type, data);
+                } else if (type === "io_mentoring") {
+                    await handleMentoringCreation(data);
                 }
 
                 push({
@@ -290,6 +292,47 @@ export function AdminOnboardingHandler() {
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.error || "Failed to generate furniture workspace");
+        }
+
+        const resData = await response.json();
+        if (resData.workspace) {
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
+    };
+
+    const handleMentoringCreation = async (data: any) => {
+        const targetUrl = "/api/generate";
+        const workspaceName = `${data.mentor_name || "Mentor"} & ${data.student_name || "Aluno"}`;
+        
+        const payload = {
+            salesRepCompany: data.mentor_name || "Mentor",
+            salesRepWebsite: "https://io.mentoring",
+            solution: "Mentoria de Performance",
+            targetCompany: workspaceName,
+            targetWebsite: "https://io.mentoring",
+            templateId: "template_io_mentoring",
+            model: "gpt-4o-mini",
+            promptAgent: "ade_research_analyst",
+            responseLength: "long",
+            promptVariables: [
+                `mentor_name:${data.mentor_name || 'Mentor'}`,
+                `student_name:${data.student_name || 'Aluno'}`,
+                `mentoring_goal:${data.mentoring_goal || 'Aceleração de Carreira'}`
+            ],
+            bulkPrompts: [],
+        };
+
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || "Failed to generate mentoring workspace");
         }
 
         const resData = await response.json();

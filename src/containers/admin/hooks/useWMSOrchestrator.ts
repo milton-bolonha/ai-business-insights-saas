@@ -3,7 +3,7 @@ import { useToast } from "@/lib/state/toast-context";
 import { useAuthStore, useUIStore } from "@/lib/stores";
 
 export interface WMSCommand {
-  action: 'CREATE_SECTOR' | 'DELETE_SECTOR' | 'PUTAWAY' | 'AUTO_PUTAWAY' | 'PICKING' | 'CHANGE_COLOR' | 'NAVIGATE' | 'CREATE_CLIENT';
+  action: 'CREATE_SECTOR' | 'DELETE_SECTOR' | 'PUTAWAY' | 'AUTO_PUTAWAY' | 'PICKING' | 'CHANGE_COLOR' | 'NAVIGATE' | 'CREATE_CLIENT' | 'CREATE_MENTORING_TASK' | 'SCHEDULE_MENTORING_SESSION';
   id?: string;
   targetId?: string;
   rows?: number;
@@ -19,6 +19,11 @@ export interface WMSCommand {
     condition?: string;
     description?: string;
     category?: string;
+    title?: string;
+    status?: string;
+    dueDate?: string;
+    startAt?: string;
+    meetingUrl?: string;
   };
   reason?: string;
   sku?: string;
@@ -222,6 +227,20 @@ export function useWMSOrchestrator(
              logs.push(`Registrou cliente: ${cmd.name}`);
           }
         }
+        else if (cmd.action === 'CREATE_MENTORING_TASK') {
+          if (cmd.item?.title) {
+            window.dispatchEvent(new CustomEvent('ai-create-task', { detail: cmd.item }));
+            logActivity(`Tarefa "${cmd.item.title}" agendada para o aluno.`, 'success');
+            logs.push(`Tarefa criada: ${cmd.item.title}`);
+          }
+        }
+        else if (cmd.action === 'SCHEDULE_MENTORING_SESSION') {
+          if (cmd.item?.title && cmd.item?.startAt) {
+            window.dispatchEvent(new CustomEvent('ai-schedule-session', { detail: cmd.item }));
+            logActivity(`Sessão "${cmd.item.title}" marcada para ${cmd.item.startAt}.`, 'success');
+            logs.push(`Sessão agendada: ${cmd.item.title}`);
+          }
+        }
       } catch (e) {
         console.error("Error executing WMS command:", e);
         logs.push(`Erro ao processar comando: ${cmd.action}`);
@@ -245,19 +264,21 @@ export function useWMSOrchestrator(
         return { reply: "Desculpe, você atingiu seu limite de créditos.", logs: [] };
       }
       // Prompt construction from prototype
-      const prompt = `Você é uma IA de Sistema de Armazém e Gestão (WMS/ERP). Você deve interpretar o pedido do usuário e retornar EXATAMENTE UM JSON com duas chaves: "reply" (texto Markdown amigável respondendo o usuário) e "commands" (array de objetos de ação, vazio se for só conversa).
+      const prompt = `Você é uma IA de Gestão Multidisciplinar (WMS, ERP e agora Mentoria I/O). Você deve interpretar o pedido do usuário e retornar EXATAMENTE UM JSON com duas chaves: "reply" (texto Markdown amigável) e "commands" (array de objetos de ação).
         
       Ações suportadas em 'commands':
-      1. { "action": "CREATE_SECTOR", "id": "A1", "rows": 4, "cols": 5, "orientation": "horizontal", "type": "Showcase", "layoutMode": "boxed" }
-      2. { "action": "AUTO_PUTAWAY", "item": { "name": "...", "sku": "...", "price": "...", "condition": "...", "description": "..." } }
-      3. { "action": "PUTAWAY", "targetId": "A1-1-1", "item": { ... } }
-      4. { "action": "PICKING", "targetId": "A1-1-1", "sku": "...", "reason": "..." }
-      5. { "action": "CREATE_PRODUCT", "item": { "name": "...", "price": 100, "category": "...", "description": "..." } }
-      6. { "action": "CHANGE_COLOR", "color": "#HEX" } (IMPORTANTE: Sempre retorne uma cor em tom pastel BEM clarinho, "esbranquiçadinha", quase branca. Nunca use preto ou cores escuras/fortes diretas. Exemplo: se pedir vermelho, retorne um rosa bem claro como '#ffe1e1'. Se pedir escuro, use um cinza muito suave como '#f0f0f0' ou um azul bem sutil para manter contraste suave.)
-      7. { "action": "CREATE_CLIENT", "name": "Nome da pessoa" } (Extraia nomes corretos, exemplo "registre a cliente chamada Ana" -> "Ana", "cliente chamado Carlos" -> "Carlos")
-      8. { "action": "NAVIGATE", "destination": "DESTINO" } (Destinos válidos: 'chat', 'menu', 'layout', 'store', 'clients', 'notes', 'credits', 'profile')
+      1. { "action": "CREATE_SECTOR", "id": "A1", "rows": 4, "cols": 5, "type": "Showcase" }
+      2. { "action": "AUTO_PUTAWAY", "item": { "name": "...", "sku": "...", "price": "..." } }
+      3. { "action": "CREATE_PRODUCT", "item": { "name": "...", "price": 100, "category": "..." } }
+      4. { "action": "CHANGE_COLOR", "color": "#HEX" } (Use tons pastel claros!)
+      5. { "action": "CREATE_CLIENT", "name": "Nome" }
+      6. { "action": "NAVIGATE", "destination": "DESTINO" } (Destinos: 'chat', 'layout', 'store', 'clients', 'members', 'mentoring_tasks', 'mentoring_schedule')
       
-      Aja naturalmente na chave "reply" e extraia os dados ricamente.`;
+      NOVAS AÇÕES DE MENTORIA:
+      7. { "action": "CREATE_MENTORING_TASK", "item": { "title": "Título", "description": "...", "status": "todo", "dueDate": "YYYY-MM-DD" } }
+      8. { "action": "SCHEDULE_MENTORING_SESSION", "item": { "title": "Título", "description": "...", "startAt": "YYYY-MM-DDTHH:mm:ss", "meetingUrl": "..." } }
+      
+      Aja naturalmente na chave "reply". Se o usuário pedir para marcar uma mentoria ou criar uma tarefa de estudo, use as ações de Mentoria.`;
 
       // Simulating API call for now or using fetch if key is known
       // Note: In a real app, this would call a serverless function or proxy

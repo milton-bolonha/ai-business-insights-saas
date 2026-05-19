@@ -42,6 +42,10 @@ import { VoiceAssistantOverlay } from "@/components/admin/chat/VoiceAssistantOve
 import { SaaSLimitsModal } from "@/components/admin/ade/SaaSLimitsModal";
 import { GlobalUsersBoard } from "@/components/admin/ade/GlobalUsersBoard";
 import { MembersBoard } from "@/components/admin/ade/MembersBoard";
+import { MentoringKanbanBoard } from "@/components/admin/ade/MentoringKanbanBoard";
+import { MentoringScheduleBoard } from "@/components/admin/ade/MentoringScheduleBoard";
+import { MentoringInsightsBoard } from "@/components/admin/ade/MentoringInsightsBoard";
+import { MentoringProfileBoard } from "@/components/admin/ade/MentoringProfileBoard";
 
 // Zustand stores
 import {
@@ -149,6 +153,8 @@ export function AdminContainer() {
     };
   }, [currentWorkspace?.id, furniture.handleProductSubmit, furniture.handleOrderSubmit]);
 
+
+
   // Sequential Writer Logic (Client-Side Orchestration)
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -169,6 +175,23 @@ export function AdminContainer() {
     }
   };
 
+  // Synchronize activeTab when workspace changes to select the appropriate start tab
+  useEffect(() => {
+    if (!currentWorkspace) return;
+    const templateId = currentWorkspace.promptSettings?.templateId;
+    if (templateId === "template_io_mentoring") {
+      setActiveTab("mentoring_profile" as any);
+    } else if (templateId === "template_love_writers") {
+      setActiveTab("library");
+    } else if (templateId === "template_trade_ranking") {
+      setActiveTab("ranking");
+    } else if (templateId?.startsWith("template_furniture")) {
+      setActiveTab("store");
+    } else {
+      setActiveTab("arcs");
+    }
+  }, [currentWorkspace?.id]);
+
   // Expose setViewMode to window for voice assistant access
   useEffect(() => {
     (window as any).setViewModeAI = setViewMode;
@@ -187,7 +210,7 @@ export function AdminContainer() {
         setActiveTab("chat_history" as NavTab);
       } else if (dest === 'menu') {
         setViewMode('menu');
-      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking'].includes(dest)) {
+      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking', 'mentoring_tasks', 'mentoring_schedule', 'mentoring_insights', 'mentoring_notes'].includes(dest)) {
         setActiveTab(dest as NavTab);
         setViewMode('menu');
       } else if (dest === 'credits') {
@@ -218,6 +241,53 @@ export function AdminContainer() {
     };
   }, [setViewMode, setActiveTab, openSaaSLimits, openAddContact, push]);
 
+  // Mentoring AI Event Listeners
+  useEffect(() => {
+    const handleCreateTask = async (e: any) => {
+      if (!currentWorkspace?.id) return;
+      try {
+        await fetch("/api/mentoring/tasks", {
+          method: "POST",
+          body: JSON.stringify({
+            workspaceId: currentWorkspace.id,
+            ...e.detail
+          })
+        });
+        push({
+          title: "Mentoria",
+          description: `Nova tarefa criada: "${e.detail?.title}"`,
+          variant: "success"
+        });
+      } catch (err) { console.error(err); }
+    };
+
+    const handleScheduleSession = async (e: any) => {
+      if (!currentWorkspace?.id) return;
+      try {
+        await fetch("/api/mentoring/sessions", {
+          method: "POST",
+          body: JSON.stringify({
+            workspaceId: currentWorkspace.id,
+            ...e.detail
+          })
+        });
+        push({
+          title: "Mentoria",
+          description: `Nova sessão agendada: "${e.detail?.title}"`,
+          variant: "success"
+        });
+      } catch (err) { console.error(err); }
+    };
+
+    window.addEventListener('ai-create-task', handleCreateTask);
+    window.addEventListener('ai-schedule-session', handleScheduleSession);
+
+    return () => {
+      window.removeEventListener('ai-create-task', handleCreateTask);
+      window.removeEventListener('ai-schedule-session', handleScheduleSession);
+    };
+  }, [currentWorkspace?.id, push]);
+
   // Sync local view mode when dashboard changes
   useEffect(() => {
     if (currentDashboard?.layoutMode) {
@@ -243,6 +313,7 @@ export function AdminContainer() {
         if (tid === "template_trade_ranking") return "ranking";
         if (tid?.startsWith("template_furniture")) return "store" as any;
         if (tid === "template_love_writers") return "library";
+        if (tid === "template_io_mentoring") return "mentoring_profile" as any;
         return "arcs";
     };
 
@@ -258,6 +329,7 @@ export function AdminContainer() {
     if (templateId === "template_furniture_logistics" && activeTab === "arcs") setActiveTab("logistics" as any);
     if (templateId === "template_furniture_layout" && activeTab === "arcs") setActiveTab("layout" as any);
     if (templateId === "template_furniture_store" && activeTab === "arcs") setActiveTab("store" as any);
+    if (templateId === "template_io_mentoring" && activeTab === "arcs") setActiveTab("mentoring_profile" as any);
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -777,6 +849,7 @@ export function AdminContainer() {
   return (
     <AdminShellAde
       appearance={appearance}
+      viewMode={viewMode}
       chatOverlay={
         <AdminChatView
           workspaces={workspaces}
@@ -1105,6 +1178,40 @@ export function AdminContainer() {
                   <MembersBoard 
                     workspaceId={currentWorkspace.id} 
                     userRole={auth.user?.globalRole}
+                  />
+                </div>
+              )}
+
+               {(activeTab as any) === "global_users" && (
+                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                   <GlobalUsersBoard />
+                 </div>
+               )}
+
+               {(activeTab as any) === "mentoring_tasks" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <MentoringKanbanBoard 
+                    workspaceId={currentWorkspace.id} 
+                    isOwner={true}
+                    currentUserRole={currentWorkspace.userId === auth.user?.id ? "mentor" : "mentee"}
+                  />
+                </div>
+              )}
+
+              {(activeTab as any) === "mentoring_schedule" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <MentoringScheduleBoard 
+                    workspaceId={currentWorkspace.id} 
+                    isOwner={currentWorkspace.userId === auth.user?.id}
+                  />
+                </div>
+              )}
+
+              {(activeTab as any) === "mentoring_profile" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <MentoringProfileBoard 
+                    isOwner={currentWorkspace.userId === auth.user?.id}
+                    workspaceId={currentWorkspace.id}
                   />
                 </div>
               )}

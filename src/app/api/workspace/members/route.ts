@@ -59,18 +59,34 @@ export async function GET(request: NextRequest) {
     for (const member of memberships) {
       if (member.userId === workspace.userId) continue; // Skip if owner somehow has a membership doc
       
-      const user = await db.findOne("users", { userId: member.userId });
-      if (user) {
-        membersList.push({
-          id: member._id?.toString(),
-          userId: member.userId,
-          email: user.email,
-          name: user.fullName || user.firstName || "Member",
-          accessLevel: member.accessLevel,
-          isOwner: false,
-          createdAt: member.createdAt
-        });
+      if (member.userId) {
+        const user = await db.findOne("users", { userId: member.userId });
+        if (user) {
+          membersList.push({
+            id: member._id?.toString(),
+            userId: member.userId,
+            email: user.email || member.email,
+            name: user.fullName || user.firstName || "Membro",
+            accessLevel: member.accessLevel,
+            status: member.status || 'active',
+            isOwner: false,
+            createdAt: member.createdAt
+          });
+          continue;
+        }
       }
+      
+      // If user doc not found or userId is null (pending invitation)
+      membersList.push({
+        id: member._id?.toString(),
+        userId: member.userId || null,
+        email: member.email || "Sem e-mail",
+        name: "Cadastro Pendente",
+        accessLevel: member.accessLevel,
+        status: member.status || 'pending',
+        isOwner: false,
+        createdAt: member.createdAt
+      });
     }
 
     return NextResponse.json({ members: membersList });
@@ -156,6 +172,21 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date()
     });
+
+    // If not a registered platform user yet (pending), send Clerk invite
+    if (!inviteUserId) {
+      try {
+        const { clerkClient } = await import("@clerk/nextjs/server");
+        const client = await clerkClient();
+        await client.invitations.createInvitation({
+          emailAddress: email,
+          ignoreExisting: true
+        });
+        console.log(`[Clerk Invite] Sent Clerk invitation email to ${email}`);
+      } catch (clerkErr) {
+        console.error("[Clerk Invite] Error sending Clerk invitation:", clerkErr);
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 

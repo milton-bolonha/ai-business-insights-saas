@@ -18,6 +18,7 @@ interface AdminShellAdeProps {
   chatOverlay?: ReactNode;
   children: ReactNode;
   appearance: AdeAppearanceTokens;
+  viewMode?: "chat" | "menu";
   // New props for Top Header
   onOpenWorkspaceDetail?: () => void;
   onDeleteWorkspace?: (workspaceId: string) => void;
@@ -31,6 +32,7 @@ export function AdminShellAde({
   chatOverlay,
   children,
   appearance,
+  viewMode = "menu",
   onOpenWorkspaceDetail,
   onDeleteWorkspace,
   onSetSpecificColor
@@ -63,21 +65,20 @@ export function AdminShellAde({
       {navigation}
 
       <div className="flex-1 flex flex-col min-w-0 h-screen relative z-10">
-        {/* Top Header */}
-        <AdminTopHeader
-          appearance={appearance}
-          onOpenSaaSLimits={openSaaSLimits}
-          onOpenWorkspaceDetail={onOpenWorkspaceDetail}
-          onDeleteWorkspace={onDeleteWorkspace}
-          onSetSpecificColor={onSetSpecificColor}
-          hideWorkspaceSwitcher={!!chatOverlay}
-        />
-
-        {/* Main Content */}
+        {/* Main Content containing both header and body, so they scroll together */}
         <main
           className="flex-1 overflow-y-auto"
           style={{ backgroundColor: "transparent" }}
         >
+          {/* Top Header */}
+          <AdminTopHeader
+            appearance={appearance}
+            onOpenSaaSLimits={openSaaSLimits}
+            onOpenWorkspaceDetail={onOpenWorkspaceDetail}
+            onDeleteWorkspace={onDeleteWorkspace}
+            onSetSpecificColor={onSetSpecificColor}
+            hideWorkspaceSwitcher={false}
+          />
           <div
             className={cn(
               "container mx-auto min-h-full px-2",

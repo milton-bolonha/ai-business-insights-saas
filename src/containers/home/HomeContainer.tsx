@@ -59,7 +59,7 @@ export function HomeContainer() {
 
   // Derived Hero Content
   const heroContent = {
-    title: activeAppTag === 'love_writers' ? 'Love Writers' : activeAppTag === 'trade_ranking' ? 'Trade Ranking' : activeAppTag === 'furniture_logistics' ? 'Logística & Gestão' : activeAppTag === 'furniture_layout' ? 'Layout Mapping' : activeAppTag === 'furniture_store' ? 'Virtual Store' : 'Business Insights',
+    title: activeAppTag === 'love_writers' ? 'Love Writers' : activeAppTag === 'trade_ranking' ? 'Trade Ranking' : activeAppTag === 'furniture_logistics' ? 'Logística & Gestão' : activeAppTag === 'furniture_layout' ? 'Layout Mapping' : activeAppTag === 'furniture_store' ? 'Virtual Store' : activeAppTag === 'io_mentoring' ? 'I/O Mentor Pro' : 'Business Insights',
     subtitle: activeAppTag === 'love_writers'
       ? 'Craft your romance novel arc by arc.'
       : activeAppTag === 'trade_ranking'
@@ -70,7 +70,9 @@ export function HomeContainer() {
             ? 'Visualize e monetize cada metro quadrado da sua loja com mapeamento inteligente.'
             : activeAppTag === 'furniture_store'
               ? 'Exhibit your furniture in a premium store and receive orders directly on your panel.'
-              : 'Generate deep business insights from company data.'
+              : activeAppTag === 'io_mentoring'
+                ? 'Elevate your coaching with smart Kanban boards and AI session summaries.'
+                : 'Generate deep business insights from company data.'
   };
 
 
@@ -87,7 +89,8 @@ export function HomeContainer() {
           'trade_ranking': 'Trade Ranking',
           'furniture_logistics': 'Furniture Logistics',
           'furniture_layout': 'Store Layout',
-          'business_insights': 'Business Insights'
+          'business_insights': 'Business Insights',
+          'io_mentoring': 'I/O Mentor Pro'
         };
         const title = titles[activeAppTag] || 'App';
         initialMessage = `You chose ${title}. Let's get started. What is the ${firstInfo.label}?`;
@@ -247,7 +250,7 @@ export function HomeContainer() {
               handleBookSubmit(updatedValues);
             } else if (activeAppTag === 'trade_ranking') {
               handleTradeSubmit(updatedValues);
-            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store') {
+            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store' || activeAppTag === 'io_mentoring') {
               handleFurnitureSubmit(activeAppTag, updatedValues);
             } else {
               handleSubmit(updatedValues as ClassicHeroFormSubmission);

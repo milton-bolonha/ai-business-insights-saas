@@ -1,4 +1,4 @@
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring";
 
 export interface AppTag {
   id: AppTagId;
@@ -50,6 +50,11 @@ export const APP_TAGS: AppTag[] = [
     id: "furniture_store",
     label: "Virtual Store",
     color: "#f59e0b", // Amber-500
+  },
+  {
+    id: "io_mentoring",
+    label: "I/O Mentoring",
+    color: "#4f46e5", // Indigo-600
   },
 ];
 
@@ -232,5 +237,25 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
     label: "Niche",
     appTagId: "furniture_store",
     placeholder: "Ex: Rustic Furniture, Modern, Decoration",
+  },
+  
+  // I/O Mentoring Attributes
+  {
+    id: "mentor_name",
+    label: "Nome do Instituto",
+    appTagId: "io_mentoring",
+    placeholder: "Qual o nome do instituto/empresa?",
+  },
+  {
+    id: "student_name",
+    label: "Nome do Mentor",
+    appTagId: "io_mentoring",
+    placeholder: "Quem será o mentor?",
+  },
+  {
+    id: "mentoring_goal",
+    label: "Objetivo da Mentoria",
+    appTagId: "io_mentoring",
+    placeholder: "Qual o foco principal dessa mentoria?",
   },
 ];

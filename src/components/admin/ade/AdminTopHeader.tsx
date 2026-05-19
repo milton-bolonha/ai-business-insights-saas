@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     ChevronDown,
     Plus,
@@ -16,7 +16,11 @@ import {
     Coins,
     Trash2,
     Target,
-    Zap
+    Zap,
+    Bell,
+    Sparkles,
+    Award,
+    AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,12 +62,56 @@ export function AdminTopHeader({
     const [isBookLibraryOpen, setIsBookLibraryOpen] = useState(false);
     const pathname = usePathname();
 
+    // Zustand and auth store selectors (moved to top to avoid block-scope lint usage errors)
     const workspaces = useWorkspaceStore((state) => state.workspaces);
     const currentWorkspace = useCurrentWorkspace();
     const { switchWorkspace } = useWorkspaceActions();
     const usage = useUsage();
     const user = useUser();
     const limits = useAuthStore((state) => state.limits);
+
+    // Notifications State & Logic
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+    const fetchNotifications = async () => {
+        try {
+            const res = await fetch(`/api/mentoring/notifications${currentWorkspace?.id ? `?workspaceId=${currentWorkspace.id}` : ""}`);
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data.notifications || []);
+                setUnreadCount(data.unreadCount || 0);
+            }
+        } catch (err) {
+            console.error("Error loading notifications:", err);
+        }
+    };
+
+    const handleMarkAsRead = async () => {
+        try {
+            const res = await fetch(`/api/mentoring/notifications${currentWorkspace?.id ? `?workspaceId=${currentWorkspace.id}` : ""}`, {
+                method: "PATCH"
+            });
+            if (res.ok) {
+                setUnreadCount(0);
+                // Update local list
+                setNotifications(prev => prev.map(n => ({
+                    ...n,
+                    readBy: [...(n.readBy || []), user?.id].filter(Boolean)
+                })));
+            }
+        } catch (err) {
+            console.error("Error marking notifications as read:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        // Setup polling every 30 seconds
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, [currentWorkspace?.id, user?.id]);
 
     // Determine context based on workspace template
     const isLoveWriters = currentWorkspace?.promptSettings?.templateId === "template_love_writers";
@@ -315,6 +363,110 @@ export function AdminTopHeader({
                             <Zap className="h-3 w-3" />
                             ML Sync
                         </Link>
+
+                        <div className="h-6 w-px bg-gray-200/20 mx-1" />
+
+                        {/* Notifications Bell Icon */}
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setIsNotifOpen(!isNotifOpen);
+                                    if (!isNotifOpen) {
+                                        fetchNotifications();
+                                    }
+                                }}
+                                className="relative flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5 text-gray-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                                title="Anúncios & Notificações"
+                            >
+                                <Bell className="h-5 w-5 cursor-pointer" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-md animate-pulse">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+                            <AnimatePresence>
+                                {isNotifOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                                            className="absolute right-0 top-full z-50 mt-2 p-5 bg-white rounded-[2rem] shadow-2xl border border-slate-100 w-80 max-h-[450px] overflow-hidden flex flex-col"
+                                        >
+                                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-black uppercase tracking-wider text-slate-800">Mensagens & Avisos</span>
+                                                    {unreadCount > 0 && (
+                                                        <span className="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">{unreadCount} novos</span>
+                                                    )}
+                                                </div>
+                                                {unreadCount > 0 && (
+                                                    <button
+                                                        onClick={handleMarkAsRead}
+                                                        className="text-[9px] font-black uppercase text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                                                    >
+                                                        Marcar todas lidas
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px]">
+                                                {notifications.length === 0 ? (
+                                                    <div className="text-center py-8 text-xs font-semibold text-slate-400">
+                                                        Nenhuma notificação por enquanto.
+                                                    </div>
+                                                ) : (
+                                                    notifications.map((notif: any) => {
+                                                        const isUnread = !(notif.readBy || []).includes(user?.id) && notif.senderId !== user?.id;
+                                                        return (
+                                                            <div 
+                                                                key={notif._id?.toString() || notif.id}
+                                                                className={cn(
+                                                                    "p-3 rounded-2xl border transition-all flex items-start gap-3",
+                                                                    isUnread 
+                                                                        ? "bg-indigo-50/30 border-indigo-100/50" 
+                                                                        : "bg-slate-50/50 border-slate-100/30"
+                                                                )}
+                                                            >
+                                                                <div className={cn(
+                                                                    "p-2 rounded-xl shrink-0 mt-0.5",
+                                                                    notif.icon === "sparkles" ? "bg-indigo-100 text-indigo-600" :
+                                                                    notif.icon === "award" ? "bg-amber-100 text-amber-600" :
+                                                                    notif.icon === "alert" ? "bg-rose-100 text-rose-600" :
+                                                                    "bg-blue-100 text-blue-600"
+                                                                )}>
+                                                                    {notif.icon === "sparkles" ? <Sparkles className="w-3.5 h-3.5" /> :
+                                                                     notif.icon === "award" ? <Award className="w-3.5 h-3.5" /> :
+                                                                     notif.icon === "alert" ? <AlertTriangle className="w-3.5 h-3.5" /> :
+                                                                     <Info className="w-3.5 h-3.5" />}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0 text-left">
+                                                                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                                                                        <span className="text-[10px] font-black text-slate-800 truncate">{notif.title}</span>
+                                                                        <span className="text-[8px] font-bold text-slate-400 shrink-0">
+                                                                            {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString("pt-BR", { day: "numeric", month: "short" }) : ""}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed line-clamp-3">
+                                                                        {notif.message}
+                                                                    </p>
+                                                                    <div className="mt-1 flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                                                        <span>De:</span>
+                                                                        <span className="text-indigo-600">{notif.workspaceId === "global" ? "Super Admin" : "Mentor"}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
                         <div className="h-6 w-px bg-gray-200/20 mx-1" />
 

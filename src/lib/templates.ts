@@ -333,6 +333,31 @@ export const DASHBOARD_TEMPLATES: Record<string, DashboardTemplate> = {
         preferredLength: "short",
       }
     ]
+  },
+  template_io_mentoring: {
+    id: "template_io_mentoring",
+    name: "I/O Mentoring",
+    description: "Hub central para mentores e alunos com Kanban e Agenda.",
+    tiles: [
+      {
+        id: "student_assessment",
+        title: "Avaliação de Perfil Aluno",
+        prompt: "Com base no objetivo {mentoring_goal}, faça uma análise do perfil do aluno {student_name} e sugira os 3 primeiros passos práticos.",
+        category: "insights",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      },
+      {
+        id: "mentoring_roadmap",
+        title: "Roadmap de Aprendizado",
+        prompt: "Crie um cronograma de 4 semanas para a mentoria de {student_name} focada em {mentoring_goal}.",
+        category: "strategy",
+        orderIndex: 1,
+        agentId: "ade_research_analyst",
+        preferredLength: "long",
+      }
+    ]
   }
 };
 

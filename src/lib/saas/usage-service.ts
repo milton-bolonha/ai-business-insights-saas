@@ -248,7 +248,7 @@ export async function incrementUsage(
   usageType: UsageType,
   amount: number = 1
 ): Promise<void> {
-  if (!userId) return; // Don't track guest usage in database
+  if (!userId || userId === "guest_temp" || userId.startsWith("guest_")) return; // Don't track guest usage in database
 
   try {
     const actionCost = (CREDIT_COSTS[usageType] || 0) * amount;

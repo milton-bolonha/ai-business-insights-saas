@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest) {
         // Update in MongoDB
         const result = await db.updateOne(
             "dashboards",
-            { _id: dashboardId, workspaceId, userId },
+            { id: dashboardId, workspaceId, userId },
             {
                 $set: {
                     ...updates,

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, ReactNode } from "react";
-import { Send, Sparkles, ChevronUp, Layers } from "lucide-react";
+import { Send, Sparkles, ChevronUp, ChevronDown, Layers } from "lucide-react";
 import { FaHome, FaChartPie, FaBook, FaGavel } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ import {
 import { useWMSOrchestrator } from "@/containers/admin/hooks/useWMSOrchestrator";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { useUIStore } from "@/lib/stores/uiStore";
 
 // Helper to get nav items based on templateId
 function getWorkspaceNavItems(templateId: string = "template_1") {
@@ -108,6 +109,8 @@ export function AdminChatView({
     onSetSpecificColor,
     onOpenSaaSLimits
 }: AdminChatViewProps) {
+    const isSidebarOpen = useUIStore(state => state.isDesktopSidebarOpen);
+
     const [inputValue, setInputValue] = useState("");
     const inputValueRef = useRef("");
     useEffect(() => { inputValueRef.current = inputValue; }, [inputValue]);
@@ -346,16 +349,16 @@ export function AdminChatView({
                 }}
             >
                 {/* Glassy Background */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/80 to-white/60 backdrop-blur-xl pointer-events-none -z-10 dark:from-black/90 dark:via-black/80 dark:to-black/60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-white/40 to-transparent backdrop-blur-xl pointer-events-none -z-10 dark:from-black/60 dark:via-black/40 dark:to-transparent" />
 
                 {/* Expanded Content (Just Input Area) */}
                 <div className="flex-1 flex flex-col min-h-0">
 
                     {/* Chat Input Area Wrapper */}
-                    <div className="shrink-0 bg-white/60 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-100/50 py-4 pb-8 sm:pb-6">
+                    <div className="shrink-0 bg-white/20 dark:bg-black/30 backdrop-blur-md border-t border-white/10 dark:border-white/5 py-4 pb-8 sm:pb-6">
                         <div className="container mx-auto px-3 sm:px-6 max-w-5xl">
-                            {/* Row 1: Workspace chooser */}
-                            <div className="mb-2 flex items-center justify-between gap-2">
+                            {/* Row 1: Workspace chooser & Minimize button */}
+                            <div className="mb-2 flex items-center justify-between gap-3">
                                 <div className="relative flex-1" ref={chooserRef}>
                                     <button
                                         onClick={() => setIsWorkspaceChooserOpen(!isWorkspaceChooserOpen)}
@@ -463,6 +466,13 @@ export function AdminChatView({
                                         )}
                                     </AnimatePresence>
                                 </div>
+                                <button
+                                    onClick={() => onSwitchToMenu()}
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#333] text-gray-300 hover:text-white border border-white/10 hover:bg-[#404040] transition-all cursor-pointer shadow-lg"
+                                    title="Minimize Chat"
+                                >
+                                    <ChevronDown className="h-5 w-5" />
+                                </button>
                             </div>
 
                             {/* Row 2: Nav Tab Light Chooser */}
@@ -588,7 +598,7 @@ export function AdminChatView({
             )}
 
             {/* Floating Indicator (Mic) and Help when collapsed */}
-            {!isExpanded && (
+            {!isExpanded && !isSidebarOpen && (
                 <motion.div 
                     key="floating-actions"
                     initial={{ opacity: 0 }}
@@ -596,6 +606,18 @@ export function AdminChatView({
                     exit={{ opacity: 0 }}
                     className="fixed bottom-8 right-8 z-[120] flex items-end gap-2"
                 >
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0, opacity: 0, y: 20 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => onSwitchToChat?.()}
+                        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-500/30 hover:bg-blue-500 transition-colors cursor-pointer"
+                    >
+                        <Mic className="h-6 w-6" />
+                    </motion.button>
+
                     {/* Help/Commands Button */}
                     <motion.button
                         initial={{ scale: 0, opacity: 0 }}
@@ -604,21 +626,9 @@ export function AdminChatView({
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setIsHelpModalOpen(true)}
-                        className="mb-10 -mr-4 w-8 h-8 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
+                        className="mb-10 -ml-4 w-8 h-8 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
                     >
                         <HelpCircle className="w-4 h-4" />
-                    </motion.button>
-                    
-                    <motion.button
-                        initial={{ scale: 0, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0, opacity: 0, y: 20 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => window.dispatchEvent(new CustomEvent('start-voice-chat'))}
-                        className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-500/30 hover:bg-blue-500 transition-colors cursor-pointer"
-                    >
-                        <Mic className="h-6 w-6" />
                     </motion.button>
                 </motion.div>
             )}

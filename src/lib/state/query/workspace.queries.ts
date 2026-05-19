@@ -86,7 +86,10 @@ export function useAddWorkspaceMember() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("Failed to add member");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to add member");
+      }
       return response.json();
     },
     onSuccess: (_, variables) => {
@@ -105,7 +108,10 @@ export function useUpdateWorkspaceMember() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accessLevel: payload.accessLevel }),
       });
-      if (!response.ok) throw new Error("Failed to update member");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to update member");
+      }
       return response.json();
     },
     onSuccess: (_, variables) => {
@@ -122,7 +128,10 @@ export function useRemoveWorkspaceMember() {
       const response = await fetch(`/api/workspace/members/${payload.memberId}?workspaceId=${payload.workspaceId}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to remove member");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to remove member");
+      }
       return response.json();
     },
     onSuccess: (_, variables) => {

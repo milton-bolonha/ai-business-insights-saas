@@ -134,8 +134,8 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-800">Membros da Equipe</h2>
-                  <p className="text-sm text-slate-500">Gerencie o acesso a este workspace</p>
+                  <h2 className="text-xl font-semibold text-slate-800">Gestão de Cadastros</h2>
+                  <p className="text-sm text-slate-500">Controle de acessos e status dos convites</p>
                 </div>
               </div>
               <button
@@ -182,7 +182,7 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
               {/* Members List */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  <span>Membros Atuais</span>
+                  <span>Cadastros Atuais</span>
                   <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs">
                     {members.length}
                   </span>
@@ -194,7 +194,7 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                   </div>
                 ) : members.length === 0 ? (
                   <div className="text-center py-8 text-slate-500 text-sm">
-                    Nenhum membro encontrado.
+                    Nenhum cadastro encontrado.
                   </div>
                 ) : (
                   <div className="border border-slate-200 rounded-xl divide-y divide-slate-100">

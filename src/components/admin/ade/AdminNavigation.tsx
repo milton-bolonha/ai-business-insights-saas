@@ -24,7 +24,10 @@ import {
     MessageSquare,
     Menu as MenuIcon,
     X,
-    Globe
+    Globe,
+    CalendarDays,
+    BrainCircuit,
+    User
 } from "lucide-react";
 import { FaGavel } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,7 +35,7 @@ import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/uiStore";
 
-export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users";
+export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile";
 
 interface AdminNavigationProps {
     activeTab: NavTab;
@@ -105,6 +108,12 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
             { id: "chat_history", label: "Histórico IA", icon: MessageSquare },
         ] : []),
 
+        ...(templateId === "template_io_mentoring" ? [
+            { id: "mentoring_profile", label: "Evolução & Perfil", icon: User },
+            { id: "mentoring_tasks", label: "Tarefas (Kanban)", icon: ClipboardList },
+            { id: "mentoring_schedule", label: "Agenda Sessões", icon: CalendarDays },
+        ] : []),
+
         {
             id: "arcs",
             label: isTrade ? "Análise" : isWriters ? "Arcos" : isFurniture ? "Insights" : "Dashboard",
@@ -115,27 +124,36 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
             label: isWriters ? "Elenco" : "Contatos",
             icon: isTrade ? Shapes : Users
         }] : []),
-        {
+        ...((!isFurniture && templateId !== "template_io_mentoring") ? [{
             id: "notes",
-            label: isFurniture ? "Relatórios" : "Notas",
+            label: "Notas",
             icon: FileText
-        },
+        }] : isFurniture ? [{
+            id: "notes",
+            label: "Relatórios",
+            icon: FileText
+        }] : []),
         { id: "files", label: "Arquivos", icon: FolderOpen },
         { 
             id: "members", 
-            label: userRole === "admin" ? "Usuários" : "Colaboradores", 
+            label: "Cadastros", 
             icon: Users 
         },
+        ...(userRole === "admin" ? [{
+            id: "global_users" as any,
+            label: "Global Admin",
+            icon: Globe
+        }] : []),
     ] as const;
 
     return (
         <>
-            {/* Floating Hamburger Button (Desktop) */}
+            {/* Floating Hamburger Button (Desktop & Mobile) */}
             <button
                 ref={buttonRef}
                 onClick={toggleDesktopSidebar}
                 className={cn(
-                    "hidden md:flex fixed top-5 z-[60] p-3 rounded-xl shadow-xl border transition-all duration-300 cursor-pointer backdrop-blur-md",
+                    "flex fixed top-5 z-[60] p-3 rounded-xl shadow-xl border transition-all duration-300 cursor-pointer backdrop-blur-md",
                     isDesktopSidebarOpen
                         ? "left-[88px] bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
                         : "left-6 bg-white/80 border-gray-200/50 text-gray-700 hover:bg-white hover:scale-105"
@@ -144,7 +162,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                 {isDesktopSidebarOpen ? <X className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
             </button>
 
-            {/* Desktop Sidebar */}
+            {/* Sidebar (Responsive Overlay on Mobile, Sticky on Desktop) */}
             <AnimatePresence>
                 {isDesktopSidebarOpen && (
                     <motion.aside
@@ -152,7 +170,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                         initial={{ width: 0, opacity: 0, x: -80 }}
                         animate={{ width: 80, opacity: 1, x: 0 }}
                         exit={{ width: 0, opacity: 0, x: -80 }}
-                        className="hidden md:flex flex-col border-r border-gray-100 bg-white h-screen sticky top-0 z-50 items-center py-6 overflow-hidden shrink-0"
+                        className="flex flex-col border-r border-gray-100 bg-white h-screen fixed md:sticky top-0 left-0 z-50 items-center py-6 overflow-hidden shrink-0 shadow-2xl md:shadow-none"
                     >
                         {/* Dynamic Logo */}
                         {/* <div 
@@ -180,6 +198,10 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                                                 onTabChange(item.id as NavTab);
                                                 if (item.id === 'chat_history' && onSwitchToChat) {
                                                     onSwitchToChat();
+                                                }
+                                                // Close mobile sidebar on selection
+                                                if (window.innerWidth < 768) {
+                                                    setDesktopSidebarOpen(false);
                                                 }
                                             }}
                                             className={cn(
@@ -211,58 +233,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                 )}
             </AnimatePresence>
 
-            {/* Mobile Bottom Menu (Floating) */}
-            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-sm">
-                <div className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-2 px-4 overflow-x-auto hide-scrollbar mask-linear-fade flex items-center gap-2">
-                    <nav className="flex justify-start sm:justify-between items-center w-max sm:w-full min-w-full gap-2">
-                        {navItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = activeTab === item.id;
 
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        onTabChange(item.id as NavTab);
-                                        if (item.id === 'chat_history' && onSwitchToChat) {
-                                            onSwitchToChat();
-                                        }
-                                    }}
-                                    className={cn(
-                                        "p-3 rounded-2xl transition-all duration-300 relative flex flex-col items-center gap-1 cursor-pointer",
-                                        isActive
-                                            ? theme.textPrimary
-                                            : "text-gray-400"
-                                    )}
-                                >
-                                    <Icon className={cn("w-6 h-6 transition-transform", isActive && "scale-110")} />
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="activeBottom"
-                                            className={cn("absolute -bottom-1 w-1 h-1 rounded-full", theme.borderActive)}
-                                        />
-                                    )}
-                                </button>
-                            );
-                        })}
-
-                        {onSwitchToChat && (
-                            <>
-                                <div className="w-px h-8 bg-gray-200 mx-1" />
-                                <button
-                                    onClick={() => {
-                                        onSwitchToChat();
-                                        window.dispatchEvent(new CustomEvent('start-voice-chat'));
-                                    }}
-                                    className="p-3 rounded-2xl transition-all duration-300 relative flex flex-col items-center gap-1 cursor-pointer text-blue-500 hover:text-blue-600"
-                                >
-                                    <Mic className="w-6 h-6" />
-                                </button>
-                            </>
-                        )}
-                    </nav>
-                </div>
-            </div>
         </>
     );
 }

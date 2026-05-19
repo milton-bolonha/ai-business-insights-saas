@@ -18,7 +18,16 @@ export async function POST(req: NextRequest) {
         // Fetch the user's global role from MongoDB
         const { db } = await import("@/lib/db/mongodb");
         const userDoc = targetUserId ? await db.findOne("users", { userId: targetUserId }) as any : null;
-        const globalRole = userDoc?.role || (targetUserId ? "user" : "guest");
+        let globalRole = userDoc?.role || (targetUserId ? "user" : "guest");
+
+        // Sync admin role dynamically if email matches SUPER_ADMIN_EMAIL
+        if (email && process.env.SUPER_ADMIN_EMAIL && email === process.env.SUPER_ADMIN_EMAIL) {
+            if (userDoc && userDoc.role !== "admin") {
+                console.log(`[UsageSync] 👑 Self-healing: Upgrading super admin ${email} to admin role in MongoDB`);
+                await db.updateOne("users", { userId: targetUserId }, { $set: { role: "admin" } });
+                globalRole = "admin";
+            }
+        }
 
         return new NextResponse(
             JSON.stringify({
