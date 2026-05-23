@@ -1,0 +1,1471 @@
+vamos mudar os nomes dos app tags ali na home e no sistema tipo love writers, business insights, todos vão começar com I/O no label só sabe..
+I/O - Love Writers
+I/O - Store
+I/O - Ranking Product
+e por aí vai
+vamos criar um chamado 
+
+I/O - Smart Survey
+
+leia pra isso io-form-surveys tem 3 txt na raiz com esse nome, eles vão te guiar para construirmos um tipo de typeform saas com um template nr1 survey e um algoritmo de importancia e survei inteligente e metodologia.
+
+import React, { useState, useEffect, useRef } from "react";
+import {
+  ShieldAlert, RefreshCw, Target, Star, HandHeart,
+  SlidersHorizontal, Scale, Zap, TrendingDown, TrendingUp,
+  Users, RadioTower, Home, ChevronRight, ChevronLeft,
+  CheckCircle2, AlertTriangle, FileText, ArrowLeft,
+  X, Clock, PlayCircle, Plus, Settings, Edit3, Trash2,
+  List, ListOrdered, AlignLeft, Activity, Building2, User2,
+  Briefcase, Save, Check, Palette, BarChart3, 
+  AlertCircle, ShieldCheck, Share2, SplitSquareHorizontal, Download,
+  BookOpen, Calculator, Network, FileBadge2
+} from "lucide-react";
+
+// Icons available for form templates
+const AVAILABLE_ICONS = [
+  { id: "FileText", icon: FileText }, { id: "Target", icon: Target },
+  { id: "Star", icon: Star }, { id: "Users", icon: Users },
+  { id: "ShieldAlert", icon: ShieldAlert }, { id: "Activity", icon: Activity },
+  { id: "HandHeart", icon: HandHeart }, { id: "Scale", icon: Scale }
+];
+
+const ACCENT_COLORS = [
+  "#2c3e50", "#e74c3c", "#8e44ad", "#2980b9",
+  "#27ae60", "#f39c12", "#d35400", "#16a085"
+];
+
+// Utility functions
+function generateId() { return Math.random().toString(36).substring(2, 9); }
+function loadData(key, defaultVal) {
+  try { return JSON.parse(localStorage.getItem(`nr1_v4_${key}`) || JSON.stringify(defaultVal)); } catch { return defaultVal; }
+}
+function saveData(key, data) {
+  try { localStorage.setItem(`nr1_v4_${key}`, JSON.stringify(data)); } catch {}
+}
+
+// Risk Level classification (Semáforo NR-1)
+function getRiskLevel(score) {
+  if (score === null || score === undefined || isNaN(score)) return { label: "Sem Dados", color: "text-neutral-500", bg: "bg-neutral-100", border: "border-neutral-200", hex: "#9ca3af" };
+  if (score < 4.0) return { label: "Risco Baixo (OK)", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", hex: "#10b981" };
+  if (score < 7.0) return { label: "Alerta Moderado", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", hex: "#f59e0b" };
+  return { label: "Risco Crítico", color: "text-red-700", bg: "bg-red-50", border: "border-red-200", hex: "#ef4444" };
+}
+
+// Check for high standard deviation (Polarization/Consensus Rupture)
+function getPolarizationAlert(stdDev) {
+  if (stdDev === null || stdDev === undefined || isNaN(stdDev)) return null;
+  // Se o desvio for >= 2.0 na escala de 10, o setor está dividido
+  if (stdDev >= 2.0) return { label: "Opiniões Divididas", color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200", icon: SplitSquareHorizontal };
+  return null;
+}
+
+const INITIAL_TEMPLATE = {
+  id: "template_demo",
+  title: "Avaliação Preliminar de Risco (NR-1)",
+  desc: "Pesquisa estruturada para composição do laudo de PGR e mapeamento de riscos.",
+  accent: "#2c3e50",
+  iconId: "ShieldAlert",
+  questions: [
+    { id: "q1", type: "scale_0_10", label: "Como você avalia a carga e o ritmo de trabalho atual?", minLabel: "Excelente (Saudável)", maxLabel: "Péssimo (Sobrecarga)", weight: 3 },
+    { id: "q2", type: "scale_0_10", label: "O seu ambiente físico favorece a concentração e evita fadiga?", minLabel: "Sim, favorece muito", maxLabel: "Não, prejudica muito", weight: 2 },
+    { id: "q3", type: "multiple_choice_single", label: "Sente dores relacionadas à postura?", options: ["Não", "Às vezes", "Sim, frequentemente"], weight: 1 }
+  ]
+};
+
+// Clean, zero-distraction UI for the employee taking the survey
+function ScaleQ({ q, val, onChange, accent }) {
+  return (
+    <div className="flex flex-col items-center text-center w-full">
+      <p className="text-xl md:text-2xl font-medium text-neutral-900 leading-snug mb-10 max-w-2xl" style={{ fontFamily: "Georgia, serif" }}>{q.label}</p>
+      <div className="flex flex-wrap justify-center gap-2.5 w-full max-w-xl">
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+          <button
+            key={i} onClick={() => onChange(i)}
+            style={{
+              width: 48, height: 48, borderRadius: 10, cursor: "pointer", fontSize: 16,
+              border: val === i ? `2.5px solid ${accent}` : "1.5px solid #e2e2de",
+              background: val === i ? accent : "#ffffff",
+              color: val === i ? "#ffffff" : "#444444",
+              fontWeight: val === i ? 700 : 500,
+              boxShadow: val === i ? `0 6px 16px ${accent}40` : "0 2px 4px rgba(0,0,0,0.02)",
+              transform: val === i ? "scale(1.05)" : "scale(1)",
+              transition: "all .15s ease"
+            }}
+            className="flex items-center justify-center hover:scale-105 active:scale-95"
+          >
+            {i}
+          </button>
+        ))}
+      </div>
+      <div className="flex justify-between w-full mt-6 text-xs font-bold text-neutral-400 max-w-lg px-2 uppercase tracking-wide">
+        <span>{q.minLabel || "0"}</span>
+        <span>{q.maxLabel || "10"}</span>
+      </div>
+    </div>
+  );
+}
+
+function SingleQ({ q, val, onChange, accent }) {
+  return (
+    <div className="flex flex-col items-center w-full">
+      <p className="text-xl md:text-2xl font-medium text-neutral-900 leading-snug text-center mb-8 max-w-2xl" style={{ fontFamily: "Georgia, serif" }}>{q.label}</p>
+      <div className="flex flex-col gap-3 w-full max-w-md">
+        {(q.options || []).map((o, i) => (
+          <button
+            key={i} onClick={() => onChange(i)}
+            style={{
+              padding: "16px 20px", borderRadius: 10, textAlign: "left", cursor: "pointer",
+              border: val === i ? `2px solid ${accent}` : "1.5px solid #e2e2de",
+              background: val === i ? `${accent}0a` : "#ffffff",
+              color: val === i ? accent : "#333333",
+              fontWeight: val === i ? 600 : 400, fontSize: 15, display: "flex", alignItems: "center", gap: 14,
+              boxShadow: val === i ? `0 4px 12px ${accent}15` : "0 2px 4px rgba(0,0,0,0.02)",
+              transition: "all .15s ease"
+            }}
+            className="hover:border-neutral-300"
+          >
+            <div style={{
+              width: 28, height: 28, borderRadius: 6, flexShrink: 0, fontSize: 12, fontWeight: 700,
+              background: val === i ? accent : "#f2f2f0", color: val === i ? "#ffffff" : "#777777",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              {String.fromCharCode(65 + i)}
+            </div>
+            {o}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MultiQ({ q, val, onChange, accent }) {
+  const arr = Array.isArray(val) ? val : [];
+  function toggle(i) {
+    const a = [...arr];
+    const p = a.indexOf(i);
+    p === -1 ? a.push(i) : a.splice(p, 1);
+    onChange(a);
+  }
+
+  return (
+    <div className="flex flex-col items-center w-full">
+      <p className="text-xl md:text-2xl font-medium text-neutral-900 leading-snug text-center mb-2 max-w-2xl" style={{ fontFamily: "Georgia, serif" }}>{q.label}</p>
+      <p className="text-[11px] text-neutral-400 font-bold uppercase tracking-wider mb-8">Múltipla escolha (marque aplicáveis):</p>
+      <div className="flex flex-col gap-3 w-full max-w-md">
+        {(q.options || []).map((o, i) => {
+          const sel = arr.includes(i);
+          return (
+            <button
+              key={i} onClick={() => toggle(i)}
+              style={{
+                padding: "16px 20px", borderRadius: 10, textAlign: "left", cursor: "pointer",
+                border: sel ? `2px solid ${accent}` : "1.5px solid #e2e2de",
+                background: sel ? `${accent}0a` : "#ffffff",
+                color: sel ? accent : "#333333", fontWeight: sel ? 600 : 400, fontSize: 15,
+                display: "flex", alignItems: "center", gap: 14, transition: "all .15s ease",
+                boxShadow: sel ? `0 4px 12px ${accent}15` : "0 2px 4px rgba(0,0,0,0.02)"
+              }}
+              className="hover:border-neutral-300"
+            >
+              <div style={{
+                width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                border: sel ? `2px solid ${accent}` : "1.5px solid #cccccc",
+                background: sel ? accent : "#ffffff",
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}>
+                {sel && <CheckCircle2 size={16} color="#ffffff" />}
+              </div>
+              {o}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TextQ({ q, val, onChange }) {
+  return (
+    <div className="flex flex-col items-center w-full">
+      <p className="text-xl md:text-2xl font-medium text-neutral-900 leading-snug text-center mb-8 max-w-2xl" style={{ fontFamily: "Georgia, serif" }}>{q.label}</p>
+      <textarea
+        value={val || ""} onChange={e => onChange(e.target.value)}
+        placeholder={q.placeholder || "Escreva livremente..."}
+        className="w-full max-w-lg min-h-[160px] border border-neutral-200 rounded-xl p-5 text-base font-normal text-neutral-800 focus:outline-none focus:border-neutral-500 bg-neutral-50/50 resize-y shadow-[0_2px_10px_rgba(0,0,0,0.02)]"
+      />
+    </div>
+  );
+}
+
+function FormView({ template, savedAnswers, onSave, onClose }) {
+  const [qIdx, setQIdx] = useState(0);
+  const [answers, setAnswers] = useState(savedAnswers || {});
+  const [animKey, setAnimKey] = useState(0);
+
+  const qs = template.questions || [];
+  const isResult = qIdx >= qs.length;
+  const q = qs[qIdx];
+  const val = answers[q?.id];
+  const accent = template.accent || "#2980b9";
+  const IconDef = AVAILABLE_ICONS.find(i => i.id === template.iconId)?.icon || FileText;
+
+  function setAns(qId, v) {
+    const next = { ...answers, [qId]: v };
+    setAnswers(next);
+    onSave(next, false);
+  }
+
+  function go(d) {
+    setAnimKey(k => k + 1);
+    setQIdx(i => i + d);
+  }
+
+  function finish() {
+    onSave(answers, true);
+    setQIdx(qs.length);
+  }
+
+  function renderQ() {
+    if (!q) return null;
+    if (q.type === "scale_0_10") return <ScaleQ q={q} val={val} onChange={v => setAns(q.id, v)} accent={accent} />;
+    if (q.type === "multiple_choice_single") return <SingleQ q={q} val={val} onChange={v => setAns(q.id, v)} accent={accent} />;
+    if (q.type === "multiple_choice_multiple") return <MultiQ q={q} val={val} onChange={v => setAns(q.id, v)} accent={accent} />;
+    if (q.type === "text") return <TextQ q={q} val={val} onChange={v => setAns(q.id, v)} />;
+    return <div className="text-sm text-neutral-500">Tipo não suportado.</div>;
+  }
+
+  const canGoNext = val !== undefined && val !== "" && (Array.isArray(val) ? val.length > 0 : true);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col bg-white animate-[fadeIn_0.2s_ease-out]">
+      <div className="relative z-10 flex items-center gap-4 px-6 py-4 border-b border-neutral-100 bg-white">
+        <button onClick={onClose} className="border border-neutral-200 hover:bg-neutral-50 rounded-md w-8 h-8 flex items-center justify-center cursor-pointer text-neutral-500 transition-colors">
+          <ArrowLeft size={14} />
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: `${accent}12` }}>
+            <IconDef size={16} color={accent} />
+          </div>
+          <h2 className="font-bold text-sm text-neutral-900 tracking-wide">{template.title}</h2>
+        </div>
+        {!isResult && qs.length > 0 && (
+          <div className="ml-auto text-[11px] font-bold text-neutral-400 uppercase tracking-widest">
+            {qIdx + 1} / {qs.length}
+          </div>
+        )}
+      </div>
+
+      {!isResult && qs.length > 0 && (
+        <div className="relative z-10 h-1.5 bg-neutral-100">
+          <div className="h-full transition-all duration-300 ease-out" style={{ background: accent, width: `${((qIdx + 1) / qs.length) * 100}%` }} />
+        </div>
+      )}
+
+      <div className="relative z-1 flex-1 overflow-y-auto px-6 py-12 flex flex-col items-center justify-center bg-[#faf9f7]">
+        <div className="w-full flex justify-center">
+          {qs.length === 0 ? (
+            <div className="text-center text-neutral-500 py-10">Formulário vazio.</div>
+          ) : isResult ? (
+            <div className="flex flex-col items-center justify-center text-center py-6 animate-[fadeIn_0.3s_ease-out]">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-sm" style={{ background: `${accent}14` }}>
+                <CheckCircle2 size={40} color={accent} />
+              </div>
+              <h2 className="text-3xl font-semibold text-neutral-900 mb-3" style={{ fontFamily: "Georgia, serif" }}>Pesquisa Finalizada</h2>
+              <p className="text-base text-neutral-500 max-w-md leading-relaxed mb-10">Respostas salvas com sucesso. Os dados já estão disponíveis no painel de resultados.</p>
+              <button onClick={onClose} className="bg-neutral-900 hover:bg-black text-white px-8 py-4 rounded-xl text-sm font-bold uppercase tracking-wider cursor-pointer transition-colors shadow-xl hover:shadow-2xl hover:-translate-y-0.5">
+                Retornar ao Hub
+              </button>
+            </div>
+          ) : (
+            <div key={animKey} className="animate-[fadeIn_0.2s_ease-out] w-full flex flex-col items-center">
+              {renderQ()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!isResult && qs.length > 0 && (
+        <div className="relative z-10 flex items-center justify-center px-6 py-5 border-t border-neutral-100 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+          <div className="w-full max-w-2xl flex items-center justify-between">
+            <div className="flex gap-1.5">
+              {qs.map((_, i) => (
+                <div key={i} className="h-1.5 rounded-full transition-all duration-300"
+                  style={{ background: i <= qIdx ? accent : "#e5e5e0", width: i === qIdx ? 24 : 8, opacity: i < qIdx ? 0.4 : 1 }}
+                />
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => go(-1)} disabled={qIdx === 0}
+                className="border border-neutral-200 hover:bg-neutral-50 disabled:opacity-30 disabled:hover:bg-transparent text-neutral-600 px-5 py-3 rounded-lg cursor-pointer flex items-center gap-2 text-xs font-bold transition-all"
+              >
+                <ChevronLeft size={16} /> Voltar
+              </button>
+              {qIdx === qs.length - 1 ? (
+                <button
+                  onClick={finish} disabled={!canGoNext}
+                  style={{ background: canGoNext ? accent : '#d4d4d4' }}
+                  className="text-white px-6 py-3 rounded-lg flex items-center gap-2 text-xs font-bold transition-all shadow-md cursor-pointer hover:brightness-110"
+                >
+                  Concluir <CheckCircle2 size={16} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => go(1)} disabled={!canGoNext}
+                  style={{ background: canGoNext ? accent : '#d4d4d4' }}
+                  className="text-white px-6 py-3 rounded-lg flex items-center gap-2 text-xs font-bold transition-all shadow-md cursor-pointer hover:brightness-110"
+                >
+                  Próximo <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomConfirm({ isOpen, title, message, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[200] bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-[fadeIn_0.1s_ease-out]">
+      <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center border border-neutral-100">
+        <AlertTriangle size={36} className="text-red-500 mx-auto mb-4" />
+        <h3 className="font-bold text-lg text-neutral-900 mb-2">{title}</h3>
+        <p className="text-sm text-neutral-500 mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 px-4 py-2.5 border border-neutral-200 rounded-lg text-neutral-700 font-semibold hover:bg-neutral-50 transition-colors">Cancelar</button>
+          <button onClick={onConfirm} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors shadow-md">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SetupModal({ entities, interviewees, onConfirm, onClose }) {
+  const [isNewEntity, setIsNewEntity] = useState(entities.length === 0);
+  const [entityName, setEntityName] = useState(entities.length > 0 ? entities[0] : "");
+  const [isNewPerson, setIsNewPerson] = useState(true);
+  const [personData, setPersonData] = useState({ name: "", role: "", sector: "" });
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const activeEntityPeople = interviewees.filter(i => i.entity === entityName);
+
+  useEffect(() => {
+    if (!isNewEntity && activeEntityPeople.length > 0) {
+      setIsNewPerson(false);
+      setPersonData(activeEntityPeople[0]);
+    } else {
+      setIsNewPerson(true);
+      setPersonData({ name: "", role: "", sector: "" });
+    }
+  }, [entityName, isNewEntity, activeEntityPeople.length]);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!entityName.trim() || (!isNewPerson && !personData.id) || (isNewPerson && (!personData.name.trim() || !personData.sector.trim()))) {
+      setErrorMsg("Preencha o Nome e Setor (obrigatórios) para iniciar.");
+      return;
+    }
+    setErrorMsg("");
+    let finalPerson = { ...personData };
+    if (isNewPerson) {
+      finalPerson.id = `p_${generateId()}`;
+      finalPerson.entity = entityName;
+    }
+    onConfirm(entityName, finalPerson, isNewEntity, isNewPerson);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-[fadeIn_0.15s_ease-out]">
+      <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col">
+        <div className="p-6 bg-neutral-900 text-white relative">
+          <button onClick={onClose} className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors cursor-pointer"><X size={18} /></button>
+          <div className="text-[10px] tracking-widest uppercase text-emerald-400 font-bold mb-1.5 flex items-center gap-1.5"><ShieldCheck size={12}/> Preparação Inicial</div>
+          <h2 className="font-serif text-2xl font-semibold">Identificação do Entrevistado</h2>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-[#faf9f7]">
+          {errorMsg && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-bold border border-red-100 flex items-center gap-2 shadow-sm">
+              <AlertCircle size={14}/> {errorMsg}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="flex items-center justify-between text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+              <span className="flex items-center gap-1.5"><Building2 size={12}/> Empresa / Entidade</span>
+              {entities.length > 0 && (
+                <button type="button" onClick={() => setIsNewEntity(!isNewEntity)} className="text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer">
+                  {isNewEntity ? "Selecionar existente" : "+ Nova Entidade"}
+                </button>
+              )}
+            </label>
+            {isNewEntity ? (
+              <input autoFocus type="text" value={entityName} onChange={e => setEntityName(e.target.value)} placeholder="Nome da Empresa" className="w-full border border-neutral-300 rounded-lg p-3 text-sm bg-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow" />
+            ) : (
+              <select value={entityName} onChange={e => setEntityName(e.target.value)} className="w-full border border-neutral-300 rounded-lg p-3 text-sm bg-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                {entities.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            )}
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-neutral-200">
+            <label className="flex items-center justify-between text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+              <span className="flex items-center gap-1.5"><User2 size={12}/> Colaborador</span>
+              {!isNewEntity && activeEntityPeople.length > 0 && (
+                <button type="button" onClick={() => setIsNewPerson(!isNewPerson)} className="text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer">
+                  {isNewPerson ? "Selecionar existente" : "+ Novo Colaborador"}
+                </button>
+              )}
+            </label>
+            {isNewPerson ? (
+              <div className="space-y-3">
+                <input type="text" value={personData.name} onChange={e => setPersonData({...personData, name: e.target.value})} placeholder="Nome completo *" className="w-full border border-neutral-300 rounded-lg p-3 text-sm bg-white focus:outline-none focus:border-emerald-500 transition-shadow" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" value={personData.sector} onChange={e => setPersonData({...personData, sector: e.target.value})} placeholder="Setor *" className="w-full border border-neutral-300 rounded-lg p-3 text-sm bg-white focus:outline-none focus:border-emerald-500 transition-shadow" />
+                  <input type="text" value={personData.role} onChange={e => setPersonData({...personData, role: e.target.value})} placeholder="Cargo (Opcional)" className="w-full border border-neutral-300 rounded-lg p-3 text-sm bg-white focus:outline-none focus:border-emerald-500 transition-shadow" />
+                </div>
+              </div>
+            ) : (
+              <select value={personData.id || ""} onChange={e => { const p = activeEntityPeople.find(x => x.id === e.target.value); if (p) setPersonData(p); }} className="w-full border border-neutral-300 rounded-lg p-3 text-sm bg-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                {activeEntityPeople.map(p => <option key={p.id} value={p.id}>{p.name} - {p.sector}</option>)}
+              </select>
+            )}
+          </div>
+
+          <div className="pt-6 mt-6 border-t border-neutral-200">
+            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all transform hover:-translate-y-0.5 cursor-pointer">
+              <PlayCircle size={18} /> Iniciar Pesquisa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function FormBuilder({ initialTemplate, onSave, onCancel }) {
+  const [template, setTemplate] = useState(initialTemplate || {
+    id: `tpl_${generateId()}`, title: "", desc: "", accent: ACCENT_COLORS[0], iconId: "ShieldAlert", questions: []
+  });
+  const [activeTab, setActiveTab] = useState("meta");
+  const [editingQ, setEditingQ] = useState(null);
+
+  function updateTemplate(key, value) { setTemplate(prev => ({ ...prev, [key]: value })); }
+  
+  function addQuestion(type) {
+    const newQ = { 
+      id: `q_${generateId()}`, type, label: "Nova Pergunta...", weight: 2, // Default weight: Medium
+      ...(type.includes("choice") ? { options: ["Opção 1", "Opção 2"] } : {}),
+      ...(type === "scale_0_10" ? { minLabel: "Discordo", maxLabel: "Concordo" } : {})
+    };
+    setTemplate(prev => ({ ...prev, questions: [...prev.questions, newQ] }));
+    setEditingQ(newQ.id);
+    setActiveTab("questions");
+  }
+
+  function updateQuestion(qId, updates) {
+    setTemplate(prev => ({ ...prev, questions: prev.questions.map(q => q.id === qId ? { ...q, ...updates } : q) }));
+  }
+
+  function deleteQuestion(qId) {
+    setTemplate(prev => ({ ...prev, questions: prev.questions.filter(q => q.id !== qId) }));
+    if (editingQ === qId) setEditingQ(null);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-50 animate-[fadeIn_0.1s_ease-out]">
+      <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between shadow-sm z-10">
+        <div className="flex items-center gap-4">
+          <button onClick={onCancel} className="text-neutral-500 hover:text-neutral-800 transition-colors p-1 cursor-pointer bg-neutral-100 rounded-md hover:bg-neutral-200"><ArrowLeft size={18}/></button>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Estúdio de Criação</div>
+            <h2 className="font-serif text-lg font-semibold text-neutral-900">{template.title || "Novo Formulário"}</h2>
+          </div>
+        </div>
+        <button onClick={() => onSave(template)} disabled={!template.title.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-md transition-all disabled:opacity-50 cursor-pointer">
+          <Save size={14} /> Salvar Formulário
+        </button>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - Options */}
+        <div className="w-80 bg-white border-r border-neutral-200 flex flex-col z-0 shadow-sm shrink-0">
+          <div className="flex border-b border-neutral-100">
+            <button onClick={() => setActiveTab("meta")} className={`flex-1 py-3.5 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${activeTab === 'meta' ? 'text-neutral-900 border-b-2 border-neutral-900 bg-neutral-50/50' : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600'}`}>Configurações</button>
+            <button onClick={() => setActiveTab("questions")} className={`flex-1 py-3.5 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${activeTab === 'questions' ? 'text-neutral-900 border-b-2 border-neutral-900 bg-neutral-50/50' : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600'}`}>Perguntas ({template.questions.length})</button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5">
+            {activeTab === "meta" && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1.5">Título do Módulo</label>
+                  <input type="text" value={template.title} onChange={e => updateTemplate("title", e.target.value)} placeholder="Ex: Avaliação Ergonômica" className="w-full border border-neutral-300 rounded-md p-2.5 text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1.5">Descrição / Objetivo</label>
+                  <textarea value={template.desc} onChange={e => updateTemplate("desc", e.target.value)} className="w-full border border-neutral-300 rounded-md p-2.5 text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-emerald-500 min-h-[100px] resize-y transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-2 flex items-center gap-1.5"><Palette size={12}/> Identidade Visual (Cor)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ACCENT_COLORS.map(c => (
+                      <button key={c} onClick={() => updateTemplate("accent", c)} className={`w-8 h-8 rounded-full border-2 transition-transform cursor-pointer ${template.accent === c ? 'border-neutral-900 scale-110 shadow-md' : 'border-transparent hover:scale-110 shadow-sm'}`} style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "questions" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => addQuestion("scale_0_10")} className="bg-neutral-50 border border-neutral-200 hover:border-emerald-400 p-3 rounded-lg flex flex-col items-center justify-center gap-2 text-[10px] font-bold text-neutral-600 uppercase transition-all cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 shadow-sm"><SlidersHorizontal size={18}/> Escala (0-10)</button>
+                  <button onClick={() => addQuestion("multiple_choice_single")} className="bg-neutral-50 border border-neutral-200 hover:border-emerald-400 p-3 rounded-lg flex flex-col items-center justify-center gap-2 text-[10px] font-bold text-neutral-600 uppercase transition-all cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 shadow-sm"><List size={18}/> Única Escolha</button>
+                  <button onClick={() => addQuestion("multiple_choice_multiple")} className="bg-neutral-50 border border-neutral-200 hover:border-emerald-400 p-3 rounded-lg flex flex-col items-center justify-center gap-2 text-[10px] font-bold text-neutral-600 uppercase transition-all cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 shadow-sm"><ListOrdered size={18}/> Múltipla</button>
+                  <button onClick={() => addQuestion("text")} className="bg-neutral-50 border border-neutral-200 hover:border-emerald-400 p-3 rounded-lg flex flex-col items-center justify-center gap-2 text-[10px] font-bold text-neutral-600 uppercase transition-all cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 shadow-sm"><AlignLeft size={18}/> Texto Aberto</button>
+                </div>
+                <div className="border-t border-neutral-200 pt-4 space-y-2.5">
+                  {template.questions.map((q, idx) => (
+                    <div key={q.id} onClick={() => setEditingQ(q.id)} className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${editingQ === q.id ? 'border-emerald-500 bg-emerald-50 shadow-md transform scale-[1.02]' : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'}`}>
+                      <div className="truncate pr-2 w-full">
+                        <div className="text-xs font-bold text-neutral-800 truncate mb-1">{idx + 1}. {q.label}</div>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-[9px] text-neutral-500 uppercase tracking-widest bg-neutral-100 px-1.5 py-0.5 rounded">{q.type.replace(/_/g, ' ')}</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${q.weight === 3 ? 'bg-red-100 text-red-700' : q.weight === 2 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            Imp. {q.weight === 3 ? 'Alta' : q.weight === 2 ? 'Média' : 'Baixa'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Area - Question Editor */}
+        <div className="flex-1 bg-[#eae8e3] p-6 md:p-10 overflow-y-auto relative">
+          <div className="max-w-3xl mx-auto">
+            {!editingQ ? (
+              <div className="flex flex-col items-center justify-center h-full text-center mt-32 opacity-60">
+                <Target size={56} className="text-neutral-400 mb-5" />
+                <h3 className="text-xl font-serif font-bold text-neutral-600">Detalhes da Pergunta</h3>
+                <p className="text-sm text-neutral-500 max-w-sm mt-2 leading-relaxed">Selecione uma pergunta ao lado para configurar o texto, opções e o grau de importância.</p>
+              </div>
+            ) : (
+              (() => {
+                const q = template.questions.find(x => x.id === editingQ);
+                if (!q) return null;
+                return (
+                  <div className="bg-white rounded-xl shadow-xl border border-neutral-200 overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+                    <div className="bg-neutral-900 px-6 py-4 flex items-center justify-between">
+                      <span className="text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"><Edit3 size={16}/> Configuração da Pergunta</span>
+                      <button onClick={() => deleteQuestion(q.id)} className="text-red-400 hover:text-white hover:bg-red-600 p-1.5 bg-neutral-800 rounded transition-colors cursor-pointer" title="Excluir Pergunta"><Trash2 size={16}/></button>
+                    </div>
+                    
+                    <div className="p-6 md:p-8 space-y-8">
+                      <div>
+                        <label className="block text-[11px] font-bold text-neutral-500 uppercase mb-2">Enunciado (Visível ao Colaborador)</label>
+                        <input type="text" value={q.label} autoFocus onChange={e => updateQuestion(q.id, { label: e.target.value })} className="w-full border-b-2 border-neutral-200 p-2 text-xl font-serif text-neutral-900 focus:outline-none focus:border-emerald-500 bg-transparent transition-colors" />
+                      </div>
+
+                      {/* Importância / Peso (Avaliador define) */}
+                      <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-5 shadow-sm">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <label className="flex items-center gap-1.5 text-xs font-bold text-amber-800 uppercase tracking-wider"><AlertTriangle size={16}/> Grau de Importância</label>
+                            <p className="text-[11px] text-amber-700/80 mt-1.5 max-w-lg leading-relaxed">Este valor define o quanto esta pergunta impacta na nota final de risco da empresa. <strong>O colaborador não visualiza essa importância.</strong></p>
+                          </div>
+                        </div>
+                        <div className="flex bg-white rounded-lg border border-amber-200 p-1 shadow-sm max-w-md">
+                          {[
+                            { val: 1, label: "Baixa", color: "#10b981", bg: "#ecfdf5" },
+                            { val: 2, label: "Média", color: "#f59e0b", bg: "#fffbeb" },
+                            { val: 3, label: "Alta", color: "#ef4444", bg: "#fef2f2" }
+                          ].map(opt => (
+                            <button
+                              key={opt.val}
+                              onClick={() => updateQuestion(q.id, { weight: opt.val })}
+                              className="flex-1 py-2.5 text-xs font-bold rounded-md transition-all duration-200 cursor-pointer"
+                              style={{
+                                backgroundColor: q.weight === opt.val ? opt.color : "transparent",
+                                color: q.weight === opt.val ? "#fff" : "#666"
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {q.type.includes("choice") && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-neutral-500 uppercase mb-3">Opções de Resposta</label>
+                          <div className="space-y-3">
+                            {q.options.map((opt, i) => (
+                              <div key={i} className="flex items-center gap-3">
+                                <span className="w-8 h-8 rounded bg-neutral-100 text-[11px] font-bold text-neutral-500 flex items-center justify-center shrink-0 border border-neutral-200">{String.fromCharCode(65 + i)}</span>
+                                <input type="text" value={opt} onChange={e => {
+                                  const newOpts = [...q.options];
+                                  newOpts[i] = e.target.value;
+                                  updateQuestion(q.id, { options: newOpts });
+                                }} className="flex-1 border border-neutral-300 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500 shadow-sm" />
+                                <button onClick={() => {
+                                  const newOpts = q.options.filter((_, idx) => idx !== i);
+                                  updateQuestion(q.id, { options: newOpts });
+                                }} className="text-neutral-400 hover:text-red-500 p-2 cursor-pointer transition-colors bg-neutral-50 hover:bg-red-50 rounded-lg"><X size={18}/></button>
+                              </div>
+                            ))}
+                            <button onClick={() => updateQuestion(q.id, { options: [...q.options, `Nova Opção ${q.options.length + 1}`] })} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 mt-3 inline-flex items-center gap-1.5 cursor-pointer bg-emerald-50 px-3 py-2 rounded-md transition-colors"><Plus size={14}/> Adicionar Opção</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {q.type === "scale_0_10" && (
+                        <div className="grid grid-cols-2 gap-5">
+                          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
+                            <label className="block text-[11px] font-bold text-neutral-500 uppercase mb-2">Descrição (Nota 0)</label>
+                            <input type="text" value={q.minLabel || ""} onChange={e => updateQuestion(q.id, { minLabel: e.target.value })} placeholder="Ex: Excelente" className="w-full border border-neutral-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500" />
+                          </div>
+                          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100">
+                            <label className="block text-[11px] font-bold text-neutral-500 uppercase mb-2">Descrição (Nota 10)</label>
+                            <input type="text" value={q.maxLabel || ""} onChange={e => updateQuestion(q.id, { maxLabel: e.target.value })} placeholder="Ex: Risco Alto" className="w-full border border-neutral-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MethodologyView() {
+  return (
+    <div className="flex-1 max-w-[1000px] w-full mx-auto p-6 md:p-8 animate-[fadeIn_0.2s_ease-out]">
+      <div className="mb-8 border-b border-neutral-200 pb-6">
+        <h1 className="font-serif text-3xl font-bold text-neutral-900 mb-2">Metodologia e Confiabilidade Analítica</h1>
+        <p className="text-neutral-600 text-sm max-w-2xl leading-relaxed">
+          Compreenda o motor de cálculo por trás do sistema e como as respostas se transformam em indicativos 
+          seguros e auditáveis para o Gerenciamento de Riscos Ocupacionais (GRO/PGR).
+        </p>
+      </div>
+
+      <div className="space-y-8">
+        
+        {/* Section 1: Algoritmo Base */}
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+              <Calculator size={24} />
+            </div>
+            <div>
+              <h2 className="font-serif text-xl font-bold text-neutral-900 mb-2">1. O Cálculo de Risco (Média Ponderada)</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                O sistema não utiliza uma média simples. Para refletir a realidade operacional, utilizamos uma <strong>Média Ponderada Estratégica</strong>. 
+                Isso significa que perguntas identificadas pelo avaliador como mais críticas (Importância Alta) têm um peso matemático maior no resultado final do colaborador.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-neutral-50 rounded-xl p-6 border border-neutral-100 flex flex-col md:flex-row items-center gap-6">
+             <div className="flex-1 text-center md:text-left">
+               <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">A Fórmula</div>
+               <div className="text-lg font-mono text-neutral-800 bg-white border border-neutral-200 py-3 px-6 rounded-lg inline-block shadow-sm">
+                 Score = Σ (Resposta × Importância) / Σ Importância
+               </div>
+             </div>
+             <div className="flex-1 text-sm text-neutral-600 space-y-2">
+                <p><strong>Resposta:</strong> A nota de 0 a 10 dada pelo colaborador.</p>
+                <p><strong>Importância:</strong> O peso (1 a 3) definido pelo avaliador no estúdio.</p>
+             </div>
+          </div>
+        </div>
+
+        {/* Section 2: Hierarquia Organizacional */}
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+              <Network size={24} />
+            </div>
+            <div>
+              <h2 className="font-serif text-xl font-bold text-neutral-900 mb-2">2. A Estrutura Hierárquica (Do Micro ao Macro)</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                O diagnóstico da empresa não é um número isolado. Ele é construído em três camadas que permitem investigar onde o risco nasce.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:border-blue-300 transition-colors">
+              <div className="text-blue-600 mb-3"><User2 size={20}/></div>
+              <h3 className="font-bold text-neutral-900 mb-1.5 text-sm">Nível 1: Indivíduo</h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">A média ponderada direta das respostas do colaborador.</p>
+            </div>
+            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:border-blue-300 transition-colors">
+              <div className="text-blue-600 mb-3"><Users size={20}/></div>
+              <h3 className="font-bold text-neutral-900 mb-1.5 text-sm">Nível 2: Setor</h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">A média consolidada de todos os colaboradores alocados naquele posto/departamento.</p>
+            </div>
+            <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm hover:border-blue-300 transition-colors">
+              <div className="text-blue-600 mb-3"><Building2 size={20}/></div>
+              <h3 className="font-bold text-neutral-900 mb-1.5 text-sm">Nível 3: Empresa</h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">A média térmica global da organização, integrando todos os setores.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Análise de Divergência */}
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+              <SplitSquareHorizontal size={24} />
+            </div>
+            <div>
+              <h2 className="font-serif text-xl font-bold text-neutral-900 mb-2">3. Análise de Divergência (Opiniões Divididas)</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Médias simples podem mascarar a realidade. O sistema monitora constantemente a variância e o desvio padrão estatístico dentro de cada setor.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-neutral-900 text-white rounded-xl p-6 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none"><Activity size={100} /></div>
+             <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl relative z-10">
+               Se a média do setor é 5 (Alerta Moderado), mas metade da equipe marcou 10 (Sobrecarga extrema) e a outra metade marcou 0 (Ambiente excelente), o sistema reconhece a ruptura e dispara a tag <span className="inline-block bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-xs font-bold mx-1 border border-indigo-400/30">Opiniões Divididas</span>. Isso indica falha de consenso, tratamentos desiguais ou liderança instável.
+             </p>
+          </div>
+        </div>
+
+        {/* Section 4: Conformidade */}
+        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+              <FileBadge2 size={24} />
+            </div>
+            <div>
+              <h2 className="font-serif text-xl font-bold text-neutral-900 mb-2">4. Conformidade e Segurança (NR-1 e PGR)</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                O uso de uma estrutura matemática separando a <strong>intenção do pesquisado</strong> (Nota) do <strong>peso legal</strong> (Importância da pergunta) protege a avaliação contra vieses de amostragem.
+              </p>
+            </div>
+          </div>
+          
+          <ul className="space-y-3">
+            <li className="flex items-center gap-3 text-sm text-neutral-700 bg-neutral-50 px-4 py-3 rounded-lg border border-neutral-100">
+              <CheckCircle2 size={16} className="text-emerald-500"/>
+              Resultados rastreáveis, baseados em métricas quantitativas limpas.
+            </li>
+            <li className="flex items-center gap-3 text-sm text-neutral-700 bg-neutral-50 px-4 py-3 rounded-lg border border-neutral-100">
+              <CheckCircle2 size={16} className="text-emerald-500"/>
+              Régua de Risco Universal (0 a 10) padronizada para geração rápida de relatórios.
+            </li>
+            <li className="flex items-center gap-3 text-sm text-neutral-700 bg-neutral-50 px-4 py-3 rounded-lg border border-neutral-100">
+              <CheckCircle2 size={16} className="text-emerald-500"/>
+              Dados prontos para exportação PDF e CSV, formatados para serem anexados aos documentos do GRO.
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [templates, setTemplates] = useState(() => loadData("templates", [INITIAL_TEMPLATE]));
+  const [entities, setEntities] = useState(() => loadData("entities", ["TechCorp Indústria", "Construtora Alfa"]));
+  const [interviewees, setInterviewees] = useState(() => loadData("interviewees", [
+    { id: "p_1", entity: "TechCorp Indústria", name: "Carlos Almeida", sector: "Montagem", role: "Técnico" },
+    { id: "p_2", entity: "TechCorp Indústria", name: "Ana Souza", sector: "Montagem", role: "Operadora" },
+    { id: "p_3", entity: "Construtora Alfa", name: "Roberto Dias", sector: "Obras", role: "Encarregado" }
+  ]));
+  
+  // responses: key -> `${personId}_${templateId}`, value -> { answers: { qId: value }, _completed: bool }
+  const [responses, setResponses] = useState(() => loadData("responses", {}));
+  
+  const [view, setView] = useState("dashboard"); // dashboard, builder, results, methodology
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
+  
+  const [showSetup, setShowSetup] = useState(false);
+  const [activeSession, setActiveSession] = useState(null); // { entity, person }
+  const [executingTemplate, setExecutingTemplate] = useState(null);
+
+  const [analyticsEntity, setAnalyticsEntity] = useState(entities.length > 0 ? entities[0] : "");
+  const [analyticsTemplateId, setAnalyticsTemplateId] = useState(templates.length > 0 ? templates[0].id : "");
+
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  useEffect(() => { saveData("templates", templates); }, [templates]);
+  useEffect(() => { saveData("entities", entities); }, [entities]);
+  useEffect(() => { saveData("interviewees", interviewees); }, [interviewees]);
+  useEffect(() => { saveData("responses", responses); }, [responses]);
+
+  function handleSaveTemplate(tpl) {
+    if (editingTemplateId) setTemplates(prev => prev.map(t => t.id === tpl.id ? tpl : t));
+    else setTemplates(prev => [...prev, tpl]);
+    setView("dashboard");
+    setEditingTemplateId(null);
+    if (!analyticsTemplateId) setAnalyticsTemplateId(tpl.id);
+  }
+
+  function handleDeleteTemplate(id) {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Excluir Formulário?",
+      message: "Tem certeza que deseja apagar este formulário? Os dados e respostas associados ficarão inacessíveis.",
+      onConfirm: () => {
+        setTemplates(prev => prev.filter(t => t.id !== id));
+        if (analyticsTemplateId === id) setAnalyticsTemplateId("");
+        setConfirmDialog(null);
+      }
+    });
+  }
+
+  function handleConfirmSetup(entityName, person, isNewEntity, isNewPerson) {
+    if (isNewEntity) setEntities(prev => [...prev, entityName]);
+    if (isNewPerson) setInterviewees(prev => [...prev, person]);
+    setActiveSession({ entity: entityName, person });
+    if (!analyticsEntity || isNewEntity) setAnalyticsEntity(entityName);
+    setShowSetup(false);
+  }
+
+  function getProgress(personId, templateId) {
+    const key = `${personId}_${templateId}`;
+    const ans = responses[key];
+    if (!ans) return 0;
+    if (ans._completed) return 100;
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl || tpl.questions.length === 0) return 0;
+    const answered = Object.keys(ans).filter(k => k !== '_completed').length;
+    return Math.round((answered / tpl.questions.length) * 100);
+  }
+
+  // --- ANALYTICS ENGINE ---
+  const activeTemplateAnalytics = templates.find(t => t.id === analyticsTemplateId);
+  const activeEntityPeopleAnalytics = interviewees.filter(p => p.entity === analyticsEntity);
+  
+  const relevantResponses = activeEntityPeopleAnalytics.map(p => {
+    const r = responses[`${p.id}_${analyticsTemplateId}`];
+    return r && r._completed ? { person: p, answers: r } : null;
+  }).filter(Boolean);
+
+  let analyticsData = { 
+    totalResponses: relevantResponses.length,
+    companyScore: null,
+    sectorScores: {}, // { sector: { score, stdDev, count, isPolarized } }
+    personScores: [], // { person, score }
+    questionsData: []
+  };
+
+  if (activeTemplateAnalytics && relevantResponses.length > 0) {
+    // 1. Cálculo Individual -> Média ponderada da pessoa
+    relevantResponses.forEach(r => {
+      let sumXW = 0;
+      let sumW = 0;
+      let hasValidNumeric = false;
+
+      activeTemplateAnalytics.questions.forEach(q => {
+        const val = r.answers[q.id];
+        if (val === undefined || val === null) return;
+        
+        if (q.type === "scale_0_10") {
+          hasValidNumeric = true;
+          const x_i = Number(val);
+          const w_i = Number(q.weight || 1);
+          sumXW += (x_i * w_i);
+          sumW += w_i;
+        }
+      });
+      r.score = hasValidNumeric && sumW > 0 ? (sumXW / sumW) : null;
+      if(r.score !== null) {
+        analyticsData.personScores.push({ person: r.person, score: r.score });
+      }
+    });
+
+    // 2. Cálculo do Setor e Empresa
+    const sectorsTemp = {};
+    let validSpCount = 0;
+    let sumSp = 0;
+
+    analyticsData.personScores.forEach(ps => {
+      const s = ps.person.sector || "Geral";
+      if(!sectorsTemp[s]) sectorsTemp[s] = { sum: 0, count: 0 };
+      sectorsTemp[s].sum += ps.score;
+      sectorsTemp[s].count += 1;
+      
+      sumSp += ps.score;
+      validSpCount++;
+    });
+
+    analyticsData.companyScore = validSpCount > 0 ? (sumSp / validSpCount) : null;
+
+    // Calcular Desvio Padrão para cada setor (Polarização)
+    Object.keys(sectorsTemp).forEach(k => {
+      const mean = sectorsTemp[k].sum / sectorsTemp[k].count;
+      let varianceSum = 0;
+      
+      analyticsData.personScores.forEach(ps => {
+        if ((ps.person.sector || "Geral") === k) {
+          varianceSum += Math.pow(ps.score - mean, 2);
+        }
+      });
+      
+      const variance = varianceSum / sectorsTemp[k].count;
+      const stdDev = Math.sqrt(variance);
+      
+      analyticsData.sectorScores[k] = {
+        score: mean,
+        stdDev: stdDev,
+        count: sectorsTemp[k].count,
+        isPolarized: stdDev >= 2.0 // Dispara alerta se houver divergência grande
+      };
+    });
+
+    // 3. Distribuição para os gráficos
+    analyticsData.questionsData = activeTemplateAnalytics.questions.map(q => {
+      let total = 0;
+      let counts = {};
+      
+      relevantResponses.forEach(({ answers }) => {
+        const val = answers[q.id];
+        if (val === undefined || val === null || val === "") return;
+        
+        if (q.type === "scale_0_10" || q.type === "multiple_choice_single") {
+          counts[val] = (counts[val] || 0) + 1;
+          total++;
+        } else if (q.type === "multiple_choice_multiple" && Array.isArray(val)) {
+          val.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+          total++; 
+        }
+      });
+      return { q, total, counts };
+    });
+  }
+
+  // --- PDF EXPORT ---
+  function exportAnalyticsPDF() {
+    if (!analyticsData.companyScore) return;
+    
+    const printWindow = window.open('', '_blank');
+    const riskCompany = getRiskLevel(analyticsData.companyScore);
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+    let sectorsHtml = Object.keys(analyticsData.sectorScores).map(sector => {
+      const sData = analyticsData.sectorScores[sector];
+      const sRisk = getRiskLevel(sData.score);
+      const polBadge = sData.isPolarized ? `<span style="background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:bold; margin-left:8px;">OPINIÕES DIVERGENTES</span>` : '';
+      return `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px; font-weight: bold;">${sector}</td>
+          <td style="padding: 10px; text-align: center;">${sData.count}</td>
+          <td style="padding: 10px; text-align: right; color: ${sRisk.hex}; font-weight: bold;">${sData.score.toFixed(1)} ${polBadge}</td>
+        </tr>
+      `;
+    }).join("");
+
+    let peopleHtml = [...analyticsData.personScores].sort((a,b) => b.score - a.score).slice(0, 10).map(ps => {
+      const pRisk = getRiskLevel(ps.score);
+      return `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 8px;">${ps.person.name}</td>
+          <td style="padding: 8px;">${ps.person.sector}</td>
+          <td style="padding: 8px; text-align: right; color: ${pRisk.hex}; font-weight: bold;">${ps.score.toFixed(1)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Laudo de Risco Organizacional - ${analyticsEntity}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; margin: 40px; }
+            h1 { font-family: Georgia, serif; border-bottom: 2px solid #222; padding-bottom: 10px; }
+            .metric-box { border: 2px solid ${riskCompany.hex}; background: ${riskCompany.hex}10; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 30px; }
+            .metric-score { font-size: 48px; font-weight: bold; color: ${riskCompany.hex}; margin: 10px 0; font-family: monospace; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px; }
+            th { text-align: left; background: #f5f5f5; padding: 10px; font-size: 11px; text-transform: uppercase; color: #666; }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório de Riscos Organizacionais (NR-1)</h1>
+          <p><strong>Entidade/Empresa:</strong> ${analyticsEntity}<br>
+             <strong>Instrumento Aplicado:</strong> ${activeTemplateAnalytics.title}<br>
+             <strong>Data do Relatório:</strong> ${dataAtual}<br>
+             <strong>Amostragem Válida:</strong> ${analyticsData.totalResponses} colaboradores</p>
+          
+          <div class="metric-box">
+            <div style="font-size: 12px; text-transform: uppercase; font-weight: bold; color: #666;">Índice Geral de Risco</div>
+            <div class="metric-score">${analyticsData.companyScore.toFixed(1)} / 10</div>
+            <div style="font-weight: bold; color: ${riskCompany.hex}; text-transform: uppercase;">Classificação: ${riskCompany.label}</div>
+          </div>
+
+          <h2>1. Nível de Risco por Setor</h2>
+          <table>
+            <thead><tr><th>Setor</th><th style="text-align:center;">Amostras</th><th style="text-align:right;">Média de Risco (0-10)</th></tr></thead>
+            <tbody>${sectorsHtml}</tbody>
+          </table>
+
+          <h2>2. Top 10 Colaboradores em Maior Risco</h2>
+          <table>
+            <thead><tr><th>Colaborador</th><th>Setor</th><th style="text-align:right;">Média (0-10)</th></tr></thead>
+            <tbody>${peopleHtml}</tbody>
+          </table>
+
+          <div style="margin-top: 50px; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 10px;">
+            Documento gerado automaticamente. Uso exclusivo para embasamento de PGR/GRO.
+          </div>
+          <script>window.onload = function() { window.print(); }</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f3f4f6] font-sans flex flex-col">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+      `}</style>
+
+      {/* Global Navbar */}
+      <div className="bg-neutral-900 text-white px-6 py-4 flex flex-col md:flex-row md:items-center justify-between sticky top-0 z-40 shadow-[0_4px_20px_rgba(0,0,0,0.1)] gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+            <ShieldCheck size={20} className="text-emerald-400" />
+          </div>
+          <span className="font-serif text-xl font-semibold tracking-wide">Mapeamento<span className="text-emerald-400">NR-1</span></span>
+        </div>
+        
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+            <button onClick={() => { setView("dashboard"); setEditingTemplateId(null); }} className={`text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap ${view === 'dashboard' ? 'bg-neutral-800 text-white shadow-inner' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white cursor-pointer'}`}>
+              Hub de Pesquisa
+            </button>
+            <button onClick={() => { setView("results"); setEditingTemplateId(null); }} className={`text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 ${view === 'results' ? 'bg-neutral-800 text-emerald-400 shadow-inner' : 'text-neutral-400 hover:bg-neutral-800 hover:text-emerald-400 cursor-pointer'}`}>
+              <BarChart3 size={16} /> Painel de Resultados
+            </button>
+            <button onClick={() => { setView("methodology"); setEditingTemplateId(null); }} className={`text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 ${view === 'methodology' ? 'bg-neutral-800 text-blue-400 shadow-inner' : 'text-neutral-400 hover:bg-neutral-800 hover:text-blue-400 cursor-pointer'}`}>
+              <BookOpen size={16} /> Metodologia
+            </button>
+        </div>
+      </div>
+
+      <CustomConfirm {...(confirmDialog || {})} onCancel={() => setConfirmDialog(null)} />
+      
+      {view === "builder" && (
+        <FormBuilder 
+          initialTemplate={editingTemplateId ? templates.find(t => t.id === editingTemplateId) : null}
+          onSave={handleSaveTemplate} 
+          onCancel={() => { setView("dashboard"); setEditingTemplateId(null); }} 
+        />
+      )}
+
+      {executingTemplate && activeSession && (
+        <FormView 
+          template={executingTemplate}
+          savedAnswers={responses[`${activeSession.person.id}_${executingTemplate.id}`] || {}}
+          onSave={(answers, completed) => {
+            const key = `${activeSession.person.id}_${executingTemplate.id}`;
+            setResponses(prev => ({ ...prev, [key]: { ...answers, _completed: completed } }));
+          }}
+          onClose={() => setExecutingTemplate(null)}
+        />
+      )}
+
+      {showSetup && (
+        <SetupModal entities={entities} interviewees={interviewees} onConfirm={handleConfirmSetup} onClose={() => setShowSetup(false)} />
+      )}
+
+      {/* METHODOLOGY VIEW */}
+      {view === "methodology" && <MethodologyView />}
+
+      {/* DASHBOARD VIEW */}
+      {view === "dashboard" && !executingTemplate && (
+        <div className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8 space-y-8 animate-[fadeIn_0.2s_ease-out]">
+          
+          <section className="bg-white border border-neutral-200 rounded-2xl p-6 md:p-8 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 border-b border-neutral-100 pb-6">
+              <div>
+                <div className="text-[11px] uppercase font-bold text-emerald-600 tracking-wider mb-1.5 flex items-center gap-2"><Target size={14}/> Execução de Campo</div>
+                <h2 className="font-serif text-3xl font-bold text-neutral-900">Coleta de Respostas</h2>
+                <p className="text-sm text-neutral-500 mt-2">Inicie uma bateria de perguntas selecionando o funcionário.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                 {activeSession ? (
+                   <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-3 text-sm text-emerald-900 flex items-center gap-4 shadow-sm">
+                     <div className="flex flex-col">
+                       <span className="font-bold flex items-center gap-1.5"><User2 size={16}/> {activeSession.person.name}</span>
+                       <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide">{activeSession.entity} • {activeSession.person.sector}</span>
+                     </div>
+                     <button onClick={() => setActiveSession(null)} className="ml-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 hover:text-emerald-900 cursor-pointer p-2 rounded-lg transition-colors"><X size={16}/></button>
+                   </div>
+                 ) : (
+                   templates.length > 0 && (
+                     <button onClick={() => setShowSetup(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(16,185,129,0.3)] transition-all cursor-pointer transform hover:-translate-y-0.5">
+                       <PlayCircle size={20}/> Iniciar Avaliação NR-1
+                     </button>
+                   )
+                 )}
+              </div>
+            </div>
+
+            {!activeSession ? (
+              <div className="bg-neutral-50 border border-neutral-100 rounded-2xl p-12 text-center">
+                <div className="w-20 h-20 bg-white border border-neutral-200 shadow-sm rounded-full flex items-center justify-center mx-auto mb-5 text-neutral-400"><Users size={32} /></div>
+                <h3 className="font-serif text-xl font-bold text-neutral-700 mb-2">Nenhum avaliado ativo no momento</h3>
+                <p className="text-sm text-neutral-500 max-w-md mx-auto">Para aplicar os formulários, clique no botão acima para identificar a empresa e o colaborador.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {templates.map(t => {
+                  const progress = getProgress(activeSession.person.id, t.id);
+                  const done = progress === 100;
+                  const IconDef = AVAILABLE_ICONS.find(i => i.id === t.iconId)?.icon || FileText;
+                  
+                  return (
+                    <div key={t.id} onClick={() => setExecutingTemplate(t)} className={`border rounded-xl p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 ${done ? 'bg-emerald-50 border-emerald-300 shadow-md' : 'bg-white border-neutral-200 shadow-sm hover:shadow-md'}`}>
+                      <div className="flex items-center justify-between mb-5">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${done ? 'bg-emerald-600 text-white' : 'bg-neutral-100 text-neutral-700'}`}>
+                          {done ? <CheckCircle2 size={24}/> : <IconDef size={24} />}
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-2xl font-black font-mono ${done ? 'text-emerald-700' : 'text-neutral-900'}`}>{progress}%</span>
+                        </div>
+                      </div>
+                      <h3 className="font-bold text-base text-neutral-900 mb-1.5 line-clamp-1">{t.title}</h3>
+                      <p className="text-[11px] text-neutral-500 uppercase font-bold tracking-wider">{t.questions.length} Questões</p>
+                      <div className="mt-5 h-2 w-full bg-neutral-100 rounded-full overflow-hidden shadow-inner">
+                        <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: done ? '#10b981' : t.accent }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className="bg-white border border-neutral-200 rounded-2xl p-6 md:p-8 shadow-sm">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 border-b border-neutral-100 pb-6 gap-4">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-neutral-900">Estúdio de Criação</h2>
+                <p className="text-sm text-neutral-500 mt-2 max-w-2xl">Crie os instrumentos de pesquisa e defina a <strong>importância</strong> de cada pergunta para gerar os relatórios de risco.</p>
+              </div>
+              <button onClick={() => { setEditingTemplateId(null); setView("builder"); }} className="bg-neutral-900 hover:bg-black text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer shrink-0">
+                <Plus size={16}/> Novo Formulário
+              </button>
+            </div>
+
+            {templates.length === 0 ? (
+              <div className="bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center">
+                <ListOrdered size={48} className="text-neutral-300 mb-5"/>
+                <h3 className="font-bold text-lg text-neutral-700 mb-2">Seu estúdio está vazio</h3>
+                <p className="text-sm text-neutral-500 max-w-sm">Construa o primeiro questionário com pesos para gerar os relatórios.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {templates.map(t => {
+                  const IconDef = AVAILABLE_ICONS.find(i => i.id === t.iconId)?.icon || FileText;
+                  return (
+                    <div key={t.id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all group flex flex-col h-[220px]">
+                      <div className="h-2 w-full" style={{ backgroundColor: t.accent }}></div>
+                      <div className="p-6 flex-1 flex flex-col relative">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: `${t.accent}15` }}>
+                            <IconDef size={20} color={t.accent} />
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1.5 bg-white shadow-md border border-neutral-100 p-1.5 rounded-lg absolute top-5 right-5">
+                            <button onClick={() => { setEditingTemplateId(t.id); setView("builder"); }} className="p-2 text-neutral-500 hover:text-blue-600 rounded-md hover:bg-blue-50 cursor-pointer transition-colors" title="Editar"><Settings size={16}/></button>
+                            <button onClick={() => handleDeleteTemplate(t.id)} className="p-2 text-neutral-500 hover:text-red-600 rounded-md hover:bg-red-50 cursor-pointer transition-colors" title="Excluir"><Trash2 size={16}/></button>
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-neutral-900 text-lg leading-tight mb-2 pr-12 line-clamp-1">{t.title}</h3>
+                        <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed flex-1">{t.desc}</p>
+                        <div className="mt-4 pt-4 border-t border-neutral-100 flex justify-between items-center">
+                          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t.questions.length} Questões Configuradas</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* ANALYTICS VIEW */}
+      {view === "results" && (
+        <div className="flex-1 max-w-[1400px] w-full mx-auto p-6 md:p-8 flex flex-col lg:flex-row gap-8 animate-[fadeIn_0.2s_ease-out]">
+          
+          <div className="w-full lg:w-80 flex-shrink-0 space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-5 flex items-center gap-2"><SlidersHorizontal size={16}/> Segmentação de Dados</h3>
+              
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-2">Empresa / Entidade</label>
+                  <select value={analyticsEntity} onChange={e => setAnalyticsEntity(e.target.value)} className="w-full border border-neutral-300 rounded-lg p-3 text-sm font-semibold focus:outline-none focus:border-emerald-500 bg-neutral-50 cursor-pointer">
+                    {entities.length === 0 ? <option value="">Sem Entidades</option> : entities.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-2">Formulário (Pesquisa Aplicada)</label>
+                  <select value={analyticsTemplateId} onChange={e => setAnalyticsTemplateId(e.target.value)} className="w-full border border-neutral-300 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500 bg-neutral-50 cursor-pointer">
+                    {templates.length === 0 ? <option value="">Sem Formulários</option> : templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-neutral-100">
+                <div className="bg-neutral-50 rounded-xl p-5 text-center border border-neutral-200">
+                  <span className="block text-4xl font-black text-neutral-800 font-mono leading-none">{analyticsData.totalResponses}</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-2">Pessoas Avaliadas</span>
+                </div>
+              </div>
+
+              {analyticsData.companyScore !== null && (
+                <button onClick={exportAnalyticsPDF} className="w-full mt-6 bg-neutral-900 hover:bg-black text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-transform hover:-translate-y-0.5 cursor-pointer">
+                  <Download size={16} /> Relatório em PDF
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-8 min-w-0">
+             {!activeTemplateAnalytics ? (
+               <div className="text-center text-neutral-500 py-12 bg-white rounded-2xl border border-neutral-200 shadow-sm text-lg font-serif">Selecione um instrumento válido.</div>
+             ) : relevantResponses.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-16 text-center flex flex-col items-center justify-center">
+                  <div className="w-24 h-24 bg-neutral-50 rounded-full flex items-center justify-center mb-6 border border-neutral-100"><AlertCircle size={40} className="text-neutral-300" /></div>
+                  <h3 className="font-serif text-2xl font-bold text-neutral-700 mb-3">Sem Dados Consolidados</h3>
+                  <p className="text-base text-neutral-500 max-w-md">Aplique o formulário <strong>{activeTemplateAnalytics.title}</strong> na entidade <strong>{analyticsEntity || 'Selecionada'}</strong> para gerar o painel de riscos.</p>
+                </div>
+             ) : (
+               <>
+                {/* 1. Global Macro Score */}
+                {(() => {
+                  const risk = getRiskLevel(analyticsData.companyScore);
+                  return (
+                    <div className={`rounded-2xl shadow-md border-2 ${risk.border} ${risk.bg} p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden`}>
+                      <div className="absolute -right-10 -top-10 opacity-[0.03] pointer-events-none">
+                         <Activity size={200} />
+                      </div>
+                      <div className="relative z-10 flex items-center gap-5">
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm border ${risk.border}`}>
+                          <Activity size={32} className={risk.color} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md text-white shadow-sm`} style={{backgroundColor: risk.hex}}>{risk.label}</span>
+                          </div>
+                          <h2 className="font-serif text-2xl md:text-3xl font-bold text-neutral-900">Risco Global da Empresa</h2>
+                          <span className="text-sm font-semibold text-neutral-600">Média geral baseada nas respostas e relevância das perguntas</span>
+                        </div>
+                      </div>
+                      
+                      <div className="relative z-10 text-left md:text-right bg-white/60 p-4 rounded-xl border border-white/50 backdrop-blur-sm">
+                         <div className={`text-6xl font-black font-mono leading-none tracking-tight ${risk.color}`}>
+                           {analyticsData.companyScore !== null ? analyticsData.companyScore.toFixed(1) : "-"}
+                         </div>
+                         <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-3 text-center md:text-right">escala de risco 0 a 10</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 2. Sector Scores */}
+                {Object.keys(analyticsData.sectorScores).length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Target size={16} className="text-neutral-400"/> Nível de Risco por Setor
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                       {Object.entries(analyticsData.sectorScores).map(([sector, sData]) => {
+                          const sRisk = getRiskLevel(sData.score);
+                          const polAlert = getPolarizationAlert(sData.stdDev);
+                          
+                          return (
+                            <div key={sector} className={`bg-white border ${sRisk.border} rounded-xl p-5 shadow-sm flex flex-col relative overflow-hidden group`}>
+                               <div className="absolute top-0 left-0 w-2 h-full" style={{backgroundColor: sRisk.hex}} />
+                               
+                               <div className="flex justify-between items-start pl-3 mb-2">
+                                 <span className="text-sm font-bold text-neutral-800 uppercase tracking-wide truncate pr-2">{sector}</span>
+                                 <span className={`text-2xl font-black font-mono ${sRisk.color} leading-none`}>{sData.score.toFixed(1)}</span>
+                               </div>
+                               
+                               <div className="pl-3 flex justify-between items-end mt-auto">
+                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{sData.count} pessoas avaliadas</span>
+                                 <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded text-white`} style={{backgroundColor: sRisk.hex}}>{sRisk.label}</span>
+                               </div>
+
+                               {/* Polarization Alert Overlay */}
+                               {polAlert && (
+                                 <div className={`mt-4 pl-3 py-2 border-t border-dashed ${polAlert.border} flex items-center gap-2`}>
+                                   <polAlert.icon size={14} className={polAlert.color} />
+                                   <div className="flex flex-col">
+                                     <span className={`text-[10px] font-black uppercase tracking-wider ${polAlert.color}`}>{polAlert.label}</span>
+                                     <span className="text-[9px] text-neutral-500">Diferença grande de opiniões na equipe.</span>
+                                   </div>
+                                 </div>
+                               )}
+                            </div>
+                          );
+                       })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Individuals Score Ranking */}
+                {analyticsData.personScores.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2"><Users size={16} className="text-neutral-400"/> Colaboradores em Maior Risco</div>
+                      <span className="text-[10px] text-neutral-400 font-normal normal-case">Ordenado pelo maior risco</span>
+                    </h3>
+                    <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                          <tr>
+                            <th className="px-5 py-4">Colaborador</th>
+                            <th className="px-5 py-4">Setor / Cargo</th>
+                            <th className="px-5 py-4 text-right">Média</th>
+                            <th className="px-5 py-4 w-40 text-center">Situação</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                          {/* Sort by highest risk first */}
+                          {[...analyticsData.personScores].sort((a,b) => b.score - a.score).map((ps, idx) => {
+                            const pRisk = getRiskLevel(ps.score);
+                            return (
+                              <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                                <td className="px-5 py-3.5 font-semibold text-neutral-800">{ps.person.name}</td>
+                                <td className="px-5 py-3.5 text-neutral-500 text-xs">{ps.person.sector} <span className="opacity-40 mx-1">|</span> {ps.person.role || "-"}</td>
+                                <td className={`px-5 py-3.5 text-right font-mono text-lg font-bold ${pRisk.color}`}>{ps.score.toFixed(1)}</td>
+                                <td className="px-5 py-3.5 text-center">
+                                  <div className={`inline-block text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded shadow-sm text-white`} style={{backgroundColor: pRisk.hex}}>
+                                    {pRisk.label}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Question Breakdown - Visual Histogram */}
+                <div className="space-y-5 pt-4">
+                  <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-2 border-b border-neutral-200 pb-3 flex items-center gap-2">
+                    <ListOrdered size={16} className="text-neutral-400"/> Respostas por Pergunta
+                  </h3>
+                  {analyticsData.questionsData.map(({ q, total, counts }, qIdx) => (
+                    <div key={q.id} className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 md:p-8">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h4 className="text-base font-bold text-neutral-900 leading-snug font-serif">
+                          <span className="text-neutral-400 font-sans mr-2 text-sm">{qIdx + 1}.</span>{q.label}
+                        </h4>
+                        <div className={`px-3 py-1.5 rounded-lg border font-bold text-[10px] whitespace-nowrap uppercase tracking-wider flex items-center gap-1.5 shadow-sm
+                          ${q.weight === 3 ? 'bg-red-50 text-red-700 border-red-200' : 
+                            q.weight === 2 ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+                            'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                          <AlertTriangle size={12} />
+                          Importância: {q.weight === 3 ? 'Alta' : q.weight === 2 ? 'Média' : 'Baixa'}
+                        </div>
+                      </div>
+
+                      {q.type === "scale_0_10" && (
+                        <div className="flex h-16 gap-1 items-end mt-6 bg-neutral-50/50 p-3 rounded-xl border border-neutral-100">
+                          {[0,1,2,3,4,5,6,7,8,9,10].map(i => {
+                            const count = counts[i] || 0;
+                            const maxCount = Math.max(...Object.values(counts), 1);
+                            const hPct = (count / maxCount) * 100;
+                            const barColor = i < 4 ? '#34d399' : i < 7 ? '#fbbf24' : '#f87171';
+                            
+                            return (
+                              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                <div 
+                                  className="w-full rounded-t transition-all" 
+                                  style={{ height: `${Math.max(hPct, 2)}%`, backgroundColor: hPct > 0 ? barColor : '#e5e7eb' }}
+                                />
+                                <span className="text-[10px] font-bold text-neutral-600 mt-1.5">{i}</span>
+                                {count > 0 && (
+                                  <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-neutral-900 text-white text-[10px] font-bold py-1 px-2 rounded shadow-md pointer-events-none whitespace-nowrap z-10 transition-opacity">
+                                    {count} resp.
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {q.type.includes("choice") && (
+                        <div className="space-y-3 mt-4">
+                          {q.options.map((opt, oIdx) => {
+                            const count = counts[oIdx] || 0;
+                            const pct = total > 0 ? (count / total) * 100 : 0;
+                            return (
+                              <div key={oIdx} className="relative">
+                                <div className="flex justify-between text-xs mb-1.5 relative z-10 px-3 pt-1">
+                                  <span className="font-semibold text-neutral-800 truncate pr-4">{opt}</span>
+                                  <span className="font-bold text-neutral-900 flex-shrink-0 bg-white/80 px-1 rounded">{count} <span className="text-neutral-400 font-normal ml-1">({pct.toFixed(0)}%)</span></span>
+                                </div>
+                                <div className="h-8 w-full bg-neutral-100 rounded-lg overflow-hidden absolute inset-0 z-0 border border-neutral-200/50">
+                                  <div className="h-full rounded-lg transition-all duration-1000 ease-out bg-indigo-100/80 border-r border-indigo-200" style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {q.type === "text" && (
+                        <div className="space-y-3 mt-5">
+                          {relevantResponses.filter(r => r.answers[q.id]).length === 0 ? (
+                            <div className="text-sm text-neutral-400 italic bg-neutral-50 p-4 rounded-xl text-center">Nenhum relato escrito nesta pesquisa.</div>
+                          ) : (
+                            relevantResponses.map((r, i) => {
+                              const val = r.answers[q.id];
+                              if(!val) return null;
+                              return (
+                                <div key={i} className="bg-[#faf9f7] rounded-xl p-4 border border-neutral-200/60 shadow-sm relative">
+                                  <div className="absolute top-0 left-0 w-1 h-full bg-neutral-300 rounded-l-xl" />
+                                  <div className="text-[10px] font-bold text-neutral-500 mb-2 pl-2 flex justify-between items-center">
+                                    <span>{r.person.name} <span className="font-normal mx-1 opacity-50">•</span> {r.person.sector}</span>
+                                    <span className="text-[9px] uppercase tracking-widest bg-white border border-neutral-200 px-1.5 py-0.5 rounded">Relato Aberto</span>
+                                  </div>
+                                  <p className="text-sm text-neutral-800 leading-relaxed font-serif italic pl-2">"{val}"</p>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+               </>
+             )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

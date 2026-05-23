@@ -352,19 +352,26 @@ export function AdminTopHeader({
                             </span>
                         </button>
 
-                        <div className="h-6 w-px bg-gray-200/20 mx-1" />
-
-                        {/* Mercado Livre Master Connection */}
-                        <Link
-                            href="/api/auth/ml/login"
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
-                            title="Connect Master Mercado Livre Account"
-                        >
-                            <Zap className="h-3 w-3" />
-                            ML Sync
-                        </Link>
-
-                        <div className="h-6 w-px bg-gray-200/20 mx-1" />
+                        {/* Mercado Livre Master Connection (only for trade or store template) */}
+                        {(() => {
+                            const tid = currentWorkspace?.promptSettings?.templateId || "";
+                            const isTradeOrStore =
+                              tid === "template_trade_ranking" || tid === "template_furniture_store";
+                            if (!isTradeOrStore) return null;
+                            return (
+                                <>
+                                    <Link
+                                        href="/api/auth/ml/login"
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
+                                        title="Connect Master Mercado Livre Account"
+                                    >
+                                        <Zap className="h-3 w-3" />
+                                        ML Sync
+                                    </Link>
+                                    <div className="h-6 w-px bg-gray-200/20 mx-1" />
+                                </>
+                            );
+                        })()}
 
                         {/* Notifications Bell Icon */}
                         <div className="relative">

@@ -46,6 +46,7 @@ import { MentoringKanbanBoard } from "@/components/admin/ade/MentoringKanbanBoar
 import { MentoringScheduleBoard } from "@/components/admin/ade/MentoringScheduleBoard";
 import { MentoringInsightsBoard } from "@/components/admin/ade/MentoringInsightsBoard";
 import { MentoringProfileBoard } from "@/components/admin/ade/MentoringProfileBoard";
+import { SmartSurveyBoard } from "@/components/admin/ade/SmartSurveyBoard";
 
 // Zustand stores
 import {
@@ -175,22 +176,24 @@ export function AdminContainer() {
     }
   };
 
-  // Synchronize activeTab when workspace changes to select the appropriate start tab
-  useEffect(() => {
-    if (!currentWorkspace) return;
-    const templateId = currentWorkspace.promptSettings?.templateId;
-    if (templateId === "template_io_mentoring") {
-      setActiveTab("mentoring_profile" as any);
-    } else if (templateId === "template_love_writers") {
-      setActiveTab("library");
-    } else if (templateId === "template_trade_ranking") {
-      setActiveTab("ranking");
-    } else if (templateId?.startsWith("template_furniture")) {
-      setActiveTab("store");
-    } else {
-      setActiveTab("arcs");
-    }
-  }, [currentWorkspace?.id]);
+    // Synchronize activeTab when workspace changes to select the appropriate start tab
+    useEffect(() => {
+      if (!currentWorkspace) return;
+      const templateId = currentWorkspace.promptSettings?.templateId;
+      if (templateId === "template_io_mentoring") {
+        setActiveTab("mentoring_profile" as any);
+      } else if (templateId === "template_love_writers") {
+        setActiveTab("library");
+      } else if (templateId === "template_trade_ranking") {
+        setActiveTab("ranking");
+      } else if (templateId?.startsWith("template_furniture")) {
+        setActiveTab("store");
+      } else if (templateId === "template_smart_survey") {
+        setActiveTab("survey");
+      } else {
+        setActiveTab("arcs");
+      }
+    }, [currentWorkspace?.id]);
 
   // Expose setViewMode to window for voice assistant access
   useEffect(() => {
@@ -210,7 +213,7 @@ export function AdminContainer() {
         setActiveTab("chat_history" as NavTab);
       } else if (dest === 'menu') {
         setViewMode('menu');
-      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking', 'mentoring_tasks', 'mentoring_schedule', 'mentoring_insights', 'mentoring_notes'].includes(dest)) {
+      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking', 'mentoring_tasks', 'mentoring_schedule', 'mentoring_insights', 'mentoring_notes', 'survey'].includes(dest)) {
         setActiveTab(dest as NavTab);
         setViewMode('menu');
       } else if (dest === 'credits') {
@@ -305,31 +308,33 @@ export function AdminContainer() {
 
   // Sync activeTab and template context
   useEffect(() => {
-    if (!currentWorkspace || !hydrated) return;
-    const templateId = currentWorkspace.promptSettings?.templateId;
-    
-    // Deterministic tab management when switching workspaces
-    const getInitialTab = (tid: string): NavTab => {
-        if (tid === "template_trade_ranking") return "ranking";
-        if (tid?.startsWith("template_furniture")) return "store" as any;
-        if (tid === "template_love_writers") return "library";
-        if (tid === "template_io_mentoring") return "mentoring_profile" as any;
-        return "arcs";
-    };
+      if (!currentWorkspace || !hydrated) return;
+      const templateId = currentWorkspace.promptSettings?.templateId;
+      
+      // Deterministic tab management when switching workspaces
+      const getInitialTab = (tid: string): NavTab => {
+          if (tid === "template_trade_ranking") return "ranking";
+          if (tid?.startsWith("template_furniture")) return "store" as any;
+          if (tid === "template_love_writers") return "library";
+          if (tid === "template_io_mentoring") return "mentoring_profile" as any;
+          if (tid === "template_smart_survey") return "survey";
+          return "arcs";
+      };
 
-    // If active tab doesn't exist for the current template, or we just switched workspace
-    if (prevWsIdRef.current !== currentWorkspace.id) {
-        setActiveTab(getInitialTab(templateId || ""));
-        prevWsIdRef.current = currentWorkspace.id;
-        return;
-    }
+      // If active tab doesn't exist for the current template, or we just switched workspace
+      if (prevWsIdRef.current !== currentWorkspace.id) {
+          setActiveTab(getInitialTab(templateId || ""));
+          prevWsIdRef.current = currentWorkspace.id;
+          return;
+      }
 
-    // Individual cases if user manually navigates to 'arcs' but we want to redirect once
-    if (templateId === "template_trade_ranking" && activeTab === "arcs") setActiveTab("ranking");
-    if (templateId === "template_furniture_logistics" && activeTab === "arcs") setActiveTab("logistics" as any);
-    if (templateId === "template_furniture_layout" && activeTab === "arcs") setActiveTab("layout" as any);
-    if (templateId === "template_furniture_store" && activeTab === "arcs") setActiveTab("store" as any);
-    if (templateId === "template_io_mentoring" && activeTab === "arcs") setActiveTab("mentoring_profile" as any);
+      // Individual cases if user manually navigates to 'arcs' but we want to redirect once
+      if (templateId === "template_trade_ranking" && activeTab === "arcs") setActiveTab("ranking");
+      if (templateId === "template_furniture_logistics" && activeTab === "arcs") setActiveTab("logistics" as any);
+      if (templateId === "template_furniture_layout" && activeTab === "arcs") setActiveTab("layout" as any);
+      if (templateId === "template_furniture_store" && activeTab === "arcs") setActiveTab("store" as any);
+      if (templateId === "template_io_mentoring" && activeTab === "arcs") setActiveTab("mentoring_profile" as any);
+      if (templateId === "template_smart_survey" && activeTab === "arcs") setActiveTab("survey");
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -1213,6 +1218,16 @@ export function AdminContainer() {
                   <MentoringProfileBoard 
                     isOwner={currentWorkspace.userId === auth.user?.id}
                     workspaceId={currentWorkspace.id}
+                  />
+                </div>
+              )}
+
+              {(activeTab as any) === "survey" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <SmartSurveyBoard 
+                    workspaceId={currentWorkspace.id}
+                    dashboardId={currentDashboard?.id}
+                    tiles={allTiles}
                   />
                 </div>
               )}

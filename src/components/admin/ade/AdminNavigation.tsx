@@ -35,7 +35,7 @@ import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/uiStore";
 
-export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile";
+export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey";
 
 interface AdminNavigationProps {
     activeTab: NavTab;
@@ -82,16 +82,17 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
     const isFurniture = templateId?.startsWith("template_furniture");
     const isLogistics = templateId === "template_furniture_logistics";
     const isLayout = templateId === "template_furniture_layout";
+    const isSurvey = templateId === "template_smart_survey";
 
     // Theme Colors
     const theme = {
-        primary: isTrade ? "emerald" : isWriters ? "pink" : isFurniture ? "sky" : "blue",
-        colorCode: isTrade ? "#10b981" : isWriters ? "#e11d48" : isFurniture ? "#0ea5e9" : "#2563eb",
-        bgLight: isTrade ? "bg-emerald-50" : isWriters ? "bg-pink-50" : isFurniture ? "bg-sky-50" : "bg-blue-50",
-        textPrimary: isTrade ? "text-emerald-600" : isWriters ? "text-pink-600" : isFurniture ? "text-sky-600" : "text-blue-600",
-        textHover: isTrade ? "hover:text-emerald-400" : isWriters ? "hover:text-pink-400" : isFurniture ? "hover:text-sky-400" : "hover:text-blue-400",
-        borderActive: isTrade ? "bg-emerald-600" : isWriters ? "bg-pink-600" : isFurniture ? "bg-sky-600" : "bg-blue-600",
-        shadow: isTrade ? "shadow-emerald-200" : isWriters ? "shadow-pink-200" : isFurniture ? "shadow-sky-200" : "shadow-blue-200",
+        primary: isTrade || isSurvey ? "emerald" : isWriters ? "pink" : isFurniture ? "sky" : "blue",
+        colorCode: isTrade || isSurvey ? "#10b981" : isWriters ? "#e11d48" : isFurniture ? "#0ea5e9" : "#2563eb",
+        bgLight: isTrade || isSurvey ? "bg-emerald-50" : isWriters ? "bg-pink-50" : isFurniture ? "bg-sky-50" : "bg-blue-50",
+        textPrimary: isTrade || isSurvey ? "text-emerald-600" : isWriters ? "text-pink-600" : isFurniture ? "text-sky-600" : "text-blue-600",
+        textHover: isTrade || isSurvey ? "hover:text-emerald-400" : isWriters ? "hover:text-pink-400" : isFurniture ? "hover:text-sky-400" : "hover:text-blue-400",
+        borderActive: isTrade || isSurvey ? "bg-emerald-600" : isWriters ? "bg-pink-600" : isFurniture ? "bg-sky-600" : "bg-blue-600",
+        shadow: isTrade || isSurvey ? "shadow-emerald-200" : isWriters ? "shadow-pink-200" : isFurniture ? "shadow-sky-200" : "shadow-blue-200",
     };
 
     const LogoIcon = isTrade ? FaGavel : isWriters ? BookOpen : isFurniture ? ShoppingBag : PieChart;
@@ -102,6 +103,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
     const navItems = [
         ...(isWriters ? [{ id: "library", label: "Biblioteca", icon: Library }] : []),
         ...(isTrade ? [{ id: "ranking", label: "Ranking", icon: FaGavel }] : []),
+        ...(isSurvey ? [{ id: "survey", label: "Inquérito", icon: ClipboardList }] : []),
 
         ...(isFurniture ? [
             { id: "store", label: "Loja", icon: ShoppingBag },
@@ -120,7 +122,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
 
         ...(!isMentee ? [{
             id: "arcs",
-            label: isTrade ? "Análise" : isWriters ? "Arcos" : isFurniture ? "Insights" : "Dashboard",
+            label: isTrade ? "Análise" : isWriters ? "Arcos" : isFurniture ? "Insights" : isSurvey ? "Análise IA" : "Dashboard",
             icon: LayoutGrid
         }] : []),
         ...((!isFurniture && !isMentee) ? [{

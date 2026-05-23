@@ -59,7 +59,21 @@ export function HomeContainer() {
 
   // Derived Hero Content
   const heroContent = {
-    title: activeAppTag === 'love_writers' ? 'Love Writers' : activeAppTag === 'trade_ranking' ? 'Trade Ranking' : activeAppTag === 'furniture_logistics' ? 'Logística & Gestão' : activeAppTag === 'furniture_layout' ? 'Layout Mapping' : activeAppTag === 'furniture_store' ? 'Virtual Store' : activeAppTag === 'io_mentoring' ? 'I/O Mentor Pro' : 'Business Insights',
+    title: activeAppTag === 'love_writers'
+      ? 'I/O - Love Writers'
+      : activeAppTag === 'trade_ranking'
+        ? 'I/O - Ranking Product'
+        : activeAppTag === 'furniture_logistics'
+          ? 'I/O - Furniture Logistics'
+          : activeAppTag === 'furniture_layout'
+            ? 'I/O - Store Layout'
+            : activeAppTag === 'furniture_store'
+              ? 'I/O - Store'
+              : activeAppTag === 'io_mentoring'
+                ? 'I/O - Mentoring'
+                : activeAppTag === 'smart_survey'
+                  ? 'I/O - Smart Survey'
+                  : 'I/O - Business Insights',
     subtitle: activeAppTag === 'love_writers'
       ? 'Craft your romance novel arc by arc.'
       : activeAppTag === 'trade_ranking'
@@ -72,7 +86,9 @@ export function HomeContainer() {
               ? 'Exhibit your furniture in a premium store and receive orders directly on your panel.'
               : activeAppTag === 'io_mentoring'
                 ? 'Elevate your coaching with smart Kanban boards and AI session summaries.'
-                : 'Generate deep business insights from company data.'
+                : activeAppTag === 'smart_survey'
+                  ? 'Plataforma inteligente de compliance ergonômico e psicossocial NR-1 e NR-17.'
+                  : 'Generate deep business insights from company data.'
   };
 
 
@@ -85,12 +101,14 @@ export function HomeContainer() {
       if (firstInfo) {
         // Simple mapping for display title
         const titles: Record<string, string> = {
-          'love_writers': 'Love Writers',
-          'trade_ranking': 'Trade Ranking',
-          'furniture_logistics': 'Furniture Logistics',
-          'furniture_layout': 'Store Layout',
-          'business_insights': 'Business Insights',
-          'io_mentoring': 'I/O Mentor Pro'
+          'love_writers': 'I/O - Love Writers',
+          'trade_ranking': 'I/O - Ranking Product',
+          'furniture_logistics': 'I/O - Furniture Logistics',
+          'furniture_layout': 'I/O - Store Layout',
+          'furniture_store': 'I/O - Store',
+          'business_insights': 'I/O - Business Insights',
+          'io_mentoring': 'I/O - Mentoring',
+          'smart_survey': 'I/O - Smart Survey'
         };
         const title = titles[activeAppTag] || 'App';
         initialMessage = `You chose ${title}. Let's get started. What is the ${firstInfo.label}?`;
@@ -250,7 +268,7 @@ export function HomeContainer() {
               handleBookSubmit(updatedValues);
             } else if (activeAppTag === 'trade_ranking') {
               handleTradeSubmit(updatedValues);
-            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store' || activeAppTag === 'io_mentoring') {
+            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store' || activeAppTag === 'io_mentoring' || activeAppTag === 'smart_survey') {
               handleFurnitureSubmit(activeAppTag, updatedValues);
             } else {
               handleSubmit(updatedValues as ClassicHeroFormSubmission);

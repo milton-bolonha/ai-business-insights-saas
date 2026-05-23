@@ -1,4 +1,4 @@
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey";
 
 export interface AppTag {
   id: AppTagId;
@@ -23,38 +23,43 @@ export const APP_TAGS: AppTag[] = [
   },
   {
     id: "business_insights",
-    label: "Business Insights",
+    label: "I/O - Business Insights",
     color: "#2563eb", // Blue-600
   },
   {
     id: "love_writers",
-    label: "Love Writers",
+    label: "I/O - Love Writers",
     color: "#e11d48", // Rose-600
   },
   {
     id: "trade_ranking",
-    label: "Trade Ranking",
+    label: "I/O - Ranking Product",
     color: "#10b981", // Emerald-500
   },
   {
     id: "furniture_logistics",
-    label: "Furniture Logistics",
+    label: "I/O - Furniture Logistics",
     color: "#0ea5e9", // Sky-500
   },
   {
     id: "furniture_layout",
-    label: "Store Layout",
+    label: "I/O - Store Layout",
     color: "#6366f1", // Indigo-500
   },
   {
     id: "furniture_store",
-    label: "Virtual Store",
+    label: "I/O - Store",
     color: "#f59e0b", // Amber-500
   },
   {
     id: "io_mentoring",
-    label: "I/O Mentoring",
+    label: "I/O - Mentoring",
     color: "#4f46e5", // Indigo-600
+  },
+  {
+    id: "smart_survey",
+    label: "I/O - Smart Survey",
+    color: "#10b981", // Emerald-500
   },
 ];
 
@@ -257,5 +262,13 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
     label: "Objetivo da Mentoria",
     appTagId: "io_mentoring",
     placeholder: "Qual o foco principal dessa mentoria?",
+  },
+
+  // I/O Smart Survey Attributes
+  {
+    id: "survey_company",
+    label: "Organização",
+    appTagId: "smart_survey",
+    placeholder: "Qual a Organização pesquisada?",
   },
 ];

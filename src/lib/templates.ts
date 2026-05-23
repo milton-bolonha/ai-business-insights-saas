@@ -358,6 +358,31 @@ export const DASHBOARD_TEMPLATES: Record<string, DashboardTemplate> = {
         preferredLength: "long",
       }
     ]
+  },
+  template_smart_survey: {
+    id: "template_smart_survey",
+    name: "I/O - Smart Survey",
+    description: "Brazilian NR-1/NR-17 psychosocial and ergonomic risk compliance platform.",
+    tiles: [
+      {
+        id: "compliance_analysis",
+        title: "Compliance & Safety Analysis",
+        prompt: "Analyze Brazilian NR-1/NR-17 compliance for {survey_company} in the {survey_sector} sector. Focus on psychosocial risk factors, workspace ergonomics, and preventative regulatory measures.",
+        category: "compliance",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      },
+      {
+        id: "risk_remediation",
+        title: "Remediation & Action Plan",
+        prompt: "Formulate a concrete, step-by-step regulatory safety and intervention plan for {survey_company} under auditor {surveyor_name}.",
+        category: "strategy",
+        orderIndex: 1,
+        agentId: "ade_sales_coach",
+        preferredLength: "long",
+      }
+    ]
   }
 };
 
