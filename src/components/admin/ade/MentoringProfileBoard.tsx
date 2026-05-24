@@ -48,6 +48,7 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import { useUser } from "@clerk/nextjs";
 import { MentoringKanbanBoard } from "./MentoringKanbanBoard";
 import { MentoringScheduleBoard } from "./MentoringScheduleBoard";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 const INVENTORY_ITEMS = [
   { id: "jack_1", name: "Jaqueta Corta-Vento Executive", category: "jacket", rarity: "Common", desc: "Design aerodinâmico cinza fosco." },
@@ -91,6 +92,7 @@ interface MentoringProfileBoardProps {
 }
 
 export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: MentoringProfileBoardProps) {
+  const { t, locale } = useTranslation();
   const { push } = useToast();
   const { user: clerkUser } = useUser();
   const authUser = useAuthStore((state) => state.user);
@@ -99,6 +101,11 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<"owner" | "public" | "tracking">("owner");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Next session date inside gamer HUD
   const [nextSessionDate, setNextSessionDate] = useState<string | null>(null);
@@ -152,11 +159,18 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const [newTemplateDesc, setNewTemplateDesc] = useState("");
 
   // Nomenclaturas Chaves
-  const [termDiary, setTermDiary] = useState("Diário de Bordo");
-  const [termTension, setTermTension] = useState("Tensão Cognitiva");
-  const [termDistortion, setTermDistortion] = useState("Distorção Cognitiva");
-  const [termStyle, setTermStyle] = useState("Estilo Pessoal");
+  const [termDiary, setTermDiary] = useState(locale === "pt" ? "Diário de Bordo" : "Logbook");
+  const [termTension, setTermTension] = useState(locale === "pt" ? "Tensão Cognitiva" : "Cognitive Tension");
+  const [termDistortion, setTermDistortion] = useState(locale === "pt" ? "Distorção Cognitiva" : "Cognitive Distortion");
+  const [termStyle, setTermStyle] = useState(locale === "pt" ? "Estilo Pessoal" : "Personal Style");
   const [termSidequest, setTermSidequest] = useState("Side-quest");
+
+  useEffect(() => {
+    setTermDiary(locale === "pt" ? "Diário de Bordo" : "Logbook");
+    setTermTension(locale === "pt" ? "Tensão Cognitiva" : "Cognitive Tension");
+    setTermDistortion(locale === "pt" ? "Distorção Cognitiva" : "Cognitive Distortion");
+    setTermStyle(locale === "pt" ? "Estilo Pessoal" : "Personal Style");
+  }, [locale]);
 
   // Profile Fields State
   const [role, setRole] = useState<"mentor" | "mentee">(isOwner ? "mentor" : "mentee");
@@ -240,6 +254,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
   // Task Statistics
   const [stats, setStats] = useState({ total: 0, completed: 0, engagement: 0 });
+  const [workspaceTasks, setWorkspaceTasks] = useState<any[]>([]);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
   // RPG Math Calculations
   const level = Math.floor(Math.sqrt(xp / 50)) + 1;
@@ -259,6 +275,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
       if (res.ok) {
         const data = await res.json();
         if (data.tasks) {
+          setWorkspaceTasks(data.tasks || []);
           const targetUserId = userId || authUser?.id;
           const activeRole = currentRole || role;
           // Filter tasks assigned strictly to this user if they are a mentee
@@ -316,6 +333,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           diaryLogs,
           cognitiveState,
           projects,
+          sessionTemplates,
           ...updatedFields
         })
       });
@@ -404,6 +422,11 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           });
           setDiaryLogs(p.diaryLogs || []);
           setCognitiveState(p.cognitiveState || "Estável");
+          setSessionTemplates(p.sessionTemplates && p.sessionTemplates.length > 0 ? p.sessionTemplates : [
+            { id: "1", title: "Kickoff de Alinhamento", duration: 60, desc: "Primeira sessão de mapeamento de objetivos." },
+            { id: "2", title: "Aceleração Operacional", duration: 45, desc: "Revisão e desbloqueio de gargalos cognitivos." },
+            { id: "3", title: "Alinhamento Estratégico", duration: 60, desc: "Definição de objetivos de trimestre e carreira." }
+          ]);
 
           const isOwnProfile = !userId || userId === authUser?.id;
           if (isOwnProfile) {
@@ -697,7 +720,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           shortTermGoals,
           mediumTermGoals,
           professionalDream,
-          genderTerm
+          genderTerm,
+          sessionTemplates
         })
       });
 
@@ -1084,11 +1108,11 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
             {/* Sub-tab selection buttons inside unified buttons list */}
             {activeSubTab === "portfolio" && [
-              { id: "dashboard", label: "Painel de Evolução", icon: TrendingUp },
+              { id: "dashboard", label: t("admin.mentoringProfile.tabs.dashboard"), icon: TrendingUp },
               { id: "diary", label: termDiary, icon: BookOpen },
-              { id: "tasks", label: "Tarefas (Kanban)", icon: ClipboardList },
-              { id: "schedule", label: "Agenda Sessões", icon: CalendarDays },
-              ...(role === "mentor" && viewMode === "owner" ? [{ id: "admin_controls", label: "Painel do Mentor", icon: Shield }] : [])
+              { id: "tasks", label: t("admin.mentoringProfile.tabs.tasks"), icon: ClipboardList },
+              { id: "schedule", label: t("admin.mentoringProfile.tabs.schedule"), icon: CalendarDays },
+              ...(role === "mentor" && viewMode === "owner" ? [{ id: "admin_controls", label: t("admin.mentoringProfile.tabs.mentorPanel"), icon: Shield }] : [])
             ].map(tab => {
               const Icon = tab.icon;
               const isActive = mentoringSubTab === tab.id;
@@ -1129,7 +1153,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 )}
               >
                 <Sliders className="w-3.5 h-3.5 shrink-0" />
-                <span>Configurações</span>
+                <span>{t("admin.mentoringProfile.tabs.config")}</span>
               </button>
             )}
 
@@ -1141,7 +1165,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 className="flex items-center gap-1.5 bg-slate-900 hover:bg-indigo-650 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-3xs font-sans border-none shrink-0"
               >
                 <Sparkles className="w-3.5 h-3.5 text-indigo-300 animate-pulse" />
-                <span>Secretaria IA</span>
+                <span>{t("admin.mentoringProfile.tabs.secretary")}</span>
               </button>
             )}
           </div>
@@ -1159,8 +1183,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
                       <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Secretaria IA (I/O) • Relatório de Evolução</h4>
-                        <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Diretrizes estratégicas e próximos passos operacionais</p>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">{t("admin.mentoringProfile.secReportHeader")}</h4>
+                        <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{t("admin.mentoringProfile.secReportSubtitle")}</p>
                       </div>
                     </div>
                     <button
@@ -1168,7 +1192,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                       onClick={() => handleOpenSecretary()}
                       className="text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-850 hover:underline transition-colors bg-indigo-50 px-2.5 py-1 rounded"
                     >
-                      Ver Histórico
+                      {t("admin.mentoringProfile.viewHistory")}
                     </button>
                   </div>
 
@@ -1179,16 +1203,18 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     >
                       <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
                         <span className="flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/50 font-black">
-                          📄 Relatório de Evolução
+                          {t("admin.mentoringProfile.reportTitle")}
                         </span>
                         {secretaryHistory[0]?.createdAt && (
                           <span className="text-slate-500 font-bold bg-[#eae6db]/60 px-2 py-0.5 rounded">
-                            Criado em: {new Date(secretaryHistory[0].createdAt).toLocaleDateString("pt-BR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit"
+                            {t("admin.mentoringProfile.createdAt", {
+                              date: isMounted ? new Date(secretaryHistory[0].createdAt).toLocaleDateString(locale === "pt" ? "pt-BR" : "en-US", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              }) : ""
                             })}
                           </span>
                         )}
@@ -1206,14 +1232,14 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                       
                       <div className="border-t border-[#f0ede4]/60 pt-2.5 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-indigo-600 group-hover/sec:text-indigo-800">
                         <span>
-                          {isSecretaryExpanded ? "↑ recolher relatório" : "↓ clique para expandir relatório completo"}
+                          {isSecretaryExpanded ? t("admin.mentoringProfile.collapseReport") : t("admin.mentoringProfile.expandReport")}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <div className="border border-dashed border-slate-200 rounded-lg p-6 text-center text-slate-400 flex flex-col items-center gap-2 bg-slate-50/50">
                       <Sparkles className="w-6 h-6 text-slate-350" />
-                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nenhum relatório de evolução gerado para este ciclo.</p>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t("admin.mentoringProfile.noReportGenerated")}</p>
                       <button
                         type="button"
                         onClick={handleGenerateSecretarySuggestion}
@@ -1223,12 +1249,12 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         {isGeneratingSecretary ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Compilando...</span>
+                            <span>{t("admin.mentoringProfile.compiling")}</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                            <span>Gerar Relatório de Evolução</span>
+                            <span>{t("admin.mentoringProfile.generateReport")}</span>
                           </>
                         )}
                       </button>
@@ -1243,10 +1269,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   <div>
                     <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2 font-sans">
                       <Sparkles className="w-4 h-4 text-indigo-500" />
-                      <span>Diretrizes & Alinhamento de Evolução</span>
+                      <span>{t("admin.mentoringProfile.guideTitle")}</span>
                     </h4>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-sans mt-0.5">
-                      Seu planejamento estratégico pessoal e alinhamento de propósito na mentoria
+                      {t("admin.mentoringProfile.guideSubtitle")}
                     </p>
                   </div>
 
@@ -1257,10 +1283,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         <div className="p-2 rounded-lg bg-indigo-50">
                           <Sparkles className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Expectativas da Mentoria</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{t("admin.mentoringProfile.expectationLabel")}</span>
                       </div>
                       <p className="text-xs font-semibold text-slate-700 leading-relaxed whitespace-pre-line">
-                        {mentorshipExpectations || "Não preenchido nas configurações."}
+                        {mentorshipExpectations || t("admin.mentoringProfile.notFilled")}
                       </p>
                     </div>
 
@@ -1270,10 +1296,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         <div className="p-2 rounded-lg bg-rose-50">
                           <Target className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Objetivos de Curto Prazo</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{t("admin.mentoringProfile.shortTermLabel")}</span>
                       </div>
                       <p className="text-xs font-semibold text-slate-700 leading-relaxed whitespace-pre-line">
-                        {shortTermGoals || "Não preenchido nas configurações."}
+                        {shortTermGoals || t("admin.mentoringProfile.notFilled")}
                       </p>
                     </div>
 
@@ -1283,10 +1309,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         <div className="p-2 rounded-lg bg-amber-50">
                           <TrendingUp className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Objetivos de Médio Prazo</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{t("admin.mentoringProfile.mediumTermLabel")}</span>
                       </div>
                       <p className="text-xs font-semibold text-slate-700 leading-relaxed whitespace-pre-line">
-                        {mediumTermGoals || "Não preenchido nas configurações."}
+                        {mediumTermGoals || t("admin.mentoringProfile.notFilled")}
                       </p>
                     </div>
 
@@ -1296,10 +1322,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         <div className="p-2 rounded-lg bg-yellow-50">
                           <Award className="w-4 h-4 animate-pulse" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Sonho Profissional (Estrela Guia)</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{t("admin.mentoringProfile.professionalDreamLabel")}</span>
                       </div>
                       <p className="text-sm font-semibold text-indigo-950 leading-relaxed whitespace-pre-line font-serif italic text-left pl-2 border-l-2 border-amber-200">
-                        {professionalDream ? `"${professionalDream}"` : "Não preenchido nas configurações."}
+                        {professionalDream ? `"${professionalDream}"` : t("admin.mentoringProfile.notFilled")}
                       </p>
                     </div>
 
@@ -1309,13 +1335,117 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                         <div className="p-2 rounded-lg bg-emerald-50">
                           <Heart className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Hobbies, Artes & Talentos</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{t("admin.mentoringProfile.hobbiesLabel")}</span>
                       </div>
                       <p className="text-xs font-semibold text-slate-700 leading-relaxed whitespace-pre-line">
-                        {hobbies || "Não preenchido nas configurações."}
+                        {hobbies || t("admin.mentoringProfile.notFilled")}
                       </p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Dynamic XP History / Audit Log */}
+              {viewMode !== "public" && (
+                <div className="bg-[#fcfbf9] border border-[#e8e5dd] p-8 rounded-xl shadow-2xs mt-2 flex flex-col gap-4 font-sans text-left animate-in fade-in duration-200">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2 font-sans">
+                      <Award className="w-4 h-4 text-indigo-500" />
+                      <span>{locale === 'pt' ? 'Histórico de Experiência (XP)' : 'Experience (XP) History Log'}</span>
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-sans mt-0.5">
+                      {locale === 'pt' ? 'Fontes e auditoria de pontos obtidos na mentoria' : 'Audit and sources of points gained throughout your mentoring journey'}
+                    </p>
+                  </div>
+
+                  {(() => {
+                    const history = [];
+
+                    // 1. Initial Login/Sign-up baseline
+                    history.push({
+                      id: "welcome_base",
+                      type: "welcome",
+                      title: locale === 'pt' ? "Cadastro / Acesso Inicial" : "Initial Sign-up / Login",
+                      xp: 0,
+                      date: "N/A"
+                    });
+
+                    // 2. Add diary logs (+200 XP each)
+                    diaryLogs.forEach((log, idx) => {
+                      history.push({
+                        id: `diary_${idx}`,
+                        type: "diary",
+                        title: `${locale === 'pt' ? "Diário de Bordo Registrado" : "Logbook Entry Submitted"} #${idx + 1}`,
+                        xp: diaryXpWeight || 200,
+                        date: log.date || "N/A"
+                      });
+                    });
+
+                    // 3. Add completed tasks (+importance * 10 XP each)
+                    const targetUserId = userId || authUser?.id;
+                    const userTasks = role === 'mentor'
+                      ? workspaceTasks
+                      : workspaceTasks.filter((t: any) => t.assigneeId === targetUserId);
+
+                    userTasks.forEach((task: any) => {
+                      if (task.status === "done") {
+                        const xpAmount = (Number(task.importance) || 0) * 10;
+                        history.push({
+                          id: `task_${task._id || task.id}`,
+                          type: "task",
+                          title: `${locale === 'pt' ? "Tarefa Concluída" : "Task Completed"}: ${task.title}`,
+                          xp: xpAmount,
+                          date: task.updatedAt ? (isMounted ? new Date(task.updatedAt).toLocaleDateString("pt-BR") : "") : "N/A"
+                        });
+                      }
+                    });
+
+                    // Sort chronologically/or just show all with newest first
+                    const sortedHistory = history.reverse(); // simple chronological reverse
+
+                    return sortedHistory.length <= 1 ? (
+                      <div className="text-center py-6 text-xs font-semibold text-slate-400 bg-white border border-[#e8e5dd]/60 rounded-xl border-dashed">
+                        {locale === 'pt' ? 'Nenhuma atividade recente que concedeu XP.' : 'No recent activities that awarded XP.'}
+                      </div>
+                    ) : (
+                      <div className="bg-white border border-[#e8e5dd]/60 rounded-xl divide-y divide-slate-100 max-h-[250px] overflow-y-auto pr-1 shadow-3xs">
+                        {sortedHistory.map((item) => (
+                          <div key={item.id} className="p-4 flex items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={cn(
+                                "p-2 rounded-xl shrink-0",
+                                item.type === "welcome"
+                                  ? "bg-slate-50 text-slate-500"
+                                  : item.type === "diary"
+                                    ? "bg-indigo-50 text-indigo-600"
+                                    : "bg-emerald-50 text-emerald-600"
+                              )}>
+                                {item.type === "welcome" ? (
+                                  <User className="w-3.5 h-3.5" />
+                                ) : item.type === "diary" ? (
+                                  <BookOpen className="w-3.5 h-3.5" />
+                                ) : (
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                )}
+                              </div>
+                              <div className="flex flex-col min-w-0 text-left">
+                                <span className="text-xs font-bold text-slate-800 truncate">{item.title}</span>
+                                <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-widest">{locale === 'pt' ? 'Data' : 'Date'}: {item.date}</span>
+                              </div>
+                            </div>
+                            <span className={cn(
+                              "text-xs font-black shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full",
+                              item.xp > 0
+                                ? "bg-amber-50 text-amber-600 border border-amber-100"
+                                : "bg-slate-100 text-slate-500"
+                            )}>
+                              {item.xp > 0 ? `+${item.xp} XP` : "0 XP"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -1326,20 +1456,20 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
                         <Briefcase className="w-4 h-4 text-indigo-500" />
-                        <span>Biografia & Trajetória</span>
+                        <span>{t("admin.mentoringProfile.bioTrajectoryLabel")}</span>
                       </h4>
                       <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-line text-left">
-                        {miniBio || "Nenhuma biografia disponível."}
+                        {miniBio || t("admin.mentoringProfile.noBio")}
                       </p>
                     </div>
 
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-indigo-500" />
-                        <span>Experiência Profissional</span>
+                        <span>{t("admin.mentoringProfile.experienceLabel")}</span>
                       </h4>
                       <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-line text-left">
-                        {experience || "Histórico de experiência não preenchido."}
+                        {experience || t("admin.mentoringProfile.noExperience")}
                       </p>
                     </div>
                   </div>
@@ -1347,10 +1477,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                     <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-indigo-500" />
-                      <span>Habilidades & Competências</span>
+                      <span>{t("admin.mentoringProfile.skillsLabel")}</span>
                     </h4>
                     {skills.length === 0 ? (
-                      <p className="text-xs text-slate-400 font-bold">Nenhuma competência cadastrada.</p>
+                      <p className="text-xs text-slate-400 font-bold">{t("admin.mentoringProfile.noSkills")}</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {skills.map((skill, idx) => (
@@ -1371,20 +1501,20 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                         <Target className="w-4 h-4 text-indigo-500" />
-                        <span>Objetivo Pessoal</span>
+                        <span>{t("admin.mentoringProfile.personalGoalLabel")}</span>
                       </h4>
                       <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-line text-left">
-                        {personalGoal || "Não definido."}
+                        {personalGoal || t("admin.mentoringProfile.notDefined")}
                       </p>
                     </div>
 
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
                         <Briefcase className="w-4 h-4 text-indigo-500" />
-                        <span>Objetivo de Carreira</span>
+                        <span>{t("admin.mentoringProfile.careerGoalLabel")}</span>
                       </h4>
                       <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-line text-left">
-                        {careerGoal || "Não definido."}
+                        {careerGoal || t("admin.mentoringProfile.notDefined")}
                       </p>
                     </div>
                   </div>
@@ -1393,13 +1523,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-4">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2 border-b border-slate-50 pb-2">
                         <Sparkles className="w-4 h-4 text-indigo-500" />
-                        <span>3 Atributos Pessoais</span>
+                        <span>{t("admin.mentoringProfile.personalAttributesLabel")}</span>
                       </h4>
                       <ul className="space-y-3">
                         {attributes.map((attr, idx) => (
                           <li key={idx} className="flex items-center gap-2.5">
                             <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black">{idx + 1}</span>
-                            <span className="text-xs font-bold text-slate-700">{attr || "Não preenchido"}</span>
+                            <span className="text-xs font-bold text-slate-700">{attr || t("admin.mentoringProfile.notFilledShort")}</span>
                           </li>
                         ))}
                       </ul>
@@ -1408,13 +1538,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-4">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2 border-b border-slate-50 pb-2">
                         <Award className="w-4 h-4 text-indigo-500" />
-                        <span>3 Grandes Conquistas</span>
+                        <span>{t("admin.mentoringProfile.greatestAchievementsLabel")}</span>
                       </h4>
                       <ul className="space-y-3">
                         {achievements.map((ach, idx) => (
                           <li key={idx} className="flex items-center gap-2.5">
                             <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black">{idx + 1}</span>
-                            <span className="text-xs font-bold text-slate-700">{ach || "Não preenchido"}</span>
+                            <span className="text-xs font-bold text-slate-700">{ach || t("admin.mentoringProfile.notFilledShort")}</span>
                           </li>
                         ))}
                       </ul>
@@ -1423,12 +1553,12 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-4">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2 border-b border-slate-50 pb-2">
                         <Heart className="w-4 h-4 text-indigo-500" />
-                        <span>Maior Qualidade</span>
+                        <span>{locale === 'pt' ? 'Maior Qualidade' : 'Greatest Quality'}</span>
                       </h4>
                       <div className="bg-indigo-50/50 p-4 rounded-2xl flex-1 flex flex-col justify-center text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">Como os outros me veem</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">{locale === 'pt' ? 'Como os outros me veem' : 'How others see me'}</p>
                         <h5 className="text-base font-black text-indigo-900 leading-tight">
-                          {greatestAttribute || "Não especificado"}
+                          {greatestAttribute || (locale === 'pt' ? 'Não especificado' : 'Not specified')}
                         </h5>
                       </div>
                     </div>
@@ -1673,8 +1803,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               {/* Header Box */}
               <div className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">Projetos Profissionais</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Apresente e gerencie seus portfólios, startups e cases de sucesso na mentoria</p>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">{t("admin.mentoringProfile.projects.title")}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t("admin.mentoringProfile.projects.subtitle")}</p>
                 </div>
                 {viewMode === "owner" && (
                   <button
@@ -1689,7 +1819,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-indigo-100 transition-all cursor-pointer hover:scale-[1.02] shrink-0"
                   >
                     <Plus className="w-4 h-4" />
-                    Novo Projeto
+                    {t("admin.mentoringProfile.projects.newProject")}
                   </button>
                 )}
               </div>
@@ -1699,26 +1829,26 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 <form onSubmit={handleSaveProject} className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-md flex flex-col gap-5 animate-in slide-in-from-top duration-300">
                   <div className="flex items-center justify-between border-b border-slate-50 pb-3">
                     <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                      {editingProjectId ? "Editar Projeto" : "Cadastrar Novo Projeto"}
+                      {editingProjectId ? t("admin.mentoringProfile.projects.editProject") : t("admin.mentoringProfile.projects.addProject")}
                     </h4>
                     <button
                       type="button"
                       onClick={() => setIsProjectFormOpen(false)}
                       className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
                     >
-                      Cancelar
+                      {t("admin.mentoringProfile.projects.cancelBtn")}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Title */}
                     <div className="flex flex-col gap-2">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Título do Projeto</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.projects.projectTitleLabel")}</label>
                       <input
                         type="text"
                         value={projectTitle}
                         onChange={(e) => setProjectTitle(e.target.value)}
-                        placeholder="Ex: App de Telemedicina, MVP de Finanças"
+                        placeholder={t("admin.mentoringProfile.projects.projectTitlePlaceholder")}
                         className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-xs font-semibold focus:outline-indigo-600 text-slate-800"
                         required
                       />
@@ -1726,12 +1856,12 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
                     {/* Tags */}
                     <div className="flex flex-col gap-2">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Tags / Tecnologias (separadas por vírgula)</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.projects.tagsLabel")}</label>
                       <input
                         type="text"
                         value={projectTagsString}
                         onChange={(e) => setProjectTagsString(e.target.value)}
-                        placeholder="Ex: NextJS, React Native, SaaS"
+                        placeholder={t("admin.mentoringProfile.projects.tagsPlaceholder")}
                         className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-xs font-semibold focus:outline-indigo-600 text-slate-800"
                       />
                     </div>
@@ -1739,29 +1869,29 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
                   {/* Description */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Descrição Detalhada</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.projects.descLabel")}</label>
                     <textarea
                       value={projectDescription}
                       onChange={(e) => setProjectDescription(e.target.value)}
-                      placeholder="Explique o objetivo do projeto, tecnologia e os resultados alcançados..."
+                      placeholder={t("admin.mentoringProfile.projects.descPlaceholder")}
                       className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-xs font-semibold min-h-[100px] focus:outline-indigo-600 text-slate-800"
                     />
                   </div>
 
                   {/* Image Upload */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Imagem do Case / Logotipo (URL ou Upload)</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.projects.imgLabel")}</label>
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       <input
                         type="text"
                         value={projectImageUrl}
                         onChange={(e) => setProjectImageUrl(e.target.value)}
-                        placeholder="Cole a URL da imagem ou use o botão à direita"
+                        placeholder={t("admin.mentoringProfile.projects.imgPlaceholder")}
                         className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-xs font-semibold focus:outline-indigo-600 text-slate-800"
                       />
                       <label className="flex items-center gap-2 px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-wider cursor-pointer select-none">
                         <UploadCloud className="w-4 h-4 text-indigo-500" />
-                        <span>Fazer Upload</span>
+                        <span>{t("admin.mentoringProfile.projects.uploadBtn")}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1778,7 +1908,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                           onClick={() => setProjectImageUrl("")}
                           className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] font-black uppercase transition-all"
                         >
-                          Remover
+                          {t("admin.mentoringProfile.projects.removeBtn")}
                         </button>
                       </div>
                     )}
@@ -1790,13 +1920,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                       onClick={() => setIsProjectFormOpen(false)}
                       className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] cursor-pointer"
                     >
-                      Cancelar
+                      {t("admin.mentoringProfile.projects.cancelBtn")}
                     </button>
                     <button
                       type="submit"
                       className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-indigo-100 cursor-pointer"
                     >
-                      {editingProjectId ? "Salvar Alterações" : "Adicionar Projeto"}
+                      {editingProjectId ? t("admin.mentoringProfile.projects.saveBtn") : t("admin.mentoringProfile.projects.addBtn")}
                     </button>
                   </div>
                 </form>
@@ -1807,15 +1937,15 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 <div className="bg-white border border-slate-100 rounded-[2.5rem] p-12 text-center shadow-sm flex flex-col items-center justify-center gap-4">
                   <Briefcase className="w-10 h-10 text-slate-300" />
                   <div>
-                    <h4 className="text-xs font-black uppercase tracking-wide text-slate-800">Nenhum projeto cadastrado</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Registre seus principais casos de sucesso profissionais ou de estudos</p>
+                    <h4 className="text-xs font-black uppercase tracking-wide text-slate-800">{t("admin.mentoringProfile.projects.emptyTitle")}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{t("admin.mentoringProfile.projects.emptySubtitle")}</p>
                   </div>
                   {viewMode === "owner" && (
                     <button
                       onClick={() => setIsProjectFormOpen(true)}
                       className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer"
                     >
-                      Adicionar Primeiro Projeto
+                      {t("admin.mentoringProfile.projects.addFirstProject")}
                     </button>
                   )}
                 </div>
@@ -1836,21 +1966,21 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                                 ? "text-amber-500 hover:text-amber-600"
                                 : "text-slate-400 hover:text-slate-600"
                             )}
-                            title={featuredProjectIds.includes(proj.id) ? "Remover dos Destaques" : "Destacar na Vitrine Pública"}
+                            title={featuredProjectIds.includes(proj.id) ? t("admin.mentoringProfile.projects.removeFeatured") : t("admin.mentoringProfile.projects.featurePublic")}
                           >
                             <Star className={cn("w-3.5 h-3.5", featuredProjectIds.includes(proj.id) && "fill-amber-500")} />
                           </button>
                           <button
                             onClick={() => handleEditProjectClick(proj)}
                             className="p-1 hover:bg-slate-100 text-slate-600 rounded cursor-pointer animate-in fade-in"
-                            title="Editar Projeto"
+                            title={t("admin.mentoringProfile.projects.editProject")}
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteProject(proj.id)}
                             className="p-1 hover:bg-red-50 text-red-600 rounded cursor-pointer animate-in fade-in"
-                            title="Excluir Projeto"
+                            title={t("admin.mentoringProfile.mentorControls.deleteTemplate")}
                           >
                             <Trash className="w-3.5 h-3.5" />
                           </button>
@@ -1903,13 +2033,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               {/* Nomenclaturas Chaves */}
               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">Nomenclaturas Chaves</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Personalize os termos chaves usados em toda a jornada do mentorado</p>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">{t("admin.mentoringProfile.mentorControls.nomenclaturasTitle")}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t("admin.mentoringProfile.mentorControls.nomenclaturasSubtitle")}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Termo Diário de Bordo</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.mentorControls.termDiaryLabel")}</label>
                     <input
                       type="text"
                       value={termDiary}
@@ -1918,7 +2048,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Termo Tensão Cognitiva</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.mentorControls.termTensionLabel")}</label>
                     <input
                       type="text"
                       value={termTension}
@@ -1927,7 +2057,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Termo Distorção Cognitiva</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.mentorControls.termDistortionLabel")}</label>
                     <input
                       type="text"
                       value={termDistortion}
@@ -1936,7 +2066,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Termo Side-quest</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.mentorControls.termSidequestLabel")}</label>
                     <input
                       type="text"
                       value={termSidequest}
@@ -1950,8 +2080,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               {/* Parâmetros do Algoritmo & Gamificação */}
               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">Configurações do Algoritmo & XP</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ajuste os limiares de burnout e os multiplicadores de experiência da mentoria</p>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">{t("admin.mentoringProfile.mentorControls.algoXpTitle")}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t("admin.mentoringProfile.mentorControls.algoXpSubtitle")}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -1960,7 +2090,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                      <span>XP por Tarefa: {taskXpWeight}</span>
+                      <span>{t("admin.mentoringProfile.mentorControls.xpTaskLabel", { value: taskXpWeight })}</span>
                     </label>
                     <input
                       type="range" min="50" max="500" step="10"
@@ -1974,7 +2104,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                      <span>XP por Registro: {diaryXpWeight}</span>
+                      <span>{t("admin.mentoringProfile.mentorControls.xpDiaryLabel", { value: diaryXpWeight })}</span>
                     </label>
                     <input
                       type="range" min="50" max="500" step="10"
@@ -1988,7 +2118,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                      <span>XP por Sessão: {sessionXpWeight}</span>
+                      <span>{t("admin.mentoringProfile.mentorControls.xpSessionLabel", { value: sessionXpWeight })}</span>
                     </label>
                     <input
                       type="range" min="50" max="1000" step="50"
@@ -2002,7 +2132,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                       <Shield className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Limiar Burnout: {burnoutThreshold.toFixed(1)}</span>
+                      <span>{t("admin.mentoringProfile.mentorControls.burnoutLimitLabel", { value: burnoutThreshold.toFixed(1) })}</span>
                     </label>
                     <input
                       type="range" min="1.0" max="2.0" step="0.1"
@@ -2014,31 +2144,32 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
                 </div>
               </div>
-
               {/* Templates de Sessão */}
               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">Gerenciador de Templates de Sessão</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Adicione modelos de sessões e agendas rápidas para seus alunos</p>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">{t("admin.mentoringProfile.mentorControls.templatesTitle")}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t("admin.mentoringProfile.mentorControls.templatesSubtitle")}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                   {/* Create template form */}
                   <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col gap-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Criar Novo Template</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      {editingTemplateId ? (locale === "pt" ? "Editar Template" : "Edit Template") : t("admin.mentoringProfile.mentorControls.createNewTemplate")}
+                    </h4>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] font-black uppercase text-slate-400">Título da Sessão</label>
+                      <label className="text-[8px] font-black uppercase text-slate-400">{t("admin.mentoringProfile.mentorControls.templateTitleLabel")}</label>
                       <input
-                        type="text" placeholder="Ex: Planejamento Trimestral"
+                        type="text" placeholder={t("admin.mentoringProfile.mentorControls.templateTitlePlaceholder")}
                         value={newTemplateTitle} onChange={(e) => setNewTemplateTitle(e.target.value)}
                         className="px-3 py-1.5 bg-white border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] font-black uppercase text-slate-400">Duração (Minutos)</label>
+                      <label className="text-[8px] font-black uppercase text-slate-400">{t("admin.mentoringProfile.mentorControls.templateDurationLabel")}</label>
                       <input
                         type="number" placeholder="60"
                         value={newTemplateDuration} onChange={(e) => setNewTemplateDuration(Number(e.target.value))}
@@ -2047,36 +2178,70 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[8px] font-black uppercase text-slate-400">Descrição/Foco</label>
+                      <label className="text-[8px] font-black uppercase text-slate-400">{t("admin.mentoringProfile.mentorControls.templateDescLabel")}</label>
                       <textarea
-                        rows={2} placeholder="Foco da mentoria e tópicos a abordar..."
+                        rows={2} placeholder={t("admin.mentoringProfile.mentorControls.templateDescPlaceholder")}
                         value={newTemplateDesc} onChange={(e) => setNewTemplateDesc(e.target.value)}
                         className="px-3 py-1.5 bg-white border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 resize-none"
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!newTemplateTitle.trim()) {
-                          push({ title: "Preencha pelo menos o título do template!", variant: "destructive" });
-                          return;
-                        }
-                        const newTemp = {
-                          id: String(Date.now()),
-                          title: newTemplateTitle.trim(),
-                          duration: newTemplateDuration || 60,
-                          desc: newTemplateDesc.trim() || "Sem descrição."
-                        };
-                        setSessionTemplates([...sessionTemplates, newTemp]);
-                        setNewTemplateTitle("");
-                        setNewTemplateDesc("");
-                        push({ title: "Template de Sessão adicionado!", variant: "success" });
-                      }}
-                      className="w-full py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors"
-                    >
-                      Adicionar Modelo
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newTemplateTitle.trim()) {
+                            push({ title: t("admin.mentoringProfile.mentorControls.fillTemplateWarning"), variant: "destructive" });
+                            return;
+                          }
+                          if (editingTemplateId) {
+                            const nextTemps = sessionTemplates.map(t => 
+                              t.id === editingTemplateId 
+                                ? { ...t, title: newTemplateTitle.trim(), duration: newTemplateDuration || 60, desc: newTemplateDesc.trim() || (locale === "pt" ? "Sem descrição." : "No description.") } 
+                                : t
+                            );
+                            setSessionTemplates(nextTemps);
+                            setEditingTemplateId(null);
+                            setNewTemplateTitle("");
+                            setNewTemplateDesc("");
+                            setNewTemplateDuration(60);
+                            push({ title: "Template de Sessão atualizado!", variant: "success" });
+                            saveGamifiedData({ sessionTemplates: nextTemps });
+                          } else {
+                            const nextTemps = [...sessionTemplates, {
+                              id: String(Date.now()),
+                              title: newTemplateTitle.trim(),
+                              duration: newTemplateDuration || 60,
+                              desc: newTemplateDesc.trim() || "Sem descrição."
+                            }];
+                            setSessionTemplates(nextTemps);
+                            setNewTemplateTitle("");
+                            setNewTemplateDesc("");
+                            setNewTemplateDuration(60);
+                            push({ title: "Template de Sessão adicionado!", variant: "success" });
+                            saveGamifiedData({ sessionTemplates: nextTemps });
+                          }
+                        }}
+                        className="w-full py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors"
+                      >
+                        {editingTemplateId ? "Salvar Alterações" : "Adicionar Modelo"}
+                      </button>
+
+                      {editingTemplateId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTemplateId(null);
+                            setNewTemplateTitle("");
+                            setNewTemplateDesc("");
+                            setNewTemplateDuration(60);
+                          }}
+                          className="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer transition-colors"
+                        >
+                          Cancelar Edição
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Templates List */}
@@ -2094,16 +2259,39 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                             <p className="text-[9px] font-semibold text-slate-500 leading-relaxed">{template.desc}</p>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSessionTemplates(sessionTemplates.filter(t => t.id !== template.id));
-                              push({ title: "Template de Sessão excluído!", variant: "success" });
-                            }}
-                            className="text-left text-[8px] font-black uppercase tracking-wider text-rose-500 hover:text-rose-700 transition-colors cursor-pointer border-none bg-transparent"
-                          >
-                            Excluir Template
-                          </button>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingTemplateId(template.id);
+                                setNewTemplateTitle(template.title);
+                                setNewTemplateDuration(template.duration);
+                                setNewTemplateDesc(template.desc);
+                              }}
+                              className="text-left text-[8px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-850 transition-colors cursor-pointer border-none bg-transparent"
+                            >
+                              Editar
+                            </button>
+                            <span className="text-[8px] text-slate-250">|</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextTemps = sessionTemplates.filter(t => t.id !== template.id);
+                                setSessionTemplates(nextTemps);
+                                if (editingTemplateId === template.id) {
+                                  setEditingTemplateId(null);
+                                  setNewTemplateTitle("");
+                                  setNewTemplateDesc("");
+                                  setNewTemplateDuration(60);
+                                }
+                                push({ title: t("admin.mentoringProfile.mentorControls.templateDeletedToast"), variant: "success" });
+                                saveGamifiedData({ sessionTemplates: nextTemps });
+                              }}
+                              className="text-left text-[8px] font-black uppercase tracking-wider text-rose-500 hover:text-rose-700 transition-colors cursor-pointer border-none bg-transparent"
+                            >
+                              {t("admin.mentoringProfile.mentorControls.deleteTemplate")}
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2114,11 +2302,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
             </div>
           )}
-
         </div>
       )}
-
-      {/* EDIT CONFIGURATIONS VIEW */}
       {activeSubTab === "edit" && (
         <form onSubmit={handleSave} className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
 
@@ -2129,8 +2314,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 <CloudLightning className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <h4 className="text-sm font-black uppercase tracking-wider">Importador LinkedIn Real</h4>
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Preencha sua biografia e trajetórias automaticamente a partir do seu LinkedIn público</p>
+                <h4 className="text-sm font-black uppercase tracking-wider">{t("admin.mentoringProfile.edit.realLinkedinImportTitle")}</h4>
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{t("admin.mentoringProfile.edit.realLinkedinImportDesc")}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -2142,10 +2327,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               >
                 {linkedinStage === "idle" ? <Linkedin className="w-4 h-4" /> : <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>
-                  {linkedinStage === "idle" ? "Importar do LinkedIn Real" :
-                    linkedinStage === "connecting" ? "Conectando..." :
-                      linkedinStage === "extracting" ? "Extraindo..." :
-                        linkedinStage === "populating" ? "Populando..." : "Importado!"}
+                  {linkedinStage === "idle" ? t("admin.mentoringProfile.edit.realLinkedinBtn") :
+                    linkedinStage === "connecting" ? t("admin.mentoringProfile.edit.realLinkedinConnecting") :
+                      linkedinStage === "extracting" ? t("admin.mentoringProfile.edit.realLinkedinExtracting") :
+                        linkedinStage === "populating" ? t("admin.mentoringProfile.edit.realLinkedinPopulating") : t("admin.mentoringProfile.edit.realLinkedinImported")}
                 </span>
               </button>
 
@@ -2154,26 +2339,26 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   type="button"
                   onClick={() => {
                     setLinkedinStage("idle");
-                    push({ title: "Importação cancelada com sucesso.", variant: "success" });
+                    push({ title: t("admin.mentoringProfile.edit.cancelSuccessToast"), variant: "success" });
                   }}
                   className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
                 >
-                  Cancelar
+                  {t("admin.mentoringProfile.edit.cancelBtn")}
                 </button>
               )}
             </div>
           </div>
 
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
-            <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">Informações Gerais</h3>
+            <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">{t("admin.mentoringProfile.edit.generalInfoTitle")}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Papel na Mentoria</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.roleLabel")}</label>
                 <div className="flex gap-2">
                   {[
-                    { val: "mentor", label: "Mentor" },
-                    { val: "mentee", label: "Mentorado" }
+                    { val: "mentor", label: t("admin.mentoringProfile.edit.roleMentor") },
+                    { val: "mentee", label: t("admin.mentoringProfile.edit.roleMentee") }
                   ].map((item) => (
                     <button
                       key={item.val}
@@ -2193,11 +2378,11 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Nome Completo</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.fullNameLabel")}</label>
                 <input
                   required
                   type="text"
-                  placeholder="Seu nome"
+                  placeholder={t("admin.mentoringProfile.edit.fullNamePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -2205,13 +2390,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Username / Slug do Perfil Público</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.usernameLabel")}</label>
                 <div className="relative flex items-center">
                   <span className="absolute left-3 text-[8px] font-black uppercase tracking-wider text-slate-400 pointer-events-none">/public/mentoring/</span>
                   <input
                     type="text"
                     required
-                    placeholder="seu-username"
+                    placeholder={t("admin.mentoringProfile.edit.usernamePlaceholder")}
                     value={username}
                     onChange={(e) => {
                       // Apply lowercase, replace spaces/specials with dashes, strip duplicates
@@ -2224,13 +2409,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     className="w-full pl-[118px] pr-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
                   />
                 </div>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Apenas letras minúsculas, números e hífens. Ex: milton-bolonha</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t("admin.mentoringProfile.edit.usernameRules")}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Foto de Perfil (Cloudinary Upload / URL)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.photoLabel")}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
@@ -2244,7 +2429,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 border border-indigo-100/50 shrink-0"
                   >
                     {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CloudLightning className="w-3.5 h-3.5" />}
-                    <span>{isUploading ? "Enviando..." : "Upload"}</span>
+                    <span>{isUploading ? t("admin.mentoringProfile.edit.photoUploading") : t("admin.mentoringProfile.edit.photoUploadBtn")}</span>
                   </label>
                   <input
                     type="text"
@@ -2257,7 +2442,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Tagline de Chamada</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.taglineLabel")}</label>
                 <input
                   type="text"
                   placeholder="Ex: CEO na 21 Miles | Desenvolvedor Upwork"
@@ -2269,15 +2454,15 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               {role === "mentee" && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Gênero / Tratamento do Perfil</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.genderLabel")}</label>
                   <select
                     value={genderTerm}
                     onChange={(e) => setGenderTerm(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 cursor-pointer"
                   >
-                    <option value="mentorado">Masculino (Mentorado)</option>
-                    <option value="mentorada">Feminino (Mentorada)</option>
-                    <option value="mentoradx">Neutro (Mentoradx)</option>
+                    <option value="mentorado">{t("admin.mentoringProfile.edit.genderMaleOption")}</option>
+                    <option value="mentorada">{t("admin.mentoringProfile.edit.genderFemaleOption")}</option>
+                    <option value="mentoradx">{t("admin.mentoringProfile.edit.genderNeutralOption")}</option>
                   </select>
                 </div>
               )}
@@ -2285,7 +2470,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Link LinkedIn</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.linkedinLinkLabel")}</label>
                 <input
                   type="text"
                   placeholder="https://linkedin.com/in/..."
@@ -2296,10 +2481,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Frase Motivacional</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.motivationalLabel")}</label>
                 <input
                   type="text"
-                  placeholder="Uma frase curta que te inspire..."
+                  placeholder={t("admin.mentoringProfile.edit.motivationalPlaceholder")}
                   value={motivationalQuote}
                   onChange={(e) => setMotivationalQuote(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -2310,14 +2495,14 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
           {/* CONTACTS & SOCIALS EDIT CARD */}
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
-            <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">Contatos & Redes Sociais</h3>
+            <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">{t("admin.mentoringProfile.edit.contactsTitle")}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Telefone / Fixo</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.phoneLabel")}</label>
                 <input
                   type="text"
-                  placeholder="Ex: (11) 99999-9999"
+                  placeholder={t("admin.mentoringProfile.edit.phonePlaceholder")}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -2325,10 +2510,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">WhatsApp (Número Limpo)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.whatsappLabel")}</label>
                 <input
                   type="text"
-                  placeholder="Ex: 5511999999999"
+                  placeholder={t("admin.mentoringProfile.edit.whatsappPlaceholder")}
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -2336,10 +2521,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">E-mail Profissional</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.emailLabel")}</label>
                 <input
                   type="email"
-                  placeholder="Ex: milton@21miles.com.br"
+                  placeholder={t("admin.mentoringProfile.edit.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -2349,7 +2534,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">GitHub Link</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.githubLabel")}</label>
                 <input
                   type="text"
                   placeholder="https://github.com/..."
@@ -2360,7 +2545,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Instagram Link</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.instagramLabel")}</label>
                 <input
                   type="text"
                   placeholder="https://instagram.com/..."
@@ -2371,7 +2556,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Website / Portfolio Link</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.websiteLabel")}</label>
                 <input
                   type="text"
                   placeholder="https://..."
@@ -2387,13 +2572,13 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           {role === "mentor" ? (
             /* MENTOR FORM */
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
-              <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">Informações de Mentor</h3>
+              <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">{t("admin.mentoringProfile.edit.mentorInfoTitle")}</h3>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Biografia Profissional</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.mentorBioLabel")}</label>
                 <textarea
                   rows={4}
-                  placeholder="Descreva sua jornada, liderança profissional e foco..."
+                  placeholder={t("admin.mentoringProfile.edit.mentorBioPlaceholder")}
                   value={miniBio}
                   onChange={(e) => setMiniBio(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2401,10 +2586,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Histórico de Experiência / Conquistas de Carreira</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.mentorExperienceLabel")}</label>
                 <textarea
                   rows={3}
-                  placeholder="Quais foram seus maiores cargos, empresas fundadas ou tempo no mercado..."
+                  placeholder={t("admin.mentoringProfile.edit.mentorExperiencePlaceholder")}
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2413,11 +2598,11 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               {/* Skills list input */}
               <div className="flex flex-col gap-2">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Skills / Habilidades</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.skillsLabel")}</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Adicionar skill..."
+                    placeholder={t("admin.mentoringProfile.edit.skillsPlaceholder")}
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
@@ -2428,7 +2613,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                     onClick={addSkill}
                     className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
                   >
-                    Adicionar
+                    {t("admin.mentoringProfile.edit.addBtn")}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -2437,7 +2622,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                       key={s}
                       onClick={() => removeSkill(s)}
                       className="bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wide flex items-center gap-1.5 cursor-pointer transition-all"
-                      title="Clique para remover"
+                      title={t("admin.mentoringProfile.edit.clickToRemove")}
                     >
                       <span>{s}</span>
                       <span>&times;</span>
@@ -2449,14 +2634,14 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
           ) : (
             /* MENTEE FORM */
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6">
-              <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">Informações de Mentorado</h3>
+              <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight border-b border-slate-50 pb-2">{t("admin.mentoringProfile.edit.menteeInfoTitle")}</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Objetivo Pessoal</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.personalGoalLabel")}</label>
                   <textarea
                     rows={3}
-                    placeholder="Ex: Ter mais inteligência emocional, foco familiar ou equilíbrio..."
+                    placeholder={t("admin.mentoringProfile.edit.personalGoalPlaceholder")}
                     value={personalGoal}
                     onChange={(e) => setPersonalGoal(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2464,10 +2649,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Objetivo de Carreira</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.careerGoalLabel")}</label>
                   <textarea
                     rows={3}
-                    placeholder="Ex: Transição de carreira para Tech Leader, fundar minha própria startup..."
+                    placeholder={t("admin.mentoringProfile.edit.careerGoalPlaceholder")}
                     value={careerGoal}
                     onChange={(e) => setCareerGoal(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2477,14 +2662,14 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               {/* Attributes array input */}
               <div className="flex flex-col gap-3">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">3 Atributos que se destaca em si</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.personalAttributesLabel")}</label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {[0, 1, 2].map((idx) => (
                     <input
                       key={idx}
                       required
                       type="text"
-                      placeholder={`Atributo ${idx + 1}`}
+                      placeholder={t("admin.mentoringProfile.edit.attributePlaceholder", { num: idx + 1 })}
                       value={attributes[idx] || ""}
                       onChange={(e) => {
                         const next = [...attributes];
@@ -2499,14 +2684,14 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               {/* Achievements array input */}
               <div className="flex flex-col gap-3">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">3 Experiências de sucesso na vida (Geral/Conquistas)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.experiencesLabel")}</label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {[0, 1, 2].map((idx) => (
                     <input
                       key={idx}
                       required
                       type="text"
-                      placeholder={`Conquista ${idx + 1}`}
+                      placeholder={t("admin.mentoringProfile.edit.experiencePlaceholder", { num: idx + 1 })}
                       value={achievements[idx] || ""}
                       onChange={(e) => {
                         const next = [...achievements];
@@ -2521,10 +2706,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Como se vê no futuro (Visão de Médio/Longo prazo)</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.futureVisionLabel")}</label>
                   <textarea
                     rows={3}
-                    placeholder="Descreva seus sonhos e onde se vê nos próximos anos..."
+                    placeholder={t("admin.mentoringProfile.edit.futureVisionPlaceholder")}
                     value={futureVision}
                     onChange={(e) => setFutureVision(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2532,10 +2717,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Maior Atributo / Qualidade Pessoal</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.greatestAttributeLabel")}</label>
                   <textarea
                     rows={3}
-                    placeholder="Se as pessoas pudessem descrever você em um único atributo forte, qual seria?"
+                    placeholder={t("admin.mentoringProfile.edit.greatestAttributePlaceholder")}
                     value={greatestAttribute}
                     onChange={(e) => setGreatestAttribute(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2545,10 +2730,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Grupo Familiar (Descreva brevemente)</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.familyGroupLabel")}</label>
                   <textarea
                     rows={2}
-                    placeholder="Ex: Casado, 2 filhos, convivência próxima com os pais..."
+                    placeholder={t("admin.mentoringProfile.edit.familyGroupPlaceholder")}
                     value={familyGroup}
                     onChange={(e) => setFamilyGroup(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2556,10 +2741,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Hobbies, Talentos & Habilidades Artísticas</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.hobbiesLabel")}</label>
                   <textarea
                     rows={2}
-                    placeholder="Ex: Pintura digital, tocar violão clássico, jogar tênis..."
+                    placeholder={t("admin.mentoringProfile.edit.hobbiesPlaceholder")}
                     value={hobbies}
                     onChange={(e) => setHobbies(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2574,19 +2759,19 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
             <div>
               <h3 className="text-sm font-black uppercase text-slate-800 tracking-tight flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" />
-                <span>Diretrizes & Alinhamento de Evolução</span>
+                <span>{t("admin.mentoringProfile.edit.expectationsTitle")}</span>
               </h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                Defina suas metas estratégicas, sonhos e alinhamento profissional na mentoria
+                {t("admin.mentoringProfile.edit.expectationsSubtitle")}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">O que espera da mentoria (Expectativas)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.expectationsLabel")}</label>
                 <textarea
                   rows={3}
-                  placeholder="Ex: Alinhamento metodológico prático, feedbacks francos, network estratégico..."
+                  placeholder={t("admin.mentoringProfile.edit.expectationsPlaceholder")}
                   value={mentorshipExpectations}
                   onChange={(e) => setMentorshipExpectations(e.target.value)}
                   className="w-full px-4 py-2 bg-white border border-[#e8e5dd] rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2594,10 +2779,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Objetivos a Curto Prazo (Foco Imediato)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.shortTermGoalsLabel")}</label>
                 <textarea
                   rows={3}
-                  placeholder="Ex: Concluir MVP da nova plataforma em 3 meses, organizar cronograma semanal..."
+                  placeholder={t("admin.mentoringProfile.edit.shortTermGoalsPlaceholder")}
                   value={shortTermGoals}
                   onChange={(e) => setShortTermGoals(e.target.value)}
                   className="w-full px-4 py-2 bg-white border border-[#e8e5dd] rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2607,10 +2792,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Objetivos a Médio Prazo (Construção)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.mediumTermGoalsLabel")}</label>
                 <textarea
                   rows={3}
-                  placeholder="Ex: Escalar equipe para 10 desenvolvedores, atingir breakeven financeiro..."
+                  placeholder={t("admin.mentoringProfile.edit.mediumTermGoalsPlaceholder")}
                   value={mediumTermGoals}
                   onChange={(e) => setMediumTermGoals(e.target.value)}
                   className="w-full px-4 py-2 bg-white border border-[#e8e5dd] rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2618,10 +2803,10 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               </div>
 
               <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sonho Profissional (Sua Estrela Guia)</label>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringProfile.edit.professionalDreamLabel")}</label>
                 <textarea
                   rows={3}
-                  placeholder="Ex: Ser a maior referência de SaaS educacional do país, criar um negócio autossustentável..."
+                  placeholder={t("admin.mentoringProfile.edit.professionalDreamPlaceholder")}
                   value={professionalDream}
                   onChange={(e) => setProfessionalDream(e.target.value)}
                   className="w-full px-4 py-2 bg-white border border-[#e8e5dd] rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -2637,7 +2822,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               onClick={() => setActiveSubTab("portfolio")}
               className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors cursor-pointer border-none bg-transparent"
             >
-              Cancelar
+              {t("admin.mentoringProfile.edit.cancelBtnGeneral")}
             </button>
             <button
               type="submit"
@@ -2645,7 +2830,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-100 border-none"
             >
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              <span>Salvar Alterações</span>
+              <span>{t("admin.mentoringProfile.edit.saveBtnGeneral")}</span>
             </button>
           </div>
 
@@ -2668,8 +2853,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
                 <div className="text-left">
-                  <h3 className="text-sm font-black uppercase tracking-wider">Secretaria IA</h3>
-                  <p className="text-[8px] text-indigo-300 font-black uppercase tracking-widest">Inteligência Artificial e Mentor Diretor</p>
+                  <h3 className="text-sm font-black uppercase tracking-wider">{t("admin.mentoringProfile.secretaryPanel.title")}</h3>
+                  <p className="text-[8px] text-indigo-300 font-black uppercase tracking-widest">{t("admin.mentoringProfile.secretaryPanel.subtitle")}</p>
                 </div>
               </div>
               <button
@@ -2686,9 +2871,9 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               {/* Call-to-action to generate new suggestions */}
               <div className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-6 flex flex-col gap-4 text-left">
                 <div>
-                  <h4 className="text-xs font-black uppercase text-indigo-950">Acionar Inteligência da Secretaria</h4>
+                  <h4 className="text-xs font-black uppercase text-indigo-950">{t("admin.mentoringProfile.secretaryPanel.activateIntelTitle")}</h4>
                   <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-normal">
-                    A ADE compilará suas tarefas concluídas, sessões agendadas, diários de bordo e objetivos para gerar recomendações estratégicas exclusivas e apontar os seus próximos passos operacionais.
+                    {t("admin.mentoringProfile.secretaryPanel.activateIntelDesc")}
                   </p>
                 </div>
                 <button
@@ -2699,12 +2884,12 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                   {isGeneratingSecretary ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Analisando Performance...</span>
+                      <span>{t("admin.mentoringProfile.secretaryPanel.activateBtnAnalyzing")}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 text-amber-300" />
-                      <span>Gerar Recomendações e Próximos Passos</span>
+                      <span>{t("admin.mentoringProfile.secretaryPanel.activateBtnGenerate")}</span>
                     </>
                   )}
                 </button>
@@ -2712,7 +2897,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
 
               {/* Suggestions Panel */}
               <div className="flex flex-col gap-3 text-left">
-                <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400">Recomendação Estratégica Atual</h4>
+                <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400">{t("admin.mentoringProfile.secretaryPanel.recommendationLabel")}</h4>
 
                 {secretaryText ? (
                   <div className="bg-[#fcfbf9] border border-[#e8e5dd] p-6 rounded-3xl text-xs font-semibold text-slate-700 leading-relaxed font-sans whitespace-pre-line text-left">
@@ -2721,8 +2906,8 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 ) : (
                   <div className="border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center text-slate-400 flex flex-col items-center gap-2 bg-slate-50/50">
                     <Sparkles className="w-8 h-8 text-slate-300" />
-                    <p className="text-xs font-bold text-slate-600">Nenhuma recomendação recente gerada.</p>
-                    <p className="text-[10px] text-slate-400 mt-1 max-w-[280px] leading-normal font-semibold">Clique no botão acima para ativar a ADE e obter insights acionáveis sobre sua evolução.</p>
+                    <p className="text-xs font-bold text-slate-600">{t("admin.mentoringProfile.secretaryPanel.noRecTitle")}</p>
+                    <p className="text-[10px] text-slate-400 mt-1 max-w-[280px] leading-normal font-semibold">{t("admin.mentoringProfile.secretaryPanel.noRecDesc")}</p>
                   </div>
                 )}
               </div>
@@ -2730,16 +2915,16 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               {/* History Section */}
               {secretaryHistory.length > 1 && (
                 <div className="flex flex-col gap-3 text-left mt-2">
-                  <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400">Histórico de Sugestões Anteriores</h4>
+                  <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400">{t("admin.mentoringProfile.secretaryPanel.historyTitle")}</h4>
                   <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">
                     {secretaryHistory.map((item, idx) => {
-                      const dateStr = new Date(item.createdAt).toLocaleDateString("pt-BR", {
+                      const dateStr = isMounted ? new Date(item.createdAt).toLocaleDateString(locale === "pt" ? "pt-BR" : "en-US", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
                         hour: "2-digit",
                         minute: "2-digit"
-                      });
+                      }) : "";
                       return (
                         <button
                           key={item._id || idx}
@@ -2751,7 +2936,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                               : "bg-white border border-slate-100"
                           )}
                         >
-                          <span className="text-[8px] font-black uppercase text-indigo-600 tracking-wider">Sugestão de {dateStr}</span>
+                          <span className="text-[8px] font-black uppercase text-indigo-600 tracking-wider">{t("admin.mentoringProfile.secretaryPanel.suggestionFrom", { date: dateStr })}</span>
                           <p className="text-[10.5px] font-semibold text-slate-600 truncate">{item.content}</p>
                         </button>
                       );
@@ -2767,7 +2952,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 onClick={() => setIsSecretaryOpen(false)}
                 className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none transition-colors"
               >
-                Fechar Painel
+                {t("admin.mentoringProfile.secretaryPanel.closePanelBtn")}
               </button>
             </div>
 

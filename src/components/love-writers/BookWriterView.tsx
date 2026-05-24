@@ -8,6 +8,7 @@ import { Loader2, Download, X, Eye, EyeOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useWorkspaceStore } from "@/lib/stores/workspaceStore";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface BookWriterViewProps {
   workspaceId: string;
@@ -21,6 +22,7 @@ export function BookWriterView({
   bookId,
   onClose,
 }: BookWriterViewProps) {
+  const { t } = useTranslation();
   const { data: books, isLoading } = useBooks(workspaceId);
   const currentDashboard = useWorkspaceStore((state) => state.currentDashboard);
   const [viewMode, setViewMode] = useState<"content" | "cover">("content");
@@ -66,10 +68,10 @@ export function BookWriterView({
       if (viewMode === "cover") {
         return (
           <BookCoverDocument
-            title={selectedBook.title || "Book"}
-            author={selectedBook.publisher || "Autores Apaixonados"}
+            title={selectedBook.title || t("loveWriters.defaultBook")}
+            author={selectedBook.publisher || t("loveWriters.defaultAuthor")}
             description={
-              selectedBook.inspiration || "Uma história de amor apaixonante"
+              selectedBook.inspiration || t("loveWriters.defaultDescription")
             }
             coverImageUrl={selectedBook.coverImageUrl}
             pageCount={selectedBook.pagesCountGoal || 100}
@@ -83,7 +85,7 @@ export function BookWriterView({
 
         return (
           <BookPDFDocument
-            title={selectedBook?.title || "Book"}
+            title={selectedBook?.title || t("loveWriters.defaultBook")}
             contentHTML={initialContentProcessed}
             names={contactNames}
           />
@@ -154,7 +156,7 @@ export function BookWriterView({
   if (!selectedBook) {
     return (
       <div className="p-8 text-center text-gray-500">
-        Book not found or loading...
+        {t("loveWriters.bookNotFound")}
       </div>
     );
   }
@@ -171,7 +173,7 @@ export function BookWriterView({
             <X className="w-5 h-5" />
           </button>
           <h2 className="text-xl font-bold tracking-tight">
-            {selectedBook?.title || "Book Generator"}
+            {selectedBook?.title || t("loveWriters.defaultBook")}
           </h2>
         </div>
         <div className="flex items-center gap-3">
@@ -187,18 +189,18 @@ export function BookWriterView({
               ) : (
                 <EyeOff className="w-4 h-4 mr-2" />
               )}
-              {viewMode === "content" ? "Ver Capa" : "Ver Conteúdo"}
+              {viewMode === "content" ? t("loveWriters.viewCover") : t("loveWriters.viewContent")}
             </button>
           )}
           <PDFDownloadLink
             document={
               viewMode === "cover" ? (
                 <BookCoverDocument
-                  title={selectedBook.title || "Book"}
-                  author={selectedBook.publisher || "Autores Apaixonados"}
+                  title={selectedBook.title || t("loveWriters.defaultBook")}
+                  author={selectedBook.publisher || t("loveWriters.defaultAuthor")}
                   description={
                     selectedBook.inspiration ||
-                    "Uma história de amor apaixonante"
+                    t("loveWriters.defaultDescription")
                   }
                   coverImageUrl={selectedBook.coverImageUrl}
                   pageCount={selectedBook.pagesCountGoal || 100}
@@ -209,7 +211,7 @@ export function BookWriterView({
                 />
               ) : (
                 <BookPDFDocument
-                  title={selectedBook.title || "Book"}
+                  title={selectedBook.title || t("loveWriters.defaultBook")}
                   contentHTML={initialContentProcessed}
                   names={contactNames}
                 />
@@ -226,8 +228,8 @@ export function BookWriterView({
                   <Download className="w-4 h-4 mr-2" />
                 )}
                 {loading
-                  ? "Preparando PDF..."
-                  : `Exportar ${viewMode === "cover" ? "Capa" : "Conteúdo"}`}
+                  ? t("loveWriters.preparingPdf")
+                  : viewMode === "cover" ? t("loveWriters.exportCover") : t("loveWriters.exportContent")}
               </>
             )}
           </PDFDownloadLink>
@@ -245,7 +247,7 @@ export function BookWriterView({
             <>
               <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 text-sm">
                 <div className="text-gray-600">
-                  Preview gerado{" "}
+                  {t("loveWriters.previewGenerated")}{" "}
                   {previewInfo
                     ? `(tamanho: ${Math.round(previewInfo.size / 1024)} KB)`
                     : ""}
@@ -268,7 +270,7 @@ export function BookWriterView({
             </>
           ) : (
             <div className="flex h-full w-full items-center justify-center text-gray-500">
-              Preview indisponível. Tente gerar novamente.
+              {t("loveWriters.previewUnavailable")}
             </div>
           )}
         </div>

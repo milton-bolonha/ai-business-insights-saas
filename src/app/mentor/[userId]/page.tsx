@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -30,6 +31,7 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   // Interactive badge tooltip description state
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
         const res = await fetch(`/api/mentoring/public-profile?id=${targetUserId}`);
         if (!res.ok) {
           if (res.status === 404) {
-            throw new Error("Perfil não encontrado");
+            throw new Error(t("public.mentor.restrictedAccess"));
           }
           throw new Error("Erro ao carregar o perfil público");
         }
@@ -57,14 +59,14 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
     if (targetUserId) {
       fetchPublicProfile();
     }
-  }, [targetUserId]);
+  }, [targetUserId, t]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center font-sans">
         <div className="flex flex-col items-center gap-3 text-slate-500">
           <Loader2 className="w-8 h-8 text-slate-800 animate-spin" />
-          <span className="text-[10px] font-black uppercase tracking-widest font-sans">Carregando Perfil...</span>
+          <span className="text-[10px] font-black uppercase tracking-widest font-sans">{t("public.mentor.loadingProfile")}</span>
         </div>
       </div>
     );
@@ -75,15 +77,15 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
       <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-6 text-center font-sans">
         <div className="bg-white border border-[#e2dfd5] p-8 rounded-xl max-w-sm w-full shadow-lg">
           <Shield className="w-12 h-12 text-[#1a1a1a] mx-auto mb-4" />
-          <h3 className="text-base font-bold text-[#1a1a1a] uppercase tracking-wider font-['Lora',Georgia,serif] mb-2">Acesso Restrito</h3>
+          <h3 className="text-base font-bold text-[#1a1a1a] uppercase tracking-wider font-['Lora',Georgia,serif] mb-2">{t("public.mentor.restrictedAccess")}</h3>
           <p className="text-xs font-semibold text-slate-500 leading-relaxed mb-6 font-sans">
-            {error || "O perfil solicitado não pôde ser localizado em nossa base."}
+            {error || t("public.mentor.restrictedDesc")}
           </p>
           <a
             href="/"
             className="inline-block bg-[#1a1a1a] hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest px-6 py-3 rounded-xl transition-all font-sans"
           >
-            Voltar para o Início
+            {t("common.backToHome")}
           </a>
         </div>
       </div>
@@ -340,20 +342,20 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
             {/* Bio section */}
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a1a] font-['Lora',Georgia,serif] border-b border-[#e2dfd5] pb-2 mb-4">
-                Biografia Executiva
+                {t("admin.mentoring.executiveBio")}
               </h2>
               <p className="text-[11px] font-medium text-slate-600 leading-relaxed font-sans whitespace-pre-line">
-                {profile.miniBio || "Biografia não cadastrada."}
+                {profile.miniBio || t("public.mentor.noBio")}
               </p>
             </div>
 
             {/* Experience section */}
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a1a] font-['Lora',Georgia,serif] border-b border-[#e2dfd5] pb-2 mb-4">
-                Trajetória & Experiência
+                {t("admin.mentoring.experienceJourney")}
               </h2>
               <p className="text-[11px] font-medium text-slate-600 leading-relaxed font-sans whitespace-pre-line">
-                {profile.experience || "Trajetória profissional ainda não cadastrada."}
+                {profile.experience || t("public.mentor.noExperience")}
               </p>
             </div>
 
@@ -362,7 +364,7 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
           {/* Right Column: Skills pills */}
           <div>
             <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-sans border-b border-[#e2dfd5] pb-2 mb-4">
-              Competências Chaves
+              {t("admin.mentoring.coreCompetencies")}
             </h2>
             <div className="flex flex-wrap gap-1.5">
               {profile.skills && profile.skills.length > 0 ? (
@@ -375,7 +377,7 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
                   </span>
                 ))
               ) : (
-                <span className="text-[9px] font-bold text-slate-400 font-sans">Nenhuma competência cadastrada.</span>
+                <span className="text-[9px] font-bold text-slate-400 font-sans">{t("public.mentor.noSkills")}</span>
               )}
             </div>
           </div>
@@ -388,7 +390,7 @@ export default function MentorProfilePage({ params }: PublicProfilePageProps) {
       {/* 3. Footer */}
       <footer className="mt-auto py-6 border-t border-[#e2dfd5] text-center">
         <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest font-sans">
-          I/O MENTORIA • TODOS OS DIREITOS RESERVADOS
+          {t("public.mentor.footer")}
         </p>
       </footer>
     </div>

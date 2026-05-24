@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/lib/state/toast-context";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface Task {
   _id: string;
@@ -49,6 +50,7 @@ const COLUMNS = [
 
 export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUserRole = "mentor" }: MentoringKanbanBoardProps) {
   const { push } = useToast();
+  const { t, locale } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingTask, setIsAddingTask] = useState<string | null>(null);
@@ -114,10 +116,10 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
         setNewTaskTitle("");
         setIsAddingTask(null);
         fetchTasks();
-        push({ title: "Tarefa criada com sucesso!", variant: "success" });
+        push({ title: t("admin.mentoringKanban.toasts.taskCreated"), variant: "success" });
       }
     } catch (err) {
-      push({ title: "Erro ao criar tarefa", variant: "destructive" });
+      push({ title: t("admin.mentoringKanban.toasts.taskCreateError"), variant: "destructive" });
     }
   };
 
@@ -131,8 +133,8 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
     // A mentee (non-owner) can only move to 'done' if it is a side-quest (importance 0)
     if (!isOwner && newStatus === 'done' && !isSideQuest) {
       push({
-        title: "Acesso Negado",
-        description: "Apenas o Mentor pode marcar tarefas estratégicas como concluídas. Mova para 'Aprovação'.",
+        title: t("admin.mentoringKanban.toasts.accessDenied"),
+        description: t("admin.mentoringKanban.toasts.onlyMentorCompleteStrategic"),
         variant: "destructive"
       });
       return;
@@ -148,7 +150,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
         setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus as any } : t));
       }
     } catch (err) {
-      push({ title: "Erro ao atualizar status", variant: "destructive" });
+      push({ title: t("admin.mentoringKanban.toasts.statusUpdateError"), variant: "destructive" });
     }
   };
 
@@ -177,8 +179,8 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
     const isSideQuest = selectedTask.importance === 0;
     if (!isOwner && !isSideQuest) {
       push({
-        title: "Acesso Negado",
-        description: "Mentees só podem editar Side-quests.",
+        title: t("admin.mentoringKanban.toasts.accessDenied"),
+        description: t("admin.mentoringKanban.toasts.menteesOnlyEditSidequests"),
         variant: "destructive"
       });
       return;
@@ -200,14 +202,14 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
       });
 
       if (res.ok) {
-        push({ title: "Tarefa atualizada com sucesso!", variant: "success" });
+        push({ title: t("admin.mentoringKanban.toasts.taskUpdated"), variant: "success" });
         setSelectedTask(null);
         fetchTasks();
       } else {
         throw new Error();
       }
     } catch (err) {
-      push({ title: "Erro ao salvar alterações", variant: "destructive" });
+      push({ title: t("admin.mentoringKanban.toasts.saveChangesError"), variant: "destructive" });
     } finally {
       setIsSavingTask(false);
     }
@@ -218,8 +220,8 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
     if (!desc) return { video: "", pdf: "" };
     
     // Simple regex or string parsing for our automated session creations
-    const youtubeMatch = desc.match(/\[Vídeo do YouTube\]\(([^)]+)\)/i) || desc.match(/(https?:\/\/(?:www\.)?youtube\.com\/watch\?v=[^\s]+)/i);
-    const pdfMatch = desc.match(/\[PDF \/ Material de Referência\]\(([^)]+)\)/i) || desc.match(/(https?:\/\/[^\s]+\.pdf|https?:\/\/drive\.google\.com\/[^\s]+)/i);
+    const youtubeMatch = desc.match(/\[Vídeo do YouTube\]\(([^)]+)\)/i) || desc.match(/\[YouTube Video\]\(([^)]+)\)/i) || desc.match(/(https?:\/\/(?:www\.)?youtube\.com\/watch\?v=[^\s]+)/i);
+    const pdfMatch = desc.match(/\[PDF \/ Material de Referência\]\(([^)]+)\)/i) || desc.match(/\[PDF \/ Reference Material\]\(([^)]+)\)/i) || desc.match(/(https?:\/\/[^\s]+\.pdf|https?:\/\/drive\.google\.com\/[^\s]+)/i);
 
     return {
       video: youtubeMatch ? youtubeMatch[1] : "",
@@ -236,8 +238,8 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
             <Layout className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Kanban de Mentoria</h2>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Acompanhamento de Evolução</p>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t("admin.mentoringKanban.title")}</h2>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t("admin.mentoringKanban.subtitle")}</p>
           </div>
         </div>
       </div>
@@ -247,6 +249,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
         {COLUMNS.map(col => {
           const Icon = col.icon;
           const isSel = activeColumnMobile === col.id;
+          const colLabel = t(`admin.mentoringKanban.columns.${col.id}` as any);
           return (
             <button
               key={col.id}
@@ -257,7 +260,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
               )}
             >
               <Icon className="w-4 h-4 shrink-0" />
-              <span>{col.label.split(' ')[0]}</span>
+              <span>{colLabel.split(' ')[0]}</span>
             </button>
           );
         })}
@@ -289,7 +292,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
               <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100/20">
                 <div className="flex items-center gap-2">
                   <div className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border", column.color)}>
-                    {column.label}
+                    {t(`admin.mentoringKanban.columns.${column.id}` as any)}
                   </div>
                   <span className="text-xs font-black text-slate-300 bg-slate-100/60 px-2 py-0.5 rounded-md">
                     {tasks.filter(t => t.status === column.id).length}
@@ -299,7 +302,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                   <button 
                     onClick={() => setIsAddingTask(column.id)}
                     className="p-1.5 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
-                    title="Adicionar Tarefa"
+                    title={t("admin.mentoringKanban.addTask")}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -319,7 +322,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     >
                       <input 
                         autoFocus
-                        placeholder="Título da tarefa..."
+                        placeholder={t("admin.mentoringKanban.taskTitlePlaceholder")}
                         className="w-full text-sm font-bold text-slate-800 outline-none"
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -330,13 +333,13 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                           onClick={() => setIsAddingTask(null)}
                           className="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 cursor-pointer"
                         >
-                          Cancelar
+                          {t("common.cancel")}
                         </button>
                         <button 
                           onClick={() => handleAddTask(column.id)}
                           className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-md shadow-indigo-100"
                         >
-                          Salvar
+                          {t("common.save")}
                         </button>
                       </div>
                     </motion.div>
@@ -411,18 +414,18 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                                 {task.dueDate && (
                                   <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
                                     <Calendar className="w-3.5 h-3.5" />
-                                    <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                                    <span>{new Date(task.dueDate).toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US')}</span>
                                   </div>
                                 )}
 
                                 {task.importance !== undefined && task.importance > 0 ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 text-[9px] font-black uppercase tracking-wider">
                                     <Sparkles className="w-2.5 h-2.5 text-amber-500 animate-pulse" />
-                                    +{task.importance * 10} XP
+                                    {t("admin.mentoringKanban.xpReward", { xp: task.importance * 10 })}
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200/50 text-slate-500 text-[9px] font-bold">
-                                    Side-Quest (0 XP)
+                                    {t("admin.mentoringKanban.sideQuestXp")}
                                   </span>
                                 )}
 
@@ -449,7 +452,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 {tasks.filter(t => t.status === column.id).length === 0 && !isAddingTask && (
                   <div className="flex flex-col items-center justify-center py-12 opacity-25">
                     <AlertCircle className="w-8 h-8 text-slate-400 mb-2" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nenhuma tarefa</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t("admin.mentoringKanban.noTasks")}</p>
                   </div>
                 )}
               </div>
@@ -475,8 +478,8 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     <Layout className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Detalhes da Tarefa</h3>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Roteiro de Estudos & Metas</p>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("admin.mentoringKanban.detailsModal.title")}</h3>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t("admin.mentoringKanban.detailsModal.subtitle")}</p>
                   </div>
                 </div>
                 <button 
@@ -492,7 +495,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 
                 {/* Status Column Switcher (Manual Move) */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Coluna / Status da Tarefa</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringKanban.detailsModal.statusLabel")}</label>
                   <div className="grid grid-cols-4 gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/20">
                     {COLUMNS.map(col => {
                       const Icon = col.icon;
@@ -516,7 +519,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                           )}
                         >
                           <Icon className="w-3.5 h-3.5 shrink-0" />
-                          <span>{col.label.split(' ')[0]}</span>
+                          <span>{t(`admin.mentoringKanban.columns.${col.id}` as any).split(' ')[0]}</span>
                         </button>
                       );
                     })}
@@ -525,7 +528,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
 
                 {/* Title */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Título</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringKanban.detailsModal.titleLabel")}</label>
                   {(isOwner || (selectedTask?.importance === 0)) ? (
                     <input
                       required
@@ -543,7 +546,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
 
                 {/* Description */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Roteiro & Descrição</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringKanban.detailsModal.descriptionLabel")}</label>
                   {(isOwner || (selectedTask?.importance === 0)) ? (
                     <textarea
                       rows={5}
@@ -553,14 +556,14 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     />
                   ) : (
                     <div className="px-4 py-4 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
-                      {selectedTask?.description || "Nenhuma descrição detalhada informada."}
+                      {selectedTask?.description || t("admin.mentoringKanban.detailsModal.noDescription")}
                     </div>
                   )}
                 </div>
 
                 {/* Assignee Selection */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Atribuído a</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringKanban.detailsModal.assignedTo")}</label>
                   {isOwner ? (
                     <select
                       value={editAssigneeId}
@@ -572,16 +575,16 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                       }}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200/50 rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none text-sm font-bold text-slate-800"
                     >
-                      <option value="">Sem responsável / Não atribuído</option>
+                      <option value="">{t("admin.mentoringKanban.detailsModal.unassigned")}</option>
                       {members.map(m => (
                         <option key={m.userId} value={m.userId}>
-                          {m.name} ({m.isOwner ? "Mentor" : "Mentorado"})
+                          {m.name} ({m.isOwner ? t("admin.mentoringKanban.detailsModal.roleMentor") : t("admin.mentoringKanban.detailsModal.roleMentee")})
                         </option>
                       ))}
                     </select>
                   ) : (
                     <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-bold text-slate-800">
-                      {editAssigneeName || "Não atribuído"}
+                      {editAssigneeName || t("admin.mentoringKanban.detailsModal.unassignedText")}
                     </div>
                   )}
                 </div>
@@ -595,7 +598,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     <div className="bg-slate-50/60 p-5 rounded-[2rem] border border-slate-100 flex flex-col gap-3">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5 mb-1">
                         <Target className="w-3.5 h-3.5 text-indigo-500" />
-                        Materiais de Apoio & Referências
+                        {t("admin.mentoringKanban.detailsModal.supportMaterials")}
                       </h4>
                       <div className="flex flex-wrap gap-3">
                         {video && (
@@ -606,7 +609,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                             className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100/70 border border-red-100 text-red-700 rounded-2xl text-[11px] font-bold transition-all cursor-pointer"
                           >
                             <Youtube className="w-4 h-4 shrink-0" />
-                            Assistir Vídeo explicativo
+                            {t("admin.mentoringKanban.detailsModal.watchVideo")}
                           </a>
                         )}
                         {pdf && (
@@ -617,7 +620,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                             className="flex items-center gap-2 px-4 py-2.5 bg-sky-50 hover:bg-sky-100/70 border border-sky-100 text-sky-700 rounded-2xl text-[11px] font-bold transition-all cursor-pointer"
                           >
                             <FileText className="w-4 h-4 shrink-0" />
-                            Abrir Documento PDF
+                            {t("admin.mentoringKanban.detailsModal.openPdf")}
                           </a>
                         )}
                       </div>
@@ -627,7 +630,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
 
                 {/* Due Date */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data de Entrega / Prazo</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringKanban.detailsModal.dueDateLabel")}</label>
                   {(isOwner || (selectedTask?.importance === 0)) ? (
                     <input
                       type="date"
@@ -637,7 +640,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     />
                   ) : (
                     <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-bold text-slate-800">
-                      {selectedTask?.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString('pt-BR') : "Sem prazo definido."}
+                      {selectedTask?.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US') : t("admin.mentoringKanban.detailsModal.noDueDate")}
                     </div>
                   )}
                 </div>
@@ -645,7 +648,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                 {/* Task Importance (0 to 10) */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Importância: {editImportance === 0 ? "Quest Secundária (Side-quest)" : `${editImportance} / 10`}
+                    {t("admin.mentoringKanban.detailsModal.importanceWithVal", { value: editImportance === 0 ? t("admin.mentoringKanban.detailsModal.sideQuest") : `${editImportance} / 10` })}
                   </label>
                   {isOwner ? (
                     currentUserRole === "mentor" ? (
@@ -659,23 +662,23 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                           className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         />
                         <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                          <span>Side-quest (Valor 0)</span>
-                          <span>Prioridade Máxima (Valor 10)</span>
+                          <span>{t("admin.mentoringKanban.detailsModal.sideQuestVal0")}</span>
+                          <span>{t("admin.mentoringKanban.detailsModal.maxPriorityVal10")}</span>
                         </div>
                         <div className="text-[9px] font-bold text-amber-600 uppercase tracking-wide">
-                          Recompensa: {editImportance * 10} XP
+                          {t("admin.mentoringKanban.detailsModal.rewardXp", { xp: editImportance * 10 })}
                         </div>
                       </div>
                     ) : (
                       <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-xs font-bold text-slate-500 leading-relaxed">
-                        Como Mentorado, você pode apenas criar Side-quests (Importância zero, +0 XP).
+                        {t("admin.mentoringKanban.detailsModal.menteeRestrictionMessage")}
                       </div>
                     )
                   ) : (
                     <div className="px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200/30 text-sm font-bold text-slate-800">
                       {selectedTask?.importance === 0 || selectedTask?.importance === undefined
-                        ? "Quest Secundária (Side-quest)"
-                        : `★ Importância: ${selectedTask?.importance} de 10 (+${(selectedTask?.importance || 0) * 10} XP)`
+                        ? t("admin.mentoringKanban.detailsModal.sideQuest")
+                        : t("admin.mentoringKanban.detailsModal.importanceMentorView", { importance: selectedTask?.importance, xp: (selectedTask?.importance || 0) * 10 })
                       }
                     </div>
                   )}
@@ -688,7 +691,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                     onClick={() => setSelectedTask(null)}
                     className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
                   >
-                    Fechar
+                    {t("admin.mentoringKanban.detailsModal.close")}
                   </button>
                   {(isOwner || (selectedTask?.importance === 0)) && (
                     <button
@@ -696,7 +699,7 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                       disabled={isSavingTask}
                       className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-100"
                     >
-                      {isSavingTask ? "Salvando..." : "Salvar Alterações"}
+                      {isSavingTask ? t("admin.mentoringKanban.detailsModal.saving") : t("admin.mentoringKanban.detailsModal.saveChanges")}
                     </button>
                   )}
                 </div>

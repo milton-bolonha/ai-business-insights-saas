@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Mail } from "lucide-react";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface PaymentEmailModalProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface PaymentEmailModalProps {
 export function PaymentEmailModal({ open, onClose }: PaymentEmailModalProps) {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +41,7 @@ export function PaymentEmailModal({ open, onClose }: PaymentEmailModalProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Mail className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold">Payment Confirmation</h2>
+            <h2 className="text-lg font-semibold">{t("admin.modals.paymentConfirmationTitle")}</h2>
           </div>
           <button
             onClick={onClose}
@@ -51,19 +53,19 @@ export function PaymentEmailModal({ open, onClose }: PaymentEmailModalProps) {
 
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Please enter your email address to receive payment confirmation and access instructions.
+            {t("admin.modals.paymentConfirmationDescription")}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
+                {t("admin.modals.emailAddressLabel")}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder={t("admin.modals.emailPlaceholder")}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 required
               />
@@ -76,14 +78,14 @@ export function PaymentEmailModal({ open, onClose }: PaymentEmailModalProps) {
                 className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
                 disabled={isSubmitting}
               >
-                Cancel
+                {t("admin.modals.cancel")}
               </button>
               <button
                 type="submit"
                 disabled={!email.trim() || isSubmitting}
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Sending..." : "Send Confirmation"}
+                {isSubmitting ? t("admin.modals.sending") : t("admin.modals.sendConfirmation")}
               </button>
             </div>
           </form>

@@ -47,6 +47,7 @@ import { MentoringScheduleBoard } from "@/components/admin/ade/MentoringSchedule
 import { MentoringInsightsBoard } from "@/components/admin/ade/MentoringInsightsBoard";
 import { MentoringProfileBoard } from "@/components/admin/ade/MentoringProfileBoard";
 import { SmartSurveyBoard } from "@/components/admin/ade/SmartSurveyBoard";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 // Zustand stores
 import {
@@ -77,6 +78,7 @@ export function AdminContainer() {
   const searchParams = useSearchParams();
   const urlWorkspaceId = searchParams?.get("workspaceId") || null;
   const { push } = useToast();
+  const { t } = useTranslation();
 
   // Zustand stores
   const { 
@@ -1034,15 +1036,15 @@ export function AdminContainer() {
                     onOpenContact={setSelectedContact}
                     appearance={appearance}
                     title={
-                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? "Elenco" :
-                        currentWorkspace?.promptSettings?.templateId === "template_furniture_logistics" ? "Equipe/Clientes" :
-                        currentWorkspace?.promptSettings?.templateId === "template_furniture_layout" ? "Equipe" :
-                        "Contatos"
+                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? t("admin.dashboardLabels.cast") :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_logistics" ? t("admin.dashboardLabels.teamClients") :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_layout" ? t("admin.dashboardLabels.team") :
+                        t("admin.dashboardLabels.contacts")
                     }
                     addLabel={
-                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? "Novo Personagem" :
-                        currentWorkspace?.promptSettings?.templateId?.startsWith("template_furniture") ? "Novo Integrante" :
-                        "Novo Contato"
+                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? t("admin.dashboardLabels.newCharacter") :
+                        currentWorkspace?.promptSettings?.templateId?.startsWith("template_furniture") ? t("admin.dashboardLabels.newMember") :
+                        t("admin.dashboardLabels.newContact")
                     }
                   />
                 </div>
@@ -1072,10 +1074,10 @@ export function AdminContainer() {
                     }}
                     appearance={appearance}
                     title={
-                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? "Arcos e Cenas" :
-                        currentWorkspace?.promptSettings?.templateId === "template_furniture_logistics" ? "Relatórios e Protocolos" :
-                        currentWorkspace?.promptSettings?.templateId === "template_furniture_layout" ? "Plantas e Ajustes" :
-                        "Notas"
+                        currentWorkspace?.promptSettings?.templateId === "template_love_writers" ? t("admin.dashboardLabels.narrativeArcs") :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_logistics" ? t("admin.dashboardLabels.reportsProtocols") :
+                        currentWorkspace?.promptSettings?.templateId === "template_furniture_layout" ? t("admin.dashboardLabels.floorplansAdjustments") :
+                        t("admin.dashboardLabels.notes")
                     }
                   />
                 </div>

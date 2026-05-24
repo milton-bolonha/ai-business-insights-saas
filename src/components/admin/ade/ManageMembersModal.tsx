@@ -11,6 +11,7 @@ import {
   useUpdateWorkspaceMember, 
   useRemoveWorkspaceMember 
 } from "@/lib/state/query/workspace.queries";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface ManageMembersModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface ManageMembersModalProps {
 }
 
 export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembersModalProps) {
+  const { t, locale } = useTranslation();
   const { push } = useToast();
   const [email, setEmail] = useState("");
   const [accessLevel, setAccessLevel] = useState("member");
@@ -43,14 +45,14 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
       });
       setEmail("");
       push({
-        title: "Membro adicionado",
-        description: "O usuário foi adicionado ao workspace com sucesso.",
+        title: t("admin.members.memberAdded"),
+        description: t("admin.members.memberAddedDesc"),
         variant: "success"
       });
     } catch (error: any) {
       push({
-        title: "Erro ao adicionar",
-        description: error.message || "Verifique se o e-mail está correto e já cadastrado na plataforma.",
+        title: t("admin.members.errorAdding"),
+        description: error.message || t("admin.members.errorAddingDesc"),
         variant: "destructive"
       });
     }
@@ -64,13 +66,13 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
         accessLevel: newLevel
       });
       push({
-        title: "Permissão atualizada",
-        description: "O nível de acesso foi alterado com sucesso.",
+        title: t("admin.members.permissionUpdated"),
+        description: t("admin.members.permissionUpdatedDesc"),
         variant: "success"
       });
     } catch (error: any) {
       push({
-        title: "Erro ao atualizar",
+        title: t("admin.members.errorUpdating"),
         description: error.message,
         variant: "destructive"
       });
@@ -78,7 +80,7 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!window.confirm("Tem certeza que deseja remover este membro?")) return;
+    if (!window.confirm(t("admin.members.removeConfirm"))) return;
     
     try {
       await removeMemberMutation.mutateAsync({
@@ -86,13 +88,13 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
         memberId
       });
       push({
-        title: "Membro removido",
-        description: "O usuário não tem mais acesso a este workspace.",
+        title: t("admin.members.memberRemoved"),
+        description: t("admin.members.memberRemovedDesc"),
         variant: "success"
       });
     } catch (error: any) {
       push({
-        title: "Erro ao remover",
+        title: t("admin.members.errorRemoving"),
         description: error.message,
         variant: "destructive"
       });
@@ -134,8 +136,8 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-800">Gestão de Cadastros</h2>
-                  <p className="text-sm text-slate-500">Controle de acessos e status dos convites</p>
+                  <h2 className="text-xl font-semibold text-slate-800">{t("admin.members.title")}</h2>
+                  <p className="text-sm text-slate-500">{t("admin.members.subtitleWorkspace")}</p>
                 </div>
               </div>
               <button
@@ -156,7 +158,7 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="E-mail do usuário..."
+                    placeholder={t("admin.members.invitePlaceholder")}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
@@ -175,14 +177,14 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                   className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   <UserPlus className="w-5 h-5" />
-                  <span>Adicionar</span>
+                  <span>{t("admin.members.inviteBtn")}</span>
                 </button>
               </form>
 
               {/* Members List */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  <span>Cadastros Atuais</span>
+                  <span>{t("admin.members.title")}</span>
                   <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs">
                     {members.length}
                   </span>
@@ -194,7 +196,7 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                   </div>
                 ) : members.length === 0 ? (
                   <div className="text-center py-8 text-slate-500 text-sm">
-                    Nenhum cadastro encontrado.
+                    {t("admin.members.noMembers")}
                   </div>
                 ) : (
                   <div className="border border-slate-200 rounded-xl divide-y divide-slate-100">
@@ -237,7 +239,7 @@ export function ManageMembersModal({ isOpen, onClose, workspaceId }: ManageMembe
                             <button
                               onClick={() => handleRemoveMember(member.id)}
                               className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Remover membro"
+                              title={t("admin.members.removeAccessTitle")}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

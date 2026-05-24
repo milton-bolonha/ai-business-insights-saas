@@ -6,6 +6,7 @@ import {
   ChevronRight, Calendar, Star, Grid, Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 // Cloudinary image resizer/transformer utility
 function getOptimizedCloudinaryUrl(url: string, width = 200, height = 200) {
@@ -17,6 +18,7 @@ function getOptimizedCloudinaryUrl(url: string, width = 200, height = 200) {
 }
 
 export default function RankingPage() {
+  const { t, locale, setLocale } = useTranslation();
   const [rankings, setRankings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"mentores" | "mentorados" | "projetos">("mentores");
@@ -52,18 +54,18 @@ export default function RankingPage() {
   const getDominantClass = (profile: any) => {
     const goalsString = `${profile.careerGoal || ""} ${profile.personalGoal || ""} ${profile.tagline || ""}`.toLowerCase();
     if (goalsString.includes("tech") || goalsString.includes("dev") || goalsString.includes("software") || goalsString.includes("tecnolog")) {
-      return "Arquiteto Tecnológico";
+      return t("public.ranking.classes.techArchitect");
     }
     if (goalsString.includes("start") || goalsString.includes("fund") || goalsString.includes("ceo") || goalsString.includes("empreend") || goalsString.includes("negoci")) {
-      return "Estrategista de Negócios";
+      return t("public.ranking.classes.businessStrategist");
     }
     if (goalsString.includes("foco") || goalsString.includes("prod") || goalsString.includes("fazer") || goalsString.includes("execut")) {
-      return "Executor de Alta Performance";
+      return t("public.ranking.classes.highPerformer");
     }
     if (profile.skillsCount && profile.skillsCount > 5) {
-      return "Analista Multidisciplinar";
+      return t("public.ranking.classes.multidisciplinary");
     }
-    return "Operador em Evolução";
+    return t("public.ranking.classes.evolvingOperator");
   };
 
   // Filter listings
@@ -93,6 +95,8 @@ export default function RankingPage() {
     return 0;
   });
 
+  const currentSeasonName = locale === "pt" ? "Maio 2026" : "May 2026";
+
   return (
     <div className="min-h-screen bg-[#f7f5f0] text-[#1a1a1a] flex flex-col font-sans relative selection:bg-slate-900/10">
       {/* Inject Google Fonts */}
@@ -105,10 +109,40 @@ export default function RankingPage() {
             <Shield className="w-4 h-4 text-indigo-400" />
             <span>I/O MENTORIA</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-black uppercase tracking-widest text-slate-300">
-            <button onClick={() => setActiveTab("mentores")} className={cn("hover:text-white transition-colors cursor-pointer", activeTab === "mentores" && "text-white underline")}>Mentores</button>
-            <button onClick={() => setActiveTab("mentorados")} className={cn("hover:text-white transition-colors cursor-pointer", activeTab === "mentorados" && "text-white underline")}>Mentorados</button>
-            <button onClick={() => setActiveTab("projetos")} className={cn("hover:text-white transition-colors cursor-pointer", activeTab === "projetos" && "text-white underline")}>Projetos em Destaque</button>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-black uppercase tracking-widest text-slate-300">
+              <button onClick={() => setActiveTab("mentores")} className={cn("hover:text-white transition-colors cursor-pointer", activeTab === "mentores" && "text-white underline")}>{t("public.ranking.tabs.mentors")}</button>
+              <button onClick={() => setActiveTab("mentorados")} className={cn("hover:text-white transition-colors cursor-pointer", activeTab === "mentorados" && "text-white underline")}>{t("public.ranking.tabs.mentees")}</button>
+              <button onClick={() => setActiveTab("projetos")} className={cn("hover:text-white transition-colors cursor-pointer", activeTab === "projetos" && "text-white underline")}>{t("public.ranking.tabs.projects")}</button>
+            </div>
+            
+            {/* Language Selector */}
+            <div className="flex items-center gap-1 rounded-full border border-slate-700 bg-slate-800 p-1 text-[8px] font-semibold shadow-xs">
+              <button
+                onClick={() => setLocale("pt")}
+                className={cn(
+                  "px-2 py-0.5 rounded-full transition-all cursor-pointer font-bold text-[8px]",
+                  locale === "pt"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                )}
+                title="Português"
+              >
+                PT
+              </button>
+              <button
+                onClick={() => setLocale("en")}
+                className={cn(
+                  "px-2 py-0.5 rounded-full transition-all cursor-pointer font-bold text-[8px]",
+                  locale === "en"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                )}
+                title="English"
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -119,11 +153,11 @@ export default function RankingPage() {
         {/* Title Block */}
         <div className="border-b border-[#e2dfd5] pb-6">
           <h1 className="text-4xl md:text-5xl font-bold font-['Lora',Georgia,serif] text-[#1a1a1a] tracking-tight">
-            Ranking de Evolução
+            {t("public.ranking.title")}
           </h1>
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 mt-1 font-sans">
             <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Temporada Ativa: Maio 2026 (Mensal)</span>
+            <span>{t("public.ranking.activeSeason", { season: currentSeasonName })}</span>
           </p>
         </div>
 
@@ -138,7 +172,7 @@ export default function RankingPage() {
                 : "border-transparent text-slate-400 hover:text-slate-700"
             )}
           >
-            Mentores
+            {t("public.ranking.tabs.mentors")}
           </button>
           <button
             onClick={() => setActiveTab("mentorados")}
@@ -149,7 +183,7 @@ export default function RankingPage() {
                 : "border-transparent text-slate-400 hover:text-slate-700"
             )}
           >
-            Mentorados
+            {t("public.ranking.tabs.mentees")}
           </button>
           <button
             onClick={() => setActiveTab("projetos")}
@@ -160,7 +194,7 @@ export default function RankingPage() {
                 : "border-transparent text-slate-400 hover:text-slate-700"
             )}
           >
-            Projetos em Destaque
+            {t("public.ranking.tabs.projects")}
           </button>
         </div>
 
@@ -168,7 +202,7 @@ export default function RankingPage() {
         {isLoading ? (
           <div className="bg-white border border-[#e2dfd5] p-12 rounded-xl text-center shadow-2xs flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-6 h-6 text-slate-800 animate-spin" />
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Classificando Quadros...</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t("public.ranking.loading")}</span>
           </div>
         ) : (
           <>
@@ -177,20 +211,20 @@ export default function RankingPage() {
               <div className="bg-white border border-[#e2dfd5] rounded-xl overflow-hidden shadow-2xs">
                 {filteredRankings.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 text-xs font-semibold font-sans">
-                    Nenhum perfil classificado nesta temporada ainda.
+                    {t("public.ranking.noProfiles")}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse font-sans">
                       <thead>
                         <tr className="bg-slate-50 border-b border-[#e2dfd5] text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-400">
-                          <th className="py-5 px-6 text-center w-16">Rank</th>
-                          <th className="py-5 px-6">Avatar & Nome</th>
-                          <th className="py-5 px-6">Classe</th>
-                          {activeTab === "mentores" && <th className="py-5 px-6 text-center w-28">Mentorados</th>}
-                          {activeTab === "mentorados" && <th className="py-5 px-6 text-center w-40">Projetos & Sessões</th>}
-                          <th className="py-5 px-6 text-center w-24">Nível</th>
-                          <th className="py-5 px-6 text-right w-32">EXP</th>
+                          <th className="py-5 px-6 text-center w-16">{t("public.ranking.headers.rank")}</th>
+                          <th className="py-5 px-6">{t("public.ranking.headers.name")}</th>
+                          <th className="py-5 px-6">{t("public.ranking.headers.class")}</th>
+                          {activeTab === "mentores" && <th className="py-5 px-6 text-center w-28">{t("public.ranking.headers.mentees")}</th>}
+                          {activeTab === "mentorados" && <th className="py-5 px-6 text-center w-40">{t("public.ranking.headers.projectsSessions")}</th>}
+                          <th className="py-5 px-6 text-center w-24">{t("public.ranking.headers.level")}</th>
+                          <th className="py-5 px-6 text-right w-32">{t("public.ranking.headers.exp")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#f0ede4] text-xs sm:text-sm font-medium text-slate-700">
@@ -240,13 +274,13 @@ export default function RankingPage() {
                                     {player.role === "mentor" ? (
                                       <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest">
-                                          {player.tagline || "Mentor I/O"}
+                                          {player.tagline || (locale === 'pt' ? 'Mentor I/O' : 'I/O Mentor')}
                                         </span>
                                       </div>
                                     ) : (
                                       <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest">
-                                          {player.tagline || "Mentorado I/O"}
+                                          {player.tagline || (locale === 'pt' ? 'Mentorado I/O' : 'I/O Mentee')}
                                         </span>
                                       </div>
                                     )}
@@ -270,10 +304,10 @@ export default function RankingPage() {
                               {activeTab === "mentorados" && (
                                 <td className="py-5 px-6 text-center">
                                   <div className="flex items-center justify-center gap-3">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100/60 text-emerald-700 text-[10px] font-black uppercase tracking-wider cursor-help" title={`${player.completedProjectsCount || 0} Projetos`}>
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100/60 text-emerald-700 text-[10px] font-black uppercase tracking-wider cursor-help" title={`${player.completedProjectsCount || 0} ${locale === 'pt' ? 'Projetos' : 'Projects'}`}>
                                       📁 {player.completedProjectsCount || 0}
                                     </span>
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100/60 text-indigo-700 text-[10px] font-black uppercase tracking-wider cursor-help" title={`${player.completedSessionsCount || 0} Sessões`}>
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100/60 text-indigo-700 text-[10px] font-black uppercase tracking-wider cursor-help" title={`${player.completedSessionsCount || 0} ${locale === 'pt' ? 'Sessões' : 'Sessions'}`}>
                                       📅 {player.completedSessionsCount || 0}
                                     </span>
                                   </div>
@@ -304,7 +338,7 @@ export default function RankingPage() {
               <div className="flex flex-col gap-6">
                 {sortedProjects.length === 0 ? (
                   <div className="bg-white border border-[#e2dfd5] p-12 rounded-xl text-center text-slate-400 text-xs font-semibold font-sans">
-                    Nenhum projeto cadastrado por mentorados nesta temporada.
+                    {t("public.ranking.noProjects")}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -324,7 +358,7 @@ export default function RankingPage() {
                           {isFeatured && (
                             <div className="absolute top-4 left-4 bg-emerald-600 text-white text-[7.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full z-10 shadow-2xs flex items-center gap-1">
                               <Star className="w-3 h-3 text-white fill-white" />
-                              <span>Destaque do Mês</span>
+                              <span>{t("public.ranking.featuredTag")}</span>
                             </div>
                           )}
 
@@ -350,13 +384,13 @@ export default function RankingPage() {
                               className="text-slate-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
                             >
                               <User className="w-3 h-3 text-indigo-500" />
-                              <span>Por: {proj.authorName}</span>
+                              <span>{t("public.ranking.projectAuthor", { author: proj.authorName })}</span>
                             </a>
                             <a
                               href={authorProfileUrl}
                               className="text-slate-400 hover:text-[#1a1a1a] flex items-center gap-0.5 transition-colors"
                             >
-                              <span>Ver Autor</span>
+                              <span>{t("public.ranking.viewAuthor")}</span>
                               <ChevronRight className="w-3.5 h-3.5" />
                             </a>
                           </div>
@@ -389,7 +423,7 @@ export default function RankingPage() {
       {/* 3. Footer */}
       <footer className="mt-auto py-6 border-t border-[#e2dfd5] text-center">
         <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest font-sans">
-          I/O MENTORIA • TODOS OS DIREITOS RESERVADOS
+          {t("public.ranking.footer")}
         </p>
       </footer>
     </div>

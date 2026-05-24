@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/lib/state/toast-context";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface Session {
   _id: string;
@@ -94,6 +95,13 @@ const PRESETS = [
 
 export function MentoringScheduleBoard({ workspaceId, isOwner = false }: MentoringScheduleBoardProps) {
   const { push } = useToast();
+  const { t, locale } = useTranslation();
+
+  const getPresetLabel = (preset: any) => {
+    return ["welcome", "initial", "sales", "session1", "session2"].includes(preset.id)
+      ? t(`admin.mentoringSchedule.presets.${preset.id}.label` as any)
+      : preset.label;
+  };
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -150,13 +158,13 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
       });
 
       if (!res.ok) throw new Error("Failed to send message");
-      push({ title: "Mensagem enviada com sucesso!", variant: "success" });
+      push({ title: t("admin.mentoringSchedule.toasts.messageSent"), variant: "success" });
       setIsMessageModalOpen(false);
       setMsgTitle("");
       setMsgBody("");
       setMsgIcon("bell");
     } catch (err) {
-      push({ title: "Erro ao enviar mensagem", variant: "destructive" });
+      push({ title: t("admin.mentoringSchedule.toasts.messageSendError"), variant: "destructive" });
     } finally {
       setIsMsgSending(false);
     }
@@ -197,9 +205,10 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
     if (!presetId) return;
     const preset = allPresets.find(p => p.id === presetId);
     if (preset) {
-      setTitle(preset.title);
-      setObjective(preset.objective);
-      setDescription(preset.description);
+      const isStatic = ["welcome", "initial", "sales", "session1", "session2"].includes(preset.id);
+      setTitle(isStatic ? t(`admin.mentoringSchedule.presets.${preset.id}.title` as any) : preset.title);
+      setObjective(isStatic ? t(`admin.mentoringSchedule.presets.${preset.id}.objective` as any) : preset.objective);
+      setDescription(isStatic ? t(`admin.mentoringSchedule.presets.${preset.id}.description` as any) : preset.description);
       setVideoUrl(preset.videoUrl || "");
       setPdfUrl(preset.pdfUrl || "");
       setMeetingUrl(preset.meetingUrl || "");
@@ -251,18 +260,18 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
       });
 
       if (!res.ok) throw new Error("Failed to save preset");
-      push({ title: editingPresetId ? "Modelo atualizado com sucesso!" : "Modelo criado com sucesso!", variant: "success" });
+      push({ title: editingPresetId ? t("admin.mentoringSchedule.toasts.presetUpdated") : t("admin.mentoringSchedule.toasts.presetCreated"), variant: "success" });
       handleResetPresetForm();
       fetchPresets();
     } catch (err) {
-      push({ title: "Erro ao salvar modelo", variant: "destructive" });
+      push({ title: t("admin.mentoringSchedule.toasts.presetSaveError"), variant: "destructive" });
     } finally {
       setIsPresetSaving(false);
     }
   };
 
   const handleDeletePreset = async (presetId: string) => {
-    if (!window.confirm("Deseja realmente excluir este modelo?")) return;
+    if (!window.confirm(t("admin.mentoringSchedule.confirmations.deletePreset"))) return;
 
     try {
       const res = await fetch(`/api/mentoring/presets?workspaceId=${workspaceId}&id=${presetId}`, {
@@ -270,13 +279,13 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
       });
 
       if (!res.ok) throw new Error("Failed to delete preset");
-      push({ title: "Modelo excluído com sucesso!", variant: "success" });
+      push({ title: t("admin.mentoringSchedule.toasts.presetDeleted"), variant: "success" });
       if (editingPresetId === presetId) {
         handleResetPresetForm();
       }
       fetchPresets();
     } catch (err) {
-      push({ title: "Erro ao excluir modelo", variant: "destructive" });
+      push({ title: t("admin.mentoringSchedule.toasts.presetDeleteError"), variant: "destructive" });
     }
   };
 
@@ -287,7 +296,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
     setIsSaving(true);
     try {
       // 1. Compile structured fields into session description
-      const fullDescription = `${description}\n\n### Metas e Referências\n- **Objetivo**: ${objective}\n${videoUrl ? `- **Vídeo de Referência**: ${videoUrl}\n` : ""}${pdfUrl ? `- **Material de Apoio (PDF)**: ${pdfUrl}\n` : ""}`;
+      const fullDescription = `${description}\n\n### ${t("admin.mentoringSchedule.dbHeaders.goalsAndRefs")}\n- **${t("admin.mentoringSchedule.dbHeaders.objective")}**: ${objective}\n${videoUrl ? `- **${t("admin.mentoringSchedule.dbHeaders.videoRef")}**: ${videoUrl}\n` : ""}${pdfUrl ? `- **${t("admin.mentoringSchedule.dbHeaders.pdfSupport")}**: ${pdfUrl}\n` : ""}`;
 
       const res = await fetch("/api/mentoring/sessions", {
         method: "POST",
@@ -303,8 +312,10 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
       if (!res.ok) throw new Error("Failed to schedule session");
 
       // 2. Automatically create task in Kanban
-      const taskTitle = `Preparação: ${title}`;
-      const taskDesc = `Tarefa automática criada para preparação da sessão de mentoria: "${title}".\n\n**Objetivo**: ${objective}\n\n**Materiais de Apoio**:\n${videoUrl ? `- [Vídeo do YouTube](${videoUrl})\n` : ""}${pdfUrl ? `- [PDF / Material de Referência](${pdfUrl})\n` : ""}`;
+      const taskTitle = `${t("admin.mentoringSchedule.taskCreation.preparationPrefix")}: ${title}`;
+      const taskDesc = t("admin.mentoringSchedule.taskCreation.desc", { title, objective }) + 
+        (videoUrl ? `- [${t("admin.mentoringSchedule.taskCreation.youtubeLabel")}](${videoUrl})\n` : "") + 
+        (pdfUrl ? `- [${t("admin.mentoringSchedule.taskCreation.pdfLabel")}](${pdfUrl})\n` : "");
 
       await fetch("/api/mentoring/tasks", {
         method: "POST",
@@ -317,7 +328,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
         })
       });
 
-      push({ title: "Sessão agendada & Tarefa criada no Kanban!", variant: "success" });
+      push({ title: t("admin.mentoringSchedule.toasts.sessionScheduled"), variant: "success" });
       setIsModalOpen(false);
       
       // Reset form
@@ -332,7 +343,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
       fetchSessions();
     } catch (err) {
-      push({ title: "Erro ao agendar sessão", variant: "destructive" });
+      push({ title: t("admin.mentoringSchedule.toasts.sessionScheduleError"), variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -346,8 +357,8 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
             <CalendarDays className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Agenda de Sessões</h2>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Encontros síncronos agendados</p>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t("admin.mentoringSchedule.title")}</h2>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t("admin.mentoringSchedule.subtitle")}</p>
           </div>
         </div>
         
@@ -359,7 +370,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
               type="button"
             >
               <Bell className="w-4 h-4" />
-              Enviar Mensagem
+              {t("admin.mentoringSchedule.sendMessageBtn")}
             </button>
             <button 
               onClick={() => setIsModalOpen(true)}
@@ -367,7 +378,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
               type="button"
             >
               <Plus className="w-4 h-4" />
-              Nova Sessão
+              {t("admin.mentoringSchedule.newSessionBtn")}
             </button>
           </div>
         )}
@@ -376,7 +387,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sessions List (Span 2) */}
         <div className="lg:col-span-2 flex flex-col gap-4">
-          <h3 className="px-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Próximas Sessões</h3>
+          <h3 className="px-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.upcomingSessions")}</h3>
           
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -385,15 +396,17 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
           ) : sessions.length === 0 ? (
             <div className="bg-slate-50 rounded-[2.5rem] p-12 flex flex-col items-center justify-center text-center gap-4 opacity-50 border border-dashed border-slate-200">
               <CalendarDays className="w-12 h-12 text-slate-300" />
-              <p className="text-sm font-bold text-slate-500">Nenhuma sessão agendada para este workspace.</p>
+              <p className="text-sm font-bold text-slate-500">{t("admin.mentoringSchedule.noSessions")}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
               {sessions.map((session, index) => {
                 // Parse references from description
                 const lines = session.description?.split('\n') || [];
-                const objLine = lines.find(l => l.includes('Objetivo**:'));
-                const sessionObj = objLine ? objLine.replace('- **Objetivo**:', '').trim() : "";
+                const objLine = lines.find(l => l.includes('Objetivo**:') || l.includes('Objective**:'));
+                const sessionObj = objLine 
+                  ? objLine.replace('- **Objetivo**:', '').replace('- **Objective**:', '').trim() 
+                  : "";
                 
                 return (
                   <motion.div
@@ -407,7 +420,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                       <div className="flex gap-4">
                         <div className="flex flex-col items-center justify-center w-16 h-16 bg-slate-50 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                           <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                            {new Date(session.startAt).toLocaleString('pt-BR', { month: 'short' })}
+                            {new Date(session.startAt).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US', { month: 'short' })}
                           </span>
                           <span className="text-xl font-black">
                             {new Date(session.startAt).getDate()}
@@ -420,19 +433,19 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                           <div className="flex items-center gap-3 mt-1">
                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
                               <Clock className="w-3.5 h-3.5" />
-                              <span>{new Date(session.startAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>{new Date(session.startAt).toLocaleTimeString(locale === 'pt' ? 'pt-BR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             {session.meetingUrl && (
                               <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">
                                 <Video className="w-3.5 h-3.5" />
-                                <span>Online</span>
+                                <span>{t("admin.mentoringSchedule.onlineStatus")}</span>
                               </div>
                             )}
                           </div>
                           
                           {/* Add to Calendar Quick-Links */}
                           <div className="flex items-center gap-2 mt-2 select-none">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Adicionar à agenda:</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">{t("admin.mentoringSchedule.addToCalendarLabel")}</span>
                             <a
                               href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(session.title)}&dates=${new Date(session.startAt).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"}/${new Date(session.endAt || new Date(session.startAt).getTime() + 60 * 60 * 1000).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"}&details=${encodeURIComponent(session.description || "")}&location=${encodeURIComponent(session.meetingUrl || "")}`}
                               target="_blank"
@@ -462,7 +475,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                             target="_blank"
                             rel="noreferrer"
                             className="p-4 bg-slate-50 group-hover:bg-indigo-600 group-hover:text-white rounded-2xl transition-all cursor-pointer shadow-sm"
-                            title="Entrar na chamada"
+                            title={t("admin.mentoringSchedule.joinCallTitle")}
                           >
                             <Video className="w-5 h-5" />
                           </a>
@@ -495,17 +508,17 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
           <div className="bg-slate-900 rounded-[3rem] p-8 text-white relative overflow-hidden group shadow-2xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 blur-[100px] rounded-full group-hover:bg-indigo-500/30 transition-all duration-700" />
             <div className="relative">
-              <h3 className="text-xl font-black uppercase tracking-tight mb-2">Insight da Agenda</h3>
+              <h3 className="text-xl font-black uppercase tracking-tight mb-2">{t("admin.mentoringSchedule.insights.title")}</h3>
               <p className="text-slate-400 text-xs font-medium leading-relaxed mb-6 font-semibold">
-                Você tem {sessions.length} sessões agendadas. Lembre-se de revisar os materiais de apoio e o roteiro antes de iniciar.
+                {t("admin.mentoringSchedule.insights.description", { count: sessions.length })}
               </p>
               <div className="flex gap-4">
                  <div className="flex-1 p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Total</p>
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">{t("admin.mentoringSchedule.insights.totalLabel")}</p>
                     <p className="text-2xl font-black">{sessions.length}</p>
                  </div>
                  <div className="flex-1 p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
-                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Mês</p>
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">{t("admin.mentoringSchedule.insights.monthLabel")}</p>
                     <p className="text-2xl font-black">{sessions.filter(s => new Date(s.startAt).getMonth() === new Date().getMonth()).length}</p>
                  </div>
               </div>
@@ -531,8 +544,8 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     <CalendarDays className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Agendar Nova Sessão</h3>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Planejamento & Roteiro</p>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("admin.mentoringSchedule.scheduleModal.title")}</h3>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t("admin.mentoringSchedule.scheduleModal.subtitle")}</p>
                   </div>
                 </div>
                 <button 
@@ -549,14 +562,14 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                 {/* Predefined Templates */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Predefinições de Mentoria</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.scheduleModal.presetsLabel")}</label>
                     {isOwner && (
                       <button
                         type="button"
                         onClick={() => setIsPresetsManageOpen(true)}
                         className="text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        ⚙️ Gerenciar Modelos
+                        {t("admin.mentoringSchedule.scheduleModal.managePresetsBtn")}
                       </button>
                     )}
                   </div>
@@ -565,10 +578,10 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     onChange={(e) => handlePresetChange(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200/50 rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none text-sm font-bold uppercase tracking-wider cursor-pointer text-slate-600"
                   >
-                    <option value="">-- Personalizado (Em Branco) --</option>
+                    <option value="">{t("admin.mentoringSchedule.scheduleModal.customPresetOption")}</option>
                     {allPresets.map(preset => (
                       <option key={preset.id} value={preset.id}>
-                        {preset.label} {preset.workspaceId ? "⭐" : ""}
+                        {getPresetLabel(preset)} {preset.workspaceId ? "⭐" : ""}
                       </option>
                     ))}
                   </select>
@@ -576,11 +589,11 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
                 {/* Title */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Título da Sessão</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.scheduleModal.sessionTitleLabel")}</label>
                   <input
                     required
                     type="text"
-                    placeholder="Ex: Boas-vindas e Alinhamento"
+                    placeholder={t("admin.mentoringSchedule.scheduleModal.sessionTitlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200/50 rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none text-sm font-semibold text-slate-800"
@@ -589,11 +602,11 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
                 {/* Objective */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Objetivo Principal</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.scheduleModal.objectiveLabel")}</label>
                   <input
                     required
                     type="text"
-                    placeholder="Qual é a meta deste encontro?"
+                    placeholder={t("admin.mentoringSchedule.scheduleModal.objectivePlaceholder")}
                     value={objective}
                     onChange={(e) => setObjective(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200/50 rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none text-sm font-semibold text-slate-800"
@@ -602,10 +615,10 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
                 {/* Description */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Roteiro / Descrição</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.scheduleModal.descriptionLabel")}</label>
                   <textarea
                     rows={3}
-                    placeholder="Tópicos que serão abordados na mentoria..."
+                    placeholder={t("admin.mentoringSchedule.scheduleModal.descriptionPlaceholder")}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200/50 rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none text-sm font-semibold text-slate-800 resize-none"
@@ -617,7 +630,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                       <Youtube className="w-3.5 h-3.5 text-red-500" />
-                      Link de Vídeo (YouTube)
+                      {t("admin.mentoringSchedule.scheduleModal.videoLinkLabel")}
                     </label>
                     <input
                       type="url"
@@ -631,7 +644,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                       <FileText className="w-3.5 h-3.5 text-sky-500" />
-                      Material de Apoio (PDF / Link)
+                      {t("admin.mentoringSchedule.scheduleModal.pdfLinkLabel")}
                     </label>
                     <input
                       type="url"
@@ -648,7 +661,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                       <Video className="w-3.5 h-3.5 text-emerald-500" />
-                      Link da Chamada (Google Meet/Zoom)
+                      {t("admin.mentoringSchedule.scheduleModal.meetingLinkLabel")}
                     </label>
                     <input
                       type="url"
@@ -660,7 +673,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data & Horário de Início</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.scheduleModal.startDateLabel")}</label>
                     <input
                       required
                       type="datetime-local"
@@ -678,7 +691,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     onClick={() => setIsModalOpen(false)}
                     className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
                   >
-                    Cancelar
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="submit"
@@ -686,7 +699,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-100"
                   >
                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    <span>Confirmar Agendamento</span>
+                    <span>{t("admin.mentoringSchedule.scheduleModal.confirmBtn")}</span>
                   </button>
                 </div>
 
@@ -713,8 +726,8 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     <Settings className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Gerenciar Predefinições de Mentoria</h3>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Painel do Administrador</p>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("admin.mentoringSchedule.presetsModal.title")}</h3>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t("admin.mentoringSchedule.presetsModal.subtitle")}</p>
                   </div>
                 </div>
                 <button 
@@ -731,32 +744,32 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                 {/* Left Side: List of Templates (Span 2) */}
                 <div className="md:col-span-2 border-r border-slate-100 overflow-y-auto p-6 flex flex-col gap-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Modelos Atuais</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.currentPresetsLabel")}</span>
                     <button
                       onClick={handleResetPresetForm}
                       className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Criar Novo
+                      <Plus className="w-3.5 h-3.5" /> {t("admin.mentoringSchedule.presetsModal.createNewBtn")}
                     </button>
                   </div>
 
                   {/* Default Templates (ReadOnly) */}
-                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1 mt-2">Modelos Padrão (Leitura)</div>
+                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1 mt-2">{t("admin.mentoringSchedule.presetsModal.defaultPresetsLabel")}</div>
                   {PRESETS.map((preset) => (
                     <div 
                       key={preset.id}
                       className="p-3 bg-slate-50 rounded-xl border border-slate-200/30 flex items-center justify-between"
                     >
                       <span className="text-xs font-bold text-slate-700 truncate">{preset.label}</span>
-                      <span className="text-[9px] font-bold text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded">Padrão</span>
+                      <span className="text-[9px] font-bold text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded">{t("admin.mentoringSchedule.presetsModal.defaultTag")}</span>
                     </div>
                   ))}
 
                   {/* Custom Templates (Editable) */}
-                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1 mt-4">Meus Modelos Customizados</div>
+                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-1 mt-4">{t("admin.mentoringSchedule.presetsModal.customPresetsLabel")}</div>
                   {customPresets.length === 0 ? (
                     <div className="text-center py-6 text-xs font-semibold text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                      Nenhum modelo customizado criado.
+                      {t("admin.mentoringSchedule.presetsModal.noCustomPresets")}
                     </div>
                   ) : (
                     customPresets.map((preset) => (
@@ -798,28 +811,28 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                 {/* Right Side: Form (Span 3) */}
                 <form onSubmit={handleSavePreset} className="md:col-span-3 overflow-y-auto p-8 flex flex-col gap-4">
                   <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 border-b border-slate-100 pb-2">
-                    {editingPresetId ? `Editar Modelo: ${presetLabel}` : "Criar Novo Modelo Customizado"}
+                    {editingPresetId ? t("admin.mentoringSchedule.presetsModal.editPresetHeader", { name: presetLabel }) : t("admin.mentoringSchedule.presetsModal.createPresetHeader")}
                   </h4>
 
                   {/* Label & Title */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5 sm:col-span-1">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Nome (Curto)</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.shortNameLabel")}</label>
                       <input
                         required
                         type="text"
-                        placeholder="Ex: Módulo 3"
+                        placeholder={t("admin.mentoringSchedule.presetsModal.shortNamePlaceholder")}
                         value={presetLabel}
                         onChange={(e) => setPresetLabel(e.target.value)}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Título Principal</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.mainTitleLabel")}</label>
                       <input
                         required
                         type="text"
-                        placeholder="Ex: Sessão 3: Alinhamento de Metas"
+                        placeholder={t("admin.mentoringSchedule.presetsModal.mainTitlePlaceholder")}
                         value={presetTitle}
                         onChange={(e) => setPresetTitle(e.target.value)}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -829,10 +842,10 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
                   {/* Objective */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Objetivo</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.objectiveLabel")}</label>
                     <input
                       type="text"
-                      placeholder="Ex: Definir os KPIs principais do negócio..."
+                      placeholder={t("admin.mentoringSchedule.presetsModal.objectivePlaceholder")}
                       value={presetObjective}
                       onChange={(e) => setPresetObjective(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -841,10 +854,10 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
                   {/* Description */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Descrição / Roteiro da Mentoria</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.descriptionLabel")}</label>
                     <textarea
                       rows={3}
-                      placeholder="Roteiro que será carregado automaticamente..."
+                      placeholder={t("admin.mentoringSchedule.presetsModal.descriptionPlaceholder")}
                       value={presetDescription}
                       onChange={(e) => setPresetDescription(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -854,7 +867,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                   {/* References & Call Links */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vídeo YouTube (Opcional)</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.videoLinkLabel")}</label>
                       <input
                         type="url"
                         placeholder="https://youtube.com/watch?v=..."
@@ -864,7 +877,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Material PDF (Opcional)</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.pdfLinkLabel")}</label>
                       <input
                         type="url"
                         placeholder="https://drive.google.com/..."
@@ -877,7 +890,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
 
                   {/* Meeting URL */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Link Padrão da Chamada</label>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.presetsModal.meetingLinkLabel")}</label>
                     <input
                       type="url"
                       placeholder="https://meet.google.com/abc-defg-hij"
@@ -895,7 +908,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                         onClick={handleResetPresetForm}
                         className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                       >
-                        Limpar / Novo
+                        {t("admin.mentoringSchedule.presetsModal.clearNewBtn")}
                       </button>
                     )}
                     <button
@@ -904,7 +917,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                       className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-100"
                     >
                       {isPresetSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      <span>{editingPresetId ? "Salvar Alterações" : "Criar Modelo"}</span>
+                      <span>{editingPresetId ? t("admin.mentoringSchedule.presetsModal.saveChangesBtn") : t("admin.mentoringSchedule.presetsModal.createPresetBtn")}</span>
                     </button>
                   </div>
                 </form>
@@ -932,8 +945,8 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     <Bell className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Enviar Mensagem ao Mentorado</h3>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Alerta Direto</p>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("admin.mentoringSchedule.messageModal.title")}</h3>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t("admin.mentoringSchedule.messageModal.subtitle")}</p>
                   </div>
                 </div>
                 <button 
@@ -947,11 +960,11 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
               {/* Form Content */}
               <form onSubmit={handleSendMessage} className="p-8 flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5 flex-1">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Assunto / Título</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.messageModal.subjectLabel")}</label>
                   <input
                     required
                     type="text"
-                    placeholder="Ex: Lembrete importante sobre a mentoria"
+                    placeholder={t("admin.mentoringSchedule.messageModal.subjectPlaceholder")}
                     value={msgTitle}
                     onChange={(e) => setMsgTitle(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-100"
@@ -959,11 +972,11 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Mensagem / Conteúdo</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.messageModal.contentLabel")}</label>
                   <textarea
                     required
                     rows={4}
-                    placeholder="Escreva a mensagem curta que será enviada diretamente para o sino de notificações do seu mentorado..."
+                    placeholder={t("admin.mentoringSchedule.messageModal.contentPlaceholder")}
                     value={msgBody}
                     onChange={(e) => setMsgBody(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200/50 rounded-xl outline-none text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-100 resize-none"
@@ -971,13 +984,13 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Ícone de Notificação</label>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t("admin.mentoringSchedule.messageModal.iconLabel")}</label>
                   <div className="flex gap-2">
                     {[
-                      { val: "bell", label: "🔔 Geral" },
-                      { val: "sparkles", label: "✨ Novidade" },
-                      { val: "award", label: "🏆 Parabéns" },
-                      { val: "alert", label: "⚠️ Alerta" }
+                      { val: "bell", label: t("admin.mentoringSchedule.messageModal.icons.bell") },
+                      { val: "sparkles", label: t("admin.mentoringSchedule.messageModal.icons.sparkles") },
+                      { val: "award", label: t("admin.mentoringSchedule.messageModal.icons.award") },
+                      { val: "alert", label: t("admin.mentoringSchedule.messageModal.icons.alert") }
                     ].map((ico) => (
                       <button
                         key={ico.val}
@@ -1003,7 +1016,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     onClick={() => setIsMessageModalOpen(false)}
                     className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                   >
-                    Cancelar
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="submit"
@@ -1011,7 +1024,7 @@ export function MentoringScheduleBoard({ workspaceId, isOwner = false }: Mentori
                     className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-100"
                   >
                     {isMsgSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                    <span>Enviar Mensagem</span>
+                    <span>{t("admin.mentoringSchedule.messageModal.sendBtn")}</span>
                   </button>
                 </div>
               </form>

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -30,6 +31,8 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { t } = useTranslation();
+
   // Interactive badge tooltip description state
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -40,14 +43,14 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
         const res = await fetch(`/api/mentoring/public-profile?id=${targetUserId}`);
         if (!res.ok) {
           if (res.status === 404) {
-            throw new Error("Perfil não encontrado");
+            throw new Error(t("public.mentee.profileNotFound"));
           }
-          throw new Error("Erro ao carregar o perfil público");
+          throw new Error(t("public.mentee.errorLoadingProfile"));
         }
         const data = await res.json();
         setProfile(data.profile);
       } catch (err: any) {
-        setError(err.message || "Erro desconhecido");
+        setError(err.message || t("public.mentee.unknownError"));
       } finally {
         setIsLoading(false);
       }
@@ -63,7 +66,7 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
       <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center font-sans">
         <div className="flex flex-col items-center gap-3 text-slate-500">
           <Loader2 className="w-8 h-8 text-slate-800 animate-spin" />
-          <span className="text-[10px] font-black uppercase tracking-widest font-sans">Carregando Perfil...</span>
+          <span className="text-[10px] font-black uppercase tracking-widest font-sans">{t("public.mentee.loadingProfile")}</span>
         </div>
       </div>
     );
@@ -74,15 +77,15 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
       <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-6 text-center font-sans">
         <div className="bg-white border border-[#e2dfd5] p-8 rounded-xl max-w-sm w-full shadow-lg">
           <Shield className="w-12 h-12 text-[#1a1a1a] mx-auto mb-4" />
-          <h3 className="text-base font-bold text-[#1a1a1a] uppercase tracking-wider font-['Lora',Georgia,serif] mb-2">Acesso Restrito</h3>
+          <h3 className="text-base font-bold text-[#1a1a1a] uppercase tracking-wider font-['Lora',Georgia,serif] mb-2">{t("public.mentee.restrictedAccess")}</h3>
           <p className="text-xs font-semibold text-slate-500 leading-relaxed mb-6 font-sans">
-            {error || "O perfil solicitado não pôde ser localizado em nossa base."}
+            {error || t("public.mentee.profileNotFoundDesc")}
           </p>
           <a
             href="/"
             className="inline-block bg-[#1a1a1a] hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest px-6 py-3 rounded-xl transition-all font-sans"
           >
-            Voltar para o Início
+            {t("public.mentee.backToHome")}
           </a>
         </div>
       </div>
@@ -103,45 +106,46 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
   const levelProgressPercent = Math.min(100, Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100));
 
   // Class evaluator
-  const getDominantClass = () => {
+  const getDominantClassKey = () => {
     const goalsString = `${profile.careerGoal || ""} ${profile.personalGoal || ""} ${profile.tagline || ""}`.toLowerCase();
     if (goalsString.includes("tech") || goalsString.includes("dev") || goalsString.includes("software") || goalsString.includes("tecnolog")) {
-      return "Arquiteto Tecnológico";
+      return "techArchitect";
     }
     if (goalsString.includes("start") || goalsString.includes("fund") || goalsString.includes("ceo") || goalsString.includes("empreend") || goalsString.includes("negoci")) {
-      return "Estrategista de Negócios";
+      return "businessStrategist";
     }
     if (goalsString.includes("foco") || goalsString.includes("prod") || goalsString.includes("fazer") || goalsString.includes("execut")) {
-      return "Executor de Alta Performance";
+      return "highPerformanceExecutor";
     }
     if (profile.skills && profile.skills.length > 5) {
-      return "Analista Multidisciplinar";
+      return "multidisciplinaryAnalyst";
     }
-    return "Operador em Evolução";
+    return "evolvingOperator";
   };
 
-  const dominantClass = getDominantClass();
+  const dominantClassKey = getDominantClassKey();
+  const dominantClass = t(`public.mentee.${dominantClassKey}`);
 
   // Dynamic high-fidelity badges list (hover/click to see detail descriptions)
   const badgesList = [
     {
       id: "verified_mentee",
-      title: "Mentorado Registrado",
-      desc: "Membro matriculado ativo em acompanhamento individual de mentoria executiva.",
+      title: t("public.mentee.verifiedMentee"),
+      desc: t("public.mentee.verifiedMenteeDesc"),
       icon: Sparkles,
       color: "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
     },
     {
       id: "dominant_class",
       title: dominantClass,
-      desc: `Especialidade ativa determinada pelo algoritmo com base nos objetivos analíticos cadastrados: ${dominantClass}.`,
+      desc: t("public.mentee.activeSpecialtyDesc", { class: dominantClass }),
       icon: Crown,
       color: "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
     },
     {
       id: "high_consistency",
-      title: "Desempenho Alto",
-      desc: "Taxa de engajamento semanal e aproveitamento de tarefas acima do baseline operacional.",
+      title: t("public.mentee.highPerformance"),
+      desc: t("public.mentee.highPerformanceDesc"),
       icon: CheckCircle2,
       color: "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
     }
@@ -157,12 +161,12 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <a href="/ranking" className="text-xs font-bold font-['Lora',Georgia,serif] tracking-wider flex items-center gap-2">
             <Shield className="w-4 h-4 text-indigo-400" />
-            <span>I/O MENTORIA</span>
+            <span>{t("public.mentee.ioMentoring")}</span>
           </a>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-black uppercase tracking-widest text-slate-300">
-            <a href="/ranking?tab=mentores" className="hover:text-white transition-colors">Mentores</a>
-            <a href="/ranking?tab=mentorados" className="hover:text-white transition-colors">Mentorados</a>
-            <a href="/ranking?tab=projetos" className="hover:text-white transition-colors">Projetos em Destaque</a>
+            <a href="/ranking?tab=mentores" className="hover:text-white transition-colors">{t("public.mentee.mentors")}</a>
+            <a href="/ranking?tab=mentorados" className="hover:text-white transition-colors">{t("public.mentee.mentees")}</a>
+            <a href="/ranking?tab=projetos" className="hover:text-white transition-colors">{t("public.mentee.featuredProjects")}</a>
           </div>
         </div>
       </nav>
@@ -193,14 +197,14 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
             </div>
             {/* Level badge overlapping the photo */}
             <div className="absolute top-20 right-8 bg-slate-900 border border-slate-800 text-white w-9 h-9 rounded-full flex flex-col items-center justify-center shadow-md">
-              <span className="text-[7px] font-black uppercase tracking-wider text-slate-400 leading-none">LV</span>
+              <span className="text-[7px] font-black uppercase tracking-wider text-slate-400 leading-none">{t("public.mentee.lv")}</span>
               <span className="text-xs font-black text-white leading-none mt-0.5">{currentLevel}</span>
             </div>
 
             {/* RPG Stats Column (Extremely Clean, No Nested Border Cards!) */}
             <div className="w-full flex flex-col gap-2 mt-1.5 font-sans items-center">
               {/* HP (Pulsing hearts directly, no label/nesting) */}
-              <div className="flex items-center justify-center gap-0.5 mt-0.5" title={`Rendimento: ${engagement}%`}>
+              <div className="flex items-center justify-center gap-0.5 mt-0.5" title={t("public.mentee.yield", { engagement })}>
                 {Array.from({ length: totalHearts }).map((_, idx) => (
                   <svg 
                     key={idx} 
@@ -220,8 +224,8 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
               {/* XP Progress Bar (Blue/Indigo, Clean!) */}
               <div className="w-full flex flex-col gap-1 mt-1 font-sans">
                 <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
-                  <span>XP</span>
-                  <span className="text-slate-700 font-bold">{xpInCurrentLevel} / {xpNeededForNextLevel} XP</span>
+                  <span>{t("public.mentee.xp")}</span>
+                  <span className="text-slate-700 font-bold">{xpInCurrentLevel} / {xpNeededForNextLevel} {t("public.mentee.xp")}</span>
                 </div>
                 <div className="w-full bg-slate-200/60 h-2.5 rounded-full overflow-hidden">
                   <div 
@@ -239,10 +243,10 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
               <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mb-0.5 leading-none font-sans flex items-center gap-2">
                 <span>{profile.name}</span>
                 <span className="bg-indigo-600 text-[8px] text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm shrink-0">
-                  {profile.role === "mentor" ? "Mentor" : "Mentorado"}
+                  {profile.role === "mentor" ? t("public.mentee.mentor") : t("public.mentee.mentee")}
                 </span>
               </h2>
-              <p className="text-indigo-600 text-[10px] font-bold uppercase tracking-widest mb-2 font-sans">{profile.tagline || "Operador de Negócios em Aceleração"}</p>
+              <p className="text-indigo-600 text-[10px] font-bold uppercase tracking-widest mb-2 font-sans">{profile.tagline || t("public.mentee.defaultTagline")}</p>
 
               {/* Sleek RPG Gamer HUD Status Bar */}
               <div className="flex flex-wrap items-center gap-2 mb-3 font-sans">
@@ -252,30 +256,30 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
                   <span>{dominantClass}</span>
                   
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover/hud:flex flex-col bg-slate-900 text-white text-[8px] p-2 rounded-lg shadow-md w-48 text-center z-30 pointer-events-none normal-case">
-                    <span className="font-black uppercase tracking-wider mb-0.5 text-amber-400">Classe de Evolução</span>
-                    <span className="text-slate-300 leading-normal font-semibold">Calculado dinamicamente a partir dos seus objetivos, trajetória profissional e competências.</span>
+                    <span className="font-black uppercase tracking-wider mb-0.5 text-amber-400">{t("public.mentee.evolutionClass")}</span>
+                    <span className="text-slate-300 leading-normal font-semibold">{t("public.mentee.evolutionClassDesc")}</span>
                   </div>
                 </div>
 
                 {/* Tensão Cognitiva HUD Badge */}
                 <div className="flex items-center gap-1.5 bg-white border border-[#e8e5dd] text-slate-700 px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider cursor-help group/hud relative shadow-3xs">
                   <Activity className="w-3 h-3 text-indigo-500 shrink-0" />
-                  <span>Tensão: 1.00</span>
+                  <span>{t("public.mentee.tension")}</span>
                   
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover/hud:flex flex-col bg-slate-900 text-white text-[8px] p-2 rounded-lg shadow-md w-48 text-center z-30 pointer-events-none normal-case">
-                    <span className="font-black uppercase tracking-wider mb-0.5 text-indigo-400">Tensão Cognitiva</span>
-                    <span className="text-slate-300 leading-normal font-semibold">Balanço de esforço diário (Carga Cognitiva / Tempo Executado) nos diários de bordo recentes.</span>
+                    <span className="font-black uppercase tracking-wider mb-0.5 text-indigo-400">{t("public.mentee.cognitiveTension")}</span>
+                    <span className="text-slate-300 leading-normal font-semibold">{t("public.mentee.cognitiveTensionDesc")}</span>
                   </div>
                 </div>
 
                 {/* Tarefas HUD Badge */}
                 <div className="flex items-center gap-1.5 bg-white border border-[#e8e5dd] text-slate-700 px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider cursor-help group/hud relative shadow-3xs">
                   <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                  <span>Tarefas: {Math.round((engagement / 100) * 4)}/4</span>
+                  <span>{t("public.mentee.tasks", { completed: Math.round((engagement / 100) * 4), total: 4 })}</span>
                   
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover/hud:flex flex-col bg-slate-900 text-white text-[8px] p-2 rounded-lg shadow-md w-48 text-center z-30 pointer-events-none normal-case">
-                    <span className="font-black uppercase tracking-wider mb-0.5 text-emerald-400">Tarefas Executadas</span>
-                    <span className="text-slate-300 leading-normal font-semibold">Seu progresso de atividades concluídas no quadro Kanban operacional.</span>
+                    <span className="font-black uppercase tracking-wider mb-0.5 text-emerald-400">{t("public.mentee.executedTasks")}</span>
+                    <span className="text-slate-300 leading-normal font-semibold">{t("public.mentee.executedTasksDesc")}</span>
                   </div>
                 </div>
               </div>
@@ -332,25 +336,25 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
               {profile.linkedinUrl && (
                 <a href={profile.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-slate-800 transition-colors cursor-pointer bg-white hover:bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/50 text-[10px] font-bold text-slate-500 shadow-3xs">
                   <Linkedin className="w-3 h-3 text-indigo-500" />
-                  <span>LinkedIn</span>
+                  <span>{t("public.mentee.linkedin")}</span>
                 </a>
               )}
               {profile.githubUrl && (
                 <a href={profile.githubUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-slate-800 transition-colors cursor-pointer bg-white hover:bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/50 text-[10px] font-bold text-slate-500 shadow-3xs">
                   <Github className="w-3 h-3 text-slate-700" />
-                  <span>GitHub</span>
+                  <span>{t("public.mentee.github")}</span>
                 </a>
               )}
               {profile.instagramUrl && (
                 <a href={profile.instagramUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-slate-800 transition-colors cursor-pointer bg-white hover:bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/50 text-[10px] font-bold text-slate-500 shadow-3xs">
                   <Instagram className="w-3 h-3 text-pink-500" />
-                  <span>Instagram</span>
+                  <span>{t("public.mentee.instagram")}</span>
                 </a>
               )}
               {profile.websiteUrl && (
                 <a href={profile.websiteUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-slate-800 transition-colors cursor-pointer bg-white hover:bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200/50 text-[10px] font-bold text-slate-500 shadow-3xs">
                   <Globe className="w-3 h-3 text-sky-500" />
-                  <span>Website</span>
+                  <span>{t("public.mentee.website")}</span>
                 </a>
               )}
             </div>
@@ -361,7 +365,7 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
         {profile.projects && profile.projects.length > 0 && (
           <div className="mt-4">
             <h2 className="text-2xl font-bold text-[#1a1a1a] font-['Lora',Georgia,serif] border-b border-[#e2dfd5] pb-2 mb-6">
-              Projetos Acadêmicos & Casos de Sucesso
+              {t("public.mentee.projectsAndCases")}
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -408,20 +412,20 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
             {/* Bio / Personal Goal */}
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a1a] font-['Lora',Georgia,serif] border-b border-[#e2dfd5] pb-2 mb-4">
-                Objetivo Pessoal
+                {t("public.mentee.personalGoal")}
               </h2>
               <p className="text-[11px] font-medium text-slate-600 leading-relaxed font-sans whitespace-pre-line">
-                {profile.personalGoal || "Não cadastrado."}
+                {profile.personalGoal || t("public.mentee.notRegistered")}
               </p>
             </div>
 
             {/* Career Goal */}
             <div>
               <h2 className="text-2xl font-bold text-[#1a1a1a] font-['Lora',Georgia,serif] border-b border-[#e2dfd5] pb-2 mb-4">
-                Objetivo de Carreira
+                {t("public.mentee.careerGoal")}
               </h2>
               <p className="text-[11px] font-medium text-slate-600 leading-relaxed font-sans whitespace-pre-line">
-                {profile.careerGoal || "Não cadastrado."}
+                {profile.careerGoal || t("public.mentee.notRegistered")}
               </p>
             </div>
 
@@ -431,7 +435,7 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
           <div className="flex flex-col gap-10">
             <div>
               <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-sans border-b border-[#e2dfd5] pb-2 mb-4">
-                Competências
+                {t("public.mentee.skills")}
               </h2>
               <div className="flex flex-wrap gap-1.5">
                 {profile.skills && profile.skills.length > 0 ? (
@@ -444,15 +448,15 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
                     </span>
                   ))
                 ) : (
-                  <span className="text-[9px] font-bold text-slate-400 font-sans">Nenhuma competência cadastrada.</span>
+                  <span className="text-[9px] font-bold text-slate-400 font-sans">{t("public.mentee.noSkillsRegistered")}</span>
                 )}
               </div>
             </div>
 
             <div>
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-sans border-b border-[#e2dfd5] pb-2 mb-3">Hobbies & Artes</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-sans border-b border-[#e2dfd5] pb-2 mb-3">{t("public.mentee.hobbiesAndArts")}</h2>
               <p className="text-[10px] font-medium text-slate-600 leading-relaxed font-sans">
-                {profile.hobbies || "Não especificado."}
+                {profile.hobbies || t("public.mentee.notSpecified")}
               </p>
             </div>
           </div>
@@ -463,7 +467,7 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
       {/* 3. Footer */}
       <footer className="mt-auto py-6 border-t border-[#e2dfd5] text-center">
         <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest font-sans">
-          I/O MENTORIA • TODOS OS DIREITOS RESERVADOS
+          {t("public.mentee.allRightsReserved")}
         </p>
       </footer>
     </div>

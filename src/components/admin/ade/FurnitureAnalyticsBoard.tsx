@@ -12,12 +12,14 @@ import {
 import { motion } from "framer-motion";
 import type { Tile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface FurnitureAnalyticsBoardProps {
     tiles: Tile[];
 }
 
 export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps) {
+    const { t, locale } = useTranslation();
     // Extraindo dados
     const products = tiles.find(t => t.category === "products")?.metadata?.products || [];
     const orders = tiles.find(t => t.category === "orders")?.metadata?.orders || [];
@@ -63,8 +65,8 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                     <BarChart3 className="h-6 w-6" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Executive Dashboard</h2>
-                    <p className="text-sm text-gray-500 font-medium">Indicadores em Tempo Real da Loja</p>
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t("admin.furnitureAnalytics.title")}</h2>
+                    <p className="text-sm text-gray-500 font-medium">{t("admin.furnitureAnalytics.subtitle")}</p>
                 </div>
             </div>
 
@@ -84,8 +86,10 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                         </span>
                     </div>
                     <div>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Faturamento Fechado</div>
-                        <div className="text-3xl sm:text-4xl font-black text-gray-900">R$ {totalRevenue.toLocaleString()}</div>
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("admin.furnitureAnalytics.kpi.totalRevenue")}</div>
+                        <div className="text-3xl sm:text-4xl font-black text-gray-900">
+                            {locale === 'pt' ? 'R$ ' + totalRevenue.toLocaleString('pt-BR') : '$ ' + totalRevenue.toLocaleString('en-US')}
+                        </div>
                     </div>
                 </motion.div>
 
@@ -100,12 +104,14 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                             <ShoppingBag className="h-6 w-6" />
                         </div>
                         <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                            Em Pipeline
+                            {t("admin.furnitureAnalytics.kpi.inPipeline")}
                         </span>
                     </div>
                     <div>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Receita Pendente (Orçamentos)</div>
-                        <div className="text-3xl sm:text-4xl font-black text-gray-900">R$ {pendingRevenue.toLocaleString()}</div>
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("admin.furnitureAnalytics.kpi.pendingRevenue")}</div>
+                        <div className="text-3xl sm:text-4xl font-black text-gray-900">
+                            {locale === 'pt' ? 'R$ ' + pendingRevenue.toLocaleString('pt-BR') : '$ ' + pendingRevenue.toLocaleString('en-US')}
+                        </div>
                     </div>
                 </motion.div>
 
@@ -121,7 +127,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                         </div>
                     </div>
                     <div>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Itens no Catálogo Ativo</div>
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t("admin.furnitureAnalytics.kpi.activeItems")}</div>
                         <div className="text-3xl sm:text-4xl font-black text-gray-900">{products.filter((p: any) => !p.archived).length}</div>
                     </div>
                 </motion.div>
@@ -130,15 +136,15 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Funil de Logística */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Funil Operacional (Pedidos)</h3>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">{t("admin.furnitureAnalytics.funnel.title")}</h3>
                     
                     <div className="space-y-4">
                         {[
-                            { label: "Novas Solicitações", count: funil.solicitacoes, color: "bg-indigo-500", w: "w-full" },
-                            { label: "Em Montagem (KDS)", count: funil.montagem, color: "bg-blue-500", w: "w-[80%]" },
-                            { label: "Pronto para Entrega", count: funil.pronto, color: "bg-amber-500", w: "w-[60%]" },
-                            { label: "Em Rota", count: funil.rota, color: "bg-sky-500", w: "w-[40%]" },
-                            { label: "Finalizado / Entregue", count: funil.entregue, color: "bg-emerald-500", w: "w-[20%]" },
+                            { label: t("admin.furnitureAnalytics.funnel.newRequests"), count: funil.solicitacoes, color: "bg-indigo-500", w: "w-full" },
+                            { label: t("admin.furnitureAnalytics.funnel.assembling"), count: funil.montagem, color: "bg-blue-500", w: "w-[80%]" },
+                            { label: t("admin.furnitureAnalytics.funnel.ready"), count: funil.pronto, color: "bg-amber-500", w: "w-[60%]" },
+                            { label: t("admin.furnitureAnalytics.funnel.inTransit"), count: funil.rota, color: "bg-sky-500", w: "w-[40%]" },
+                            { label: t("admin.furnitureAnalytics.funnel.delivered"), count: funil.entregue, color: "bg-emerald-500", w: "w-[20%]" },
                         ].map((step, idx) => (
                             <div key={idx} className="relative h-12 rounded-2xl bg-gray-50 flex items-center overflow-hidden">
                                 <motion.div 
@@ -158,7 +164,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
 
                 {/* Top Produtos */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Top Móveis Procurados</h3>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">{t("admin.furnitureAnalytics.topProducts.title")}</h3>
                     
                     {topProducts.length > 0 ? (
                         <div className="space-y-4">
@@ -169,7 +175,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                                     </div>
                                     <div className="flex-1">
                                         <div className="text-sm font-black text-gray-900">{p.name}</div>
-                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pedido {p.count}x</div>
+                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("admin.furnitureAnalytics.topProducts.orderCount", { count: p.count })}</div>
                                     </div>
                                     <div className="h-8 w-8 rounded-full bg-sky-100 flex items-center justify-center">
                                         <TrendingUp className="h-4 w-4 text-sky-600" />
@@ -180,7 +186,7 @@ export function FurnitureAnalyticsBoard({ tiles }: FurnitureAnalyticsBoardProps)
                     ) : (
                         <div className="h-40 flex flex-col items-center justify-center text-gray-400 gap-2">
                             <ShoppingBag className="h-8 w-8 opacity-20" />
-                            <span className="text-xs font-bold uppercase tracking-widest">Ainda sem dados de venda</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{t("admin.furnitureAnalytics.topProducts.noData")}</span>
                         </div>
                     )}
                 </div>

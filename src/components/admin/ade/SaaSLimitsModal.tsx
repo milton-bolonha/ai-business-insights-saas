@@ -7,6 +7,7 @@ import { useAuthStore, useUsage, useLimits } from "@/lib/stores/authStore";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface SaaSLimitsModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ function TransactionLedgerList({ filterType }: { filterType: "purchases" | "usag
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const user = useAuthStore((state) => state.user);
+    const { t } = useTranslation();
 
     useEffect(() => {
         const storedUserId = typeof window !== "undefined" ? localStorage.getItem("guest_checkout_user_id") : null;
@@ -47,22 +49,22 @@ function TransactionLedgerList({ filterType }: { filterType: "purchases" | "usag
             .finally(() => setLoading(false));
     }, [(user as any)?.id]);
 
-    if (loading) return <div className="text-center py-8 text-gray-500">Loading history...</div>;
+    if (loading) return <div className="text-center py-8 text-gray-500">{t("admin.modals.loadingHistory")}</div>;
     if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
-    if (transactions.length === 0) return <div className="text-center py-8 text-gray-500">No transaction history found.</div>;
+    if (transactions.length === 0) return <div className="text-center py-8 text-gray-500">{t("admin.modals.noTransactionHistory")}</div>;
 
     const actionLabels: Record<string, string> = {
-        buy_credits: "Credit Purchase",
-        createWorkspace: "Created Workspace",
-        createTile: "Generated Insight (Arc)",
-        createContact: "New Character",
-        tileChat: "Insight Map Chat",
-        contactChat: "Character Chat",
-        regenerate: "AI Regeneration",
-        bookGenerationsCount: "Book Chapter",
-        imageGenerationsCount: "AI Book Image",
-        marketEnrichmentCount: "Market Enrichment",
-        assetsCount: "Asset Upload"
+        buy_credits: t("admin.modals.actionLabels.buy_credits"),
+        createWorkspace: t("admin.modals.actionLabels.createWorkspace"),
+        createTile: t("admin.modals.actionLabels.createTile"),
+        createContact: t("admin.modals.actionLabels.createContact"),
+        tileChat: t("admin.modals.actionLabels.tileChat"),
+        contactChat: t("admin.modals.actionLabels.contactChat"),
+        regenerate: t("admin.modals.actionLabels.regenerate"),
+        bookGenerationsCount: t("admin.modals.actionLabels.bookGenerationsCount"),
+        imageGenerationsCount: t("admin.modals.actionLabels.imageGenerationsCount"),
+        marketEnrichmentCount: t("admin.modals.actionLabels.marketEnrichmentCount"),
+        assetsCount: t("admin.modals.actionLabels.assetsCount")
     };
 
     return (
@@ -96,6 +98,7 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
     const usage = useUsage();
     const limits = useLimits();
     const [tab, setTab] = useState<"usage" | "ledger" | "history">("usage");
+    const { t } = useTranslation();
 
     if (!isOpen) return null;
 
@@ -110,7 +113,7 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
             >
                 <div className="flex items-center justify-between border-b px-6 py-4 dark:border-gray-800">
                     <h3 className="text-lg font-semibold">
-                        {featureLocked ? "Feature Locked" : "Usage Limits"}
+                        {featureLocked ? t("admin.modals.featureLocked") : t("admin.modals.usageLimits")}
                     </h3>
                     <button
                         onClick={onClose}
@@ -125,19 +128,19 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                         onClick={() => setTab("usage")}
                         className={`flex-1 py-3 text-sm font-medium ${tab === "usage" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
                     >
-                        Usage Limits
+                        {t("admin.modals.usageLimits")}
                     </button>
                     <button
                         onClick={() => setTab("ledger")}
                         className={`flex-1 py-3 text-sm font-medium ${tab === "ledger" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
                     >
-                        Payment History
+                        {t("admin.modals.paymentHistory")}
                     </button>
                     <button
                         onClick={() => setTab("history")}
                         className={`flex-1 py-3 text-sm font-medium ${tab === "history" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
                     >
-                        Usage History
+                        {t("admin.modals.usageHistory")}
                     </button>
                 </div>
 
@@ -153,10 +156,7 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                                     <h4 className="mb-2 text-xl font-bold">
                                         {featureLocked}
                                     </h4>
-                                    <p className="mb-6 text-gray-500 dark:text-gray-400">
-                                        This feature is available exclusively for <strong>Pro</strong> members.
-                                        Upgrade your plan to unlock it immediately.
-                                    </p>
+                                    <p className="mb-6 text-gray-500 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: t("admin.modals.featureLockedDescription") }} />
                                 </div>
                             ) : (
                                 <>
@@ -168,64 +168,64 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                                                     <Coins className="h-10 w-10 text-amber-500" />
                                                 </div>
                                             </div>
-                                            <div className="text-sm text-amber-700 dark:text-amber-400 font-bold mb-2 uppercase tracking-wide">Current Balance</div>
+                                            <div className="text-sm text-amber-700 dark:text-amber-400 font-bold mb-2 uppercase tracking-wide">{t("admin.modals.currentBalance")}</div>
                                             <div className="text-5xl font-extrabold text-amber-600 dark:text-amber-500">
-                                                {Math.max(0, ((usage as any)?.creditsTotal || (limits as any)?.creditsTotal || 0) - ((usage as any)?.creditsUsed || 0))} <span className="text-xl font-medium opacity-70">Credits</span>
+                                                {Math.max(0, ((usage as any)?.creditsTotal || (limits as any)?.creditsTotal || 0) - ((usage as any)?.creditsUsed || 0))} <span className="text-xl font-medium opacity-70">{t("admin.modals.credits")}</span>
                                             </div>
                                         </div>
 
                                         {/* Right Column: Cost Table */}
                                         <div className="flex flex-col justify-center">
-                                            <h4 className="text-sm font-semibold mb-3 text-gray-500 uppercase tracking-wider">Cost Table</h4>
+                                            <h4 className="text-sm font-semibold mb-3 text-gray-500 uppercase tracking-wider">{t("admin.modals.costTable")}</h4>
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <Sparkles className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">Generate Insight (Arc)</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.generateInsight")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">5 Credits</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">5 {t("admin.modals.credits")}</div>
                                                 </div>
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <UserPlus className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">New Character</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.newCharacter")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">1 Credit</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">1 {t("admin.modals.credits")}</div>
                                                 </div>
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <Briefcase className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">Create Workspace</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.createWorkspace")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">10 Credits</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">10 {t("admin.modals.credits")}</div>
                                                 </div>
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <MessageSquare className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">Send Message</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.sendMessage")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">2 Credits</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">2 {t("admin.modals.credits")}</div>
                                                 </div>
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <BookOpen className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">Book Chapter / Arc</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.bookChapter")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">20 Credits</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">20 {t("admin.modals.credits")}</div>
                                                 </div>
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <Zap className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">Market Enrichment</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.marketEnrichment")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">5 Credits</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">5 {t("admin.modals.credits")}</div>
                                                 </div>
                                                 <div className="flex justify-between items-center p-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                                                     <div className="flex items-center gap-3">
                                                         <Sparkles className="h-4 w-4 text-amber-500" />
-                                                        <span className="font-medium text-sm">AI Book Image</span>
+                                                        <span className="font-medium text-sm">{t("admin.modals.costs.aiBookImage")}</span>
                                                     </div>
-                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">100 Credits</div>
+                                                    <div className="font-bold text-amber-600 dark:text-amber-500 text-sm">100 {t("admin.modals.credits")}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -234,7 +234,7 @@ export function SaaSLimitsModal({ isOpen, onClose, appearance, featureLocked }: 
                             )}
 
                             <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 flex items-center justify-between">
-                                <span>Need more resources?</span>
+                                <span>{t("admin.modals.needMoreResources")}</span>
                                 <UpgradeButton />
                             </div>
                         </div>
@@ -256,6 +256,7 @@ function UpgradeButton() {
     const startCheckout = useAuthStore((state) => state.startCheckout);
     const clerk = useClerk();
     const [isLoading, setIsLoading] = useState(false);
+    const { t } = useTranslation();
 
     const handleUpgrade = async () => {
         setIsLoading(true);
@@ -301,7 +302,7 @@ function UpgradeButton() {
             disabled={isLoading}
             className="font-bold underline cursor-pointer hover:text-blue-800 dark:hover:text-blue-200 disabled:opacity-50"
         >
-            {isLoading ? "Loading..." : "Buy Credits"}
+            {isLoading ? t("admin.modals.loading") : t("admin.modals.buyCredits")}
         </button>
     );
 }

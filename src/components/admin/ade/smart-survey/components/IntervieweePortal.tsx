@@ -4,6 +4,7 @@ import React from "react";
 import { User2, PlayCircle, Settings } from "lucide-react";
 import { NR1_TOPICS } from "../nr1-topics";
 import type { SmartSurveyBoardViewProps } from "../SmartSurveyBoardView";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 /** Portal restrito: o entrevistado só vê o próprio perfil e formulários — sem dados da empresa. */
 export function IntervieweePortal(props: SmartSurveyBoardViewProps) {
@@ -16,6 +17,7 @@ export function IntervieweePortal(props: SmartSurveyBoardViewProps) {
     handleStartSurveySequential,
     setSubTab,
   } = props;
+  const { t } = useTranslation();
 
   if (!activeCompany) return null;
 
@@ -37,23 +39,23 @@ export function IntervieweePortal(props: SmartSurveyBoardViewProps) {
     <div className="max-w-lg mx-auto space-y-8 animate-in fade-in">
       <div className="text-center space-y-2">
         <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800">
-          Meu espaço de entrevista
+          {t("admin.smartSurvey.intervieweePortal.title")}
         </h2>
         <p className="text-xs text-neutral-500">
-          Pesquisa: <strong>{activeSurvey?.title || "—"}</strong>
+          {t("admin.smartSurvey.intervieweePortal.survey", { title: activeSurvey?.title || "—" })}
         </p>
       </div>
 
       <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm space-y-4">
         <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block">
-          Identifique-se
+          {t("admin.smartSurvey.intervieweePortal.identify")}
         </label>
         <select
           value={guestRespondentId}
           onChange={e => setGuestRespondentId(e.target.value)}
           className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-emerald-500"
         >
-          <option value="">Selecione seu nome...</option>
+          <option value="">{t("admin.smartSurvey.intervieweePortal.selectName")}</option>
           {activeCompany.collaborators.map(c => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -74,7 +76,7 @@ export function IntervieweePortal(props: SmartSurveyBoardViewProps) {
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-[9px] font-black uppercase text-neutral-400">
-                <span>Progresso</span>
+                <span>{t("admin.smartSurvey.intervieweePortal.progress")}</span>
                 <span>{progress}%</span>
               </div>
               <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
@@ -87,14 +89,14 @@ export function IntervieweePortal(props: SmartSurveyBoardViewProps) {
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest px-8 py-3.5 rounded-xl inline-flex items-center gap-2 cursor-pointer"
             >
               <PlayCircle size={16} />
-              {progress > 0 ? "Retomar inquérito" : "Iniciar inquérito"}
+              {progress > 0 ? t("admin.smartSurvey.intervieweePortal.resumeSurvey") : t("admin.smartSurvey.intervieweePortal.startSurvey")}
             </button>
           </div>
 
           {forms.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 text-center">
-                Ou inicie um formulário
+                {t("admin.smartSurvey.intervieweePortal.orStartForm")}
               </h4>
               {forms.map(f => (
                 <button
@@ -118,7 +120,7 @@ export function IntervieweePortal(props: SmartSurveyBoardViewProps) {
             className="w-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-800 cursor-pointer"
           >
             <Settings size={14} />
-            Meu perfil (configuração)
+            {t("admin.smartSurvey.intervieweePortal.myProfile")}
           </button>
         </>
       )}

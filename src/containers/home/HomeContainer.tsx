@@ -17,11 +17,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { AppTagId, APP_ATTRIBUTES } from "@/lib/app-tags";
+import { useTranslation } from "@/lib/hooks/useTranslation";
+import { cn } from "@/lib/utils";
 
 export function HomeContainer() {
   const router = useRouter();
   const { push } = useToast();
   const { isSignedIn } = useUser();
+  const { t, locale, setLocale } = useTranslation();
 
   // Usar Zustand stores ao invés de Context API
   const {
@@ -59,59 +62,25 @@ export function HomeContainer() {
 
   // Derived Hero Content
   const heroContent = {
-    title: activeAppTag === 'love_writers'
-      ? 'I/O - Love Writers'
-      : activeAppTag === 'trade_ranking'
-        ? 'I/O - Ranking Product'
-        : activeAppTag === 'furniture_logistics'
-          ? 'I/O - Furniture Logistics'
-          : activeAppTag === 'furniture_layout'
-            ? 'I/O - Store Layout'
-            : activeAppTag === 'furniture_store'
-              ? 'I/O - Store'
-              : activeAppTag === 'io_mentoring'
-                ? 'I/O - Mentoring'
-                : activeAppTag === 'smart_survey'
-                  ? 'I/O - Smart Survey'
-                  : 'I/O - Business Insights',
-    subtitle: activeAppTag === 'love_writers'
-      ? 'Craft your romance novel arc by arc.'
-      : activeAppTag === 'trade_ranking'
-        ? 'Professional parametric trade valuation system.'
-        : activeAppTag === 'furniture_logistics'
-          ? 'Painel KDS de montagem, controle de caixa e logística operacional para lojas de móveis.'
-          : activeAppTag === 'furniture_layout'
-            ? 'Visualize e monetize cada metro quadrado da sua loja com mapeamento inteligente.'
-            : activeAppTag === 'furniture_store'
-              ? 'Exhibit your furniture in a premium store and receive orders directly on your panel.'
-              : activeAppTag === 'io_mentoring'
-                ? 'Elevate your coaching with smart Kanban boards and AI session summaries.'
-                : activeAppTag === 'smart_survey'
-                  ? 'Plataforma inteligente de compliance ergonômico e psicossocial NR-1 e NR-17.'
-                  : 'Generate deep business insights from company data.'
+    title: activeAppTag === "home"
+      ? t("appTags.business_insights.label")
+      : t(`appTags.${activeAppTag}.label`),
+    subtitle: activeAppTag === "home"
+      ? t("appTags.business_insights.subtitle")
+      : t(`appTags.${activeAppTag}.subtitle`)
   };
 
 
   // Initial Greeting Effect
   useEffect(() => {
-    let initialMessage = "I'm ready to help! Pick an App Tag below or start typing.";
+    let initialMessage = t("home.chat.initialGreeting");
 
-    if (activeAppTag !== 'home') {
-      const firstInfo = APP_ATTRIBUTES.find(a => a.appTagId === activeAppTag);
+    if (activeAppTag !== "home") {
+      const firstInfo = APP_ATTRIBUTES.find((a) => a.appTagId === activeAppTag);
       if (firstInfo) {
-        // Simple mapping for display title
-        const titles: Record<string, string> = {
-          'love_writers': 'I/O - Love Writers',
-          'trade_ranking': 'I/O - Ranking Product',
-          'furniture_logistics': 'I/O - Furniture Logistics',
-          'furniture_layout': 'I/O - Store Layout',
-          'furniture_store': 'I/O - Store',
-          'business_insights': 'I/O - Business Insights',
-          'io_mentoring': 'I/O - Mentoring',
-          'smart_survey': 'I/O - Smart Survey'
-        };
-        const title = titles[activeAppTag] || 'App';
-        initialMessage = `You chose ${title}. Let's get started. What is the ${firstInfo.label}?`;
+        const title = t(`appTags.${activeAppTag}.label`);
+        const label = t(`attributes.${firstInfo.id}.label`);
+        initialMessage = t("home.chat.selectedTag", { title, label });
       }
     }
 
@@ -131,7 +100,8 @@ export function HomeContainer() {
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [activeAppTag, hasStarted]);
+  }, [activeAppTag, hasStarted, t]);
+
 
   // Handle Chat Input
   const handleTestMode = (scenario: string = 'iphone') => {
@@ -212,7 +182,7 @@ export function HomeContainer() {
     setMessages(prev => [
       ...prev,
       { role: 'user', content: `⏩ Skip to ${scenarioLabel} Analysis` },
-      { role: 'assistant', content: `Test Mode detected. Compiling Trade Dossiê for ${scenarioLabel}...` }
+      { role: 'assistant', content: t("home.chat.testModeActive", { scenario: scenarioLabel }) }
     ]);
 
     setTimeout(() => {
@@ -251,15 +221,16 @@ export function HomeContainer() {
       if (activeAppTag !== 'home') {
         if (nextMissingAttribute) {
           // Ask for the next field
+          const label = t(`attributes.${nextMissingAttribute.id}.label`);
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: `Got it. Now, what is the ${nextMissingAttribute.label}?`
+            content: t("home.chat.missingField", { label })
           }]);
         } else {
           // All done!
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: "Perfect! I have everything I need. Generating your workspace now..."
+            content: t("home.chat.generating")
           }]);
 
           // Trigger submission after a short delay
@@ -302,8 +273,8 @@ export function HomeContainer() {
 
       // 2. Redirect to Sign Up
       push({
-        title: "Almost there!",
-        description: "Create your free account to view your insights.",
+        title: t("home.toasts.almostThere"),
+        description: t("home.toasts.createAccount"),
         variant: "default",
       });
 
@@ -315,8 +286,8 @@ export function HomeContainer() {
     } catch (error) {
       console.error("Failed to capture onboarding data:", error);
       push({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: t("common.error"),
+        description: t("home.toasts.errorOccurred"),
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -334,8 +305,8 @@ export function HomeContainer() {
       }));
 
       push({
-        title: "Calculating trade value...",
-        description: "Create a free account to view your ranking report.",
+        title: t("home.toasts.calculating"),
+        description: t("home.toasts.createAccount"),
         variant: "default",
       });
 
@@ -346,8 +317,8 @@ export function HomeContainer() {
     } catch (error) {
       console.error("Failed to capture onboarding data:", error);
       push({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: t("common.error"),
+        description: t("home.toasts.errorOccurred"),
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -367,8 +338,8 @@ export function HomeContainer() {
 
       // 2. Redirect to Sign Up
       push({
-        title: "Saving your story idea...",
-        description: "Create a free account to start writing.",
+        title: t("home.toasts.savingStory"),
+        description: t("home.toasts.createAccount"),
         variant: "default",
       });
 
@@ -379,8 +350,8 @@ export function HomeContainer() {
     } catch (error) {
       console.error("Failed to capture onboarding data:", error);
       push({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: t("common.error"),
+        description: t("home.toasts.errorOccurred"),
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -398,8 +369,8 @@ export function HomeContainer() {
       }));
 
       push({
-        title: `Carregando ${type.replace('_', ' ')}...`,
-        description: "Crie sua conta gratuita para acessar o painel.",
+        title: t("home.toasts.loadingPanel"),
+        description: t("home.toasts.createAccount"),
         variant: "default",
       });
 
@@ -409,7 +380,7 @@ export function HomeContainer() {
 
     } catch (error) {
       console.error("Failed to capture furniture data:", error);
-      push({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+      push({ title: t("common.error"), description: t("home.toasts.errorOccurred"), variant: "destructive" });
       setIsSubmitting(false);
     }
   };
@@ -457,17 +428,17 @@ export function HomeContainer() {
       useAuthStore.getState().setUser(null);
 
       push({
-        title: "Workspace cleared",
-        description: "Submit the form again to generate a fresh workspace.",
+        title: t("home.toasts.workspaceCleared"),
+        description: t("home.toasts.workspaceClearedDesc"),
         variant: "success",
       });
     } catch (error) {
       push({
-        title: "Reset failed",
+        title: t("common.error"),
         description:
           error instanceof Error
             ? error.message
-            : "Please try again in a few moments.",
+            : t("home.toasts.errorOccurred"),
         variant: "destructive",
       });
     }
@@ -488,30 +459,59 @@ export function HomeContainer() {
             <span className="text-xl font-semibold text-black">WebApp</span>
           </Link>
           <div className="flex items-center space-x-3">
+            {/* Language Selector */}
+            <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-xs font-semibold shadow-xs mr-2 pointer-events-auto">
+              <button
+                onClick={() => setLocale("pt")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold text-[10px]",
+                  locale === "pt"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                )}
+                title="Português"
+              >
+                PT
+              </button>
+              <button
+                onClick={() => setLocale("en")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold text-[10px]",
+                  locale === "en"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                )}
+                title="English"
+              >
+                EN
+              </button>
+            </div>
+
+
             {messages.length > 0 && (
               <button
                 onClick={handleResetWorkspace}
-                className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors cursor-pointer"
+                className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors cursor-pointer pointer-events-auto"
               >
-                Start Over
+                {t("common.startOver")}
               </button>
             )}
             {isSignedIn ? (
               <Link href="/admin">
                 <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
-                  Dashboard
+                  {t("common.dashboard")}
                 </button>
               </Link>
             ) : (
               <>
                 <SignInButton mode="modal">
                   <button className="text-sm font-medium text-gray-600 hover:text-black cursor-pointer">
-                    Log in
+                    {t("common.login")}
                   </button>
                 </SignInButton>
                 <SignUpButton mode="modal">
                   <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
-                    Sign up
+                    {t("common.signUp")}
                   </button>
                 </SignUpButton>
               </>

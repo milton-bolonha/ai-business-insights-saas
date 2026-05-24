@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface FurniturePublicStoreProps {
   tiles: Tile[];
@@ -20,6 +21,7 @@ interface FurniturePublicStoreProps {
 }
 
 export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePublicStoreProps) {
+  const { t, locale } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [requestedId, setRequestedId] = useState<string | null>(null);
 
@@ -73,7 +75,7 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
                 animate={{ opacity: 1, y: 0 }}
                 className="inline-flex items-center gap-2 bg-sky-50 text-sky-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6"
               >
-                  <ShoppingBag className="h-4 w-4" /> Loja Virtual Ativa
+                  <ShoppingBag className="h-4 w-4" /> {t("public.furnitureStore.virtualStoreActive")}
               </motion.div>
               <motion.h1 
                 initial={{ opacity: 0, y: 20 }}
@@ -81,7 +83,7 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
                 transition={{ delay: 0.1 }}
                 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter mb-6"
               >
-                  Design que <span className="text-sky-600">Transforma.</span>
+                  {t("public.furnitureStore.heroTitlePrefix")} <span className="text-sky-600">{t("public.furnitureStore.heroTitleSuffix")}</span>
               </motion.h1>
               <motion.p 
                 initial={{ opacity: 0 }}
@@ -89,8 +91,7 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
                 transition={{ delay: 0.2 }}
                 className="text-lg text-gray-500 max-w-2xl mx-auto font-medium"
               >
-                  Explore nossa coleção exclusiva de móveis com montagem profissional incluída. 
-                  Direto da fábrica para sua casa.
+                  {t("public.furnitureStore.heroSubtitle")}
               </motion.p>
           </div>
       </div>
@@ -100,7 +101,7 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
           <div className="max-w-7xl mx-auto px-6 -mt-10 mb-20">
               <div className="flex items-center gap-3 mb-8">
                   <Star className="h-6 w-6 text-amber-500 fill-amber-500" />
-                  <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Destaques da Temporada</h2>
+                  <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">{t("public.furnitureStore.featuredSeason")}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {featuredProducts.map((p) => (
@@ -123,19 +124,21 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
 
                          <div className="flex flex-col justify-center flex-1">
                              <div className="flex items-center gap-2 mb-3">
-                                 <span className="bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Oferta Especial</span>
+                                 <span className="bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">{t("public.furnitureStore.specialOffer")}</span>
                                  <span className="text-gray-300 text-xs font-bold">•</span>
                                  <span className="text-gray-400 text-xs font-bold uppercase">{p.category}</span>
                              </div>
                              <h3 className="text-3xl font-black text-gray-900 mb-3">{p.name}</h3>
                              <p className="text-gray-500 text-sm mb-6 line-clamp-2 font-medium">{p.description}</p>
                              <div className="flex items-center justify-between mt-auto">
-                                <div className="text-3xl font-black text-gray-900">R$ {p.price?.toLocaleString()}</div>
+                                <div className="text-3xl font-black text-gray-900">
+                                    {locale === 'pt' ? 'R$ ' + p.price?.toLocaleString('pt-BR') : '$ ' + p.price?.toLocaleString('en-US')}
+                                </div>
                                 <button 
                                     onClick={() => handleRequest(p)}
                                     className="bg-sky-600 hover:bg-sky-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center gap-2"
                                 >
-                                    Solicitar Orçamento <ArrowRight className="h-4 w-4" />
+                                    {t("public.furnitureStore.requestQuote")} <ArrowRight className="h-4 w-4" />
                                 </button>
                              </div>
                          </div>
@@ -160,12 +163,12 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
                                 : "bg-white text-gray-400 border border-gray-100 hover:bg-gray-50"
                         )}
                       >
-                          {cat === "All" ? "Todos" : cat}
+                          {cat === "All" ? t("public.furnitureStore.allCategories") : cat}
                       </button>
                   ))}
               </div>
               <div className="flex items-center gap-2 text-gray-400 text-xs font-black uppercase tracking-widest bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100">
-                  <Filter className="h-4 w-4" /> {filteredProducts.length} itens encontrados
+                  <Filter className="h-4 w-4" /> {t("public.furnitureStore.itemsFound", { count: filteredProducts.length })}
               </div>
           </div>
 
@@ -200,7 +203,9 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
                             </div>
                             
                             <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                                <div className="text-xl font-black text-gray-900">R$ {p.price.toLocaleString()}</div>
+                                <div className="text-xl font-black text-gray-900">
+                                    {locale === 'pt' ? 'R$ ' + p.price.toLocaleString('pt-BR') : '$ ' + p.price.toLocaleString('en-US')}
+                                </div>
                                 <button 
                                     onClick={() => handleRequest(p)}
                                     disabled={requestedId === p.id}
@@ -227,7 +232,7 @@ export function FurniturePublicStore({ tiles, onPurchaseRequest }: FurniturePubl
             animate={{ opacity: 1, y: 0 }}
             className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] bg-emerald-600 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-xs uppercase tracking-widest flex items-center gap-4"
         >
-            <CheckCircle2 className="h-5 w-5" /> Interesse enviado! Nossa equipe entrará em contato.
+            <CheckCircle2 className="h-5 w-5" /> {t("public.furnitureStore.interestSent")}
         </motion.div>
       )}
     </div>

@@ -9,8 +9,10 @@ import { IntervieweePortal } from "./IntervieweePortal";
 import { SurveyBuilder } from "./SurveyBuilder";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
+  const { t, locale } = useTranslation();
   const [makerSurvey, setMakerSurvey] = useState<any | null>(null);
 
   const {
@@ -141,7 +143,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                     }`}
                   >
                     <Activity size={14} />
-                    Diagnóstico
+                    {t("admin.smartSurvey.detailView.tabs.dashboard")}
                   </button>
                   <button
                     onClick={() => setSubTab("collaborators")}
@@ -163,7 +165,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                     }`}
                   >
                     <ClipboardList size={14} />
-                    Pesquisas
+                    {t("admin.smartSurvey.detailView.tabs.surveys")}
                   </button>
                   <button
                     onClick={() => setSubTab("settings")}
@@ -174,7 +176,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                     }`}
                   >
                     <Settings size={14} />
-                    Ajustes
+                    {t("admin.smartSurvey.detailView.tabs.settings")}
                   </button>
                 </>
               )}
@@ -188,7 +190,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                   }`}
                 >
                   <ClipboardList size={14} />
-                  Coleta Auditor
+                  {t("admin.smartSurvey.detailView.tabs.auditorPanel")}
                 </button>
               )}
               {sessionRole === "admin" && (
@@ -201,14 +203,14 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                   }`}
                 >
                   <User2 size={14} />
-                  Portal do {activeCompany.respondentLabel}
+                  {t("admin.smartSurvey.detailView.tabs.portalOf", { label: activeCompany.respondentLabel })}
                 </button>
               )}
             </div>
 
             {(activeCompany.surveys?.length || 0) > 0 && (
               <div className="flex items-center gap-2 px-2 pb-2 md:pb-0 shrink-0 border-t md:border-t-0 md:border-l border-neutral-100 pt-2 md:pt-0 md:pl-4">
-                <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Ativa:</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.active")}</span>
                 <select
                   value={selectedSurveyId || activeCompany.surveys![0].id}
                   onChange={e => setSelectedSurveyId(e.target.value)}
@@ -222,7 +224,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                   type="button"
                   onClick={() => setIsMethodologyModalOpen(true)}
                   className="p-1.5 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                  title="Metodologia"
+                  title={t("admin.smartSurvey.detailView.methodology")}
                 >
                   <HelpCircle size={14} />
                 </button>
@@ -243,7 +245,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                     <BrainCircuit size={24} className="text-indigo-600" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-indigo-900">Sumário da Inteligência Artificial</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-indigo-900">{t("admin.smartSurvey.detailView.aiSummary")}</h3>
                     <div className="prose prose-sm prose-neutral max-w-none text-neutral-600 bg-white border border-neutral-100 rounded-[2rem] p-8 shadow-sm">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {activeSurvey.aiReport}
@@ -260,7 +262,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 {activeSurvey?.template === "nr1_compliance" ? (
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">IRO — média Sp (ponderada por módulo)</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.iroSp")}</span>
                       <div className="p-2 bg-emerald-50 rounded-xl">
                         <Activity size={16} className="text-emerald-600" />
                       </div>
@@ -279,17 +281,17 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 ) : (
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Total Faturamento</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.totalRevenue")}</span>
                       <div className="p-2 bg-emerald-50 rounded-xl">
                         <DollarSign size={16} className="text-emerald-600" />
                       </div>
                     </div>
                     <div>
                       <div className="text-3xl font-black tracking-tight text-neutral-900 font-mono">
-                        R$ {(activeSurvey?.continuousLogs || []).reduce((acc, cur) => acc + cur.faturamento, 0).toLocaleString("pt-BR")}
+                        {locale === 'pt' ? 'R$ ' : '$ '}{(activeSurvey?.continuousLogs || []).reduce((acc, cur) => acc + cur.faturamento, 0).toLocaleString(locale === 'en' ? "en-US" : "pt-BR")}
                       </div>
                       <div className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                        Soma de faturamento corporativo
+                        {t("admin.smartSurvey.detailView.sumCorporateRevenue")}
                       </div>
                     </div>
                   </div>
@@ -299,7 +301,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 {activeSurvey?.template === "nr1_compliance" ? (
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Cobertura da amostra</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.sampleCoverage")}</span>
                       <div className="p-2 bg-neutral-50 rounded-xl">
                         <Calculator size={16} className="text-neutral-500" />
                       </div>
@@ -309,12 +311,12 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                         {samplingStats?.coveragePercent ?? 0}%
                       </div>
                       <div className="text-[9px] font-bold text-neutral-400 mt-2 leading-relaxed">
-                        n={completedSamplesCount} concluídos · universo N={activeCompany.populationSize}
+                        {t("admin.smartSurvey.detailView.completedUniverse", { completed: completedSamplesCount, population: activeCompany.populationSize })}
                         {samplingStats && !samplingStats.isCensus && samplingStats.marginOfErrorPercent !== null && (
-                          <span className="block mt-1">Margem de erro ≈ ±{samplingStats.marginOfErrorPercent}% (95%)</span>
+                          <span className="block mt-1">{t("admin.smartSurvey.detailView.marginOfError", { margin: samplingStats.marginOfErrorPercent })}</span>
                         )}
                         {samplingStats?.isCensus && (
-                          <span className="block mt-1 text-emerald-600">Censo do universo declarado</span>
+                          <span className="block mt-1 text-emerald-600">{t("admin.smartSurvey.detailView.censusDeclared")}</span>
                         )}
                       </div>
                     </div>
@@ -322,7 +324,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 ) : (
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Quantidade de Vendas</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.salesQty")}</span>
                       <div className="p-2 bg-neutral-50 rounded-xl">
                         <TrendingUp size={16} className="text-neutral-500" />
                       </div>
@@ -332,7 +334,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                         {(activeSurvey?.continuousLogs || []).reduce((acc, cur) => acc + cur.qtdVendas, 0)}
                       </div>
                       <div className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-2">
-                        Fechamentos totais no período
+                        {t("admin.smartSurvey.detailView.totalClosings")}
                       </div>
                     </div>
                   </div>
@@ -342,7 +344,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 {activeSurvey?.template === "nr1_compliance" ? (
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Polarização Setorial</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.sectorPolarization")}</span>
                       <div className="p-2 bg-indigo-50 rounded-xl">
                         <SplitSquareHorizontal size={16} className="text-indigo-600" />
                       </div>
@@ -353,7 +355,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${polarizedSectorsCount > 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 animate-pulse' : 'bg-neutral-50 text-neutral-500'}`}>
-                          {polarizedSectorsCount > 0 ? "⚠️ Divergências Agudas" : "Consenso Geral"}
+                          {polarizedSectorsCount > 0 ? t("admin.smartSurvey.detailView.severeDivergence") : t("admin.smartSurvey.detailView.generalConsensus")}
                         </span>
                       </div>
                     </div>
@@ -361,7 +363,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 ) : (
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Apresentações</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.presentations")}</span>
                       <div className="p-2 bg-indigo-50 rounded-xl">
                         <Briefcase size={16} className="text-indigo-600" />
                       </div>
@@ -371,7 +373,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                         {(activeSurvey?.continuousLogs || []).reduce((acc, cur) => acc + cur.apresentacoes, 0)}
                       </div>
                       <div className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-2">
-                        Demonstrações comerciais realizadas
+                        {t("admin.smartSurvey.detailView.commercialDemos")}
                       </div>
                     </div>
                   </div>
@@ -380,7 +382,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                 {/* 4. AI report state */}
                 <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Controles & Dev</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.controlsDev")}</span>
                     <div className="p-2 bg-neutral-50 rounded-xl">
                       <BrainCircuit size={16} className="text-neutral-500" />
                     </div>
@@ -392,11 +394,11 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                         className="w-full bg-neutral-900 hover:bg-black text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                       >
                         <RefreshCw size={11} />
-                        Simular Respostas
+                        {t("admin.smartSurvey.detailView.simulateResponses")}
                       </button>
                     ) : (
                       <div className="text-xs font-bold text-neutral-800 leading-snug">
-                        Log Contínuo de {activeCompany.respondentLabel}
+                        {t("admin.smartSurvey.detailView.continuousLogOf", { label: activeCompany.respondentLabel })}
                       </div>
                     )}
 
@@ -406,7 +408,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                         disabled={completedSamplesCount === 0 || isGeneratingAI}
                         className="w-full border border-neutral-200 bg-white hover:bg-neutral-50 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-neutral-700 transition-colors cursor-pointer"
                       >
-                        {isGeneratingAI ? "Aguarde..." : activeSurvey?.aiReport ? "Re-gerar Laudo" : "Gerar Laudo SST"}
+                        {isGeneratingAI ? t("admin.smartSurvey.detailView.pleaseWait") : activeSurvey?.aiReport ? t("admin.smartSurvey.detailView.regenerateReport") : t("admin.smartSurvey.detailView.generateSstReport")}
                       </button>
                     )}
                   </div>
@@ -416,37 +418,37 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
               {activeSurvey?.template === "nr1_compliance" && organizationAnalytics && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Dispersão global</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.globalDispersion")}</span>
                     <div className="text-4xl font-black font-mono mt-3 text-neutral-900">
                       {organizationAnalytics.dispersion !== null ? organizationAnalytics.dispersion.toFixed(2) : "—"}
                     </div>
                     <span className={`text-[9px] font-black uppercase mt-2 inline-block px-2 py-0.5 rounded border ${organizationAnalytics.dispersionLevel.bg} ${organizationAnalytics.dispersionLevel.color}`}>
                       {organizationAnalytics.dispersionLevel.label}
                     </span>
-                    <p className="text-[9px] text-neutral-400 mt-2">Desvio dos Sp_i — detecta “média OK, guerra interna”</p>
+                    <p className="text-[9px] text-neutral-400 mt-2">{t("admin.smartSurvey.detailView.dispersionDesc")}</p>
                   </div>
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Variação do IRO</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.iroVariation")}</span>
                     <div className="text-4xl font-black font-mono mt-3 text-neutral-900">
                       {iroTrend.delta !== null ? `${iroTrend.delta > 0 ? "+" : ""}${iroTrend.delta.toFixed(2)}` : "—"}
                     </div>
                     <span className="text-[9px] font-black uppercase text-neutral-600 mt-2 block">{iroTrend.label}</span>
-                    <p className="text-[9px] text-neutral-400 mt-1">Comparado ao registro anterior desta pesquisa</p>
+                    <p className="text-[9px] text-neutral-400 mt-1">{t("admin.smartSurvey.detailView.comparedToPrevious")}</p>
                     {iroTrend.acceleration !== null && (
-                      <p className="text-[9px] text-neutral-400">Ritmo de mudança: {iroTrend.acceleration > 0 ? "+" : ""}{iroTrend.acceleration.toFixed(2)}</p>
+                      <p className="text-[9px] text-neutral-400">{t("admin.smartSurvey.detailView.changeRate", { val: (iroTrend.acceleration > 0 ? "+" : "") + iroTrend.acceleration.toFixed(2) })}</p>
                     )}
                   </div>
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Viés amostral</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.sampleBias")}</span>
                     <div className="text-4xl font-black font-mono mt-3 text-neutral-900">
                       {organizationAnalytics.bias ? `${organizationAnalytics.bias.biasIndex}%` : "—"}
                     </div>
                     <span className="text-[9px] font-black uppercase text-neutral-600 mt-2 block">
-                      {organizationAnalytics.bias?.label ?? "Sem amostra"}
+                      {organizationAnalytics.bias?.label ?? t("admin.smartSurvey.detailView.noSample")}
                     </span>
                   </div>
                   <div className="bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Diversidade de scores</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.detailView.scoreDiversity")}</span>
                     <div className="text-4xl font-black font-mono mt-3 text-neutral-900">
                       {organizationAnalytics.entropy ? `${organizationAnalytics.entropy.normalized}%` : "—"}
                     </div>
@@ -464,16 +466,16 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                   <div className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm space-y-6">
                     <div>
                       <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800">
-                        Média de risco por setor (Sp)
+                        {t("admin.smartSurvey.detailView.avgRiskPerSector")}
                       </h2>
-                      <p className="text-xs text-neutral-400 mt-1">Agregação por setor na pesquisa ativa</p>
+                      <p className="text-xs text-neutral-400 mt-1">{t("admin.smartSurvey.detailView.aggBySector")}</p>
                     </div>
 
                     <div className="flex items-end gap-3 overflow-x-auto pb-2 pt-8 h-[240px] hide-scrollbar w-full">
                       {completedSamplesCount === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-neutral-400 space-y-2 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 w-full h-full">
-                          <span className="text-xs font-bold uppercase tracking-widest">Sem Entrevistas</span>
-                          <span className="text-[10px] max-w-xs text-center">Inicie entrevistas no painel para gerar gráficos setoriais.</span>
+                          <span className="text-xs font-bold uppercase tracking-widest">{t("admin.smartSurvey.detailView.noInterviews")}</span>
+                          <span className="text-[10px] max-w-xs text-center">{t("admin.smartSurvey.detailView.startInterviewsPanel")}</span>
                         </div>
                       ) : (
                         Object.entries(sectorBreakdowns).map(([name, data]) => {
@@ -484,7 +486,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                             <div key={name} className="flex flex-col items-center justify-end h-full min-w-[80px] group flex-1">
                               {/* Polarized warning badge floating above bar */}
                               {data.isPolarized && (
-                                <div className="mb-2 text-red-500 animate-pulse drop-shadow-sm" title="Polarização grave detectada">
+                                <div className="mb-2 text-red-500 animate-pulse drop-shadow-sm" title={t("admin.smartSurvey.detailView.severePolarizationDetected")}>
                                   <AlertTriangle size={14} />
                                 </div>
                               )}
@@ -511,7 +513,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                               {/* Labels */}
                               <div className="text-center mt-3 space-y-0.5 w-full">
                                 <h4 className="text-[9px] font-black text-neutral-800 uppercase tracking-widest truncate px-1" title={name}>{name}</h4>
-                                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">{data.count} res</p>
+                                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">{t("admin.smartSurvey.detailView.resCount", { count: data.count })}</p>
                               </div>
                             </div>
                           );
@@ -555,32 +557,35 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                    ========================================== */
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Left: Quick logging logger form */}
-                  <div className="lg:col-span-1 bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm space-y-6">
+                  <div className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm space-y-6">
                     <div>
                       <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800">
-                        Logar Registro de {activeCompany.respondentLabel}
+                        {t("admin.smartSurvey.detailView.logRecordOf", { label: activeCompany.respondentLabel })}
                       </h2>
-                      <p className="text-xs text-neutral-400 mt-0.5">Lançar métricas operacionais diárias</p>
+                      <p className="text-xs text-neutral-400 mt-1">{t("admin.smartSurvey.detailView.postDailyMetrics")}</p>
                     </div>
 
-                    <form onSubmit={handleAddContinuousLog} className="space-y-4">
+                    <div className="space-y-4">
                       <div>
-                        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block mb-1">Data do Log</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 block mb-1">
+                          {t("admin.smartSurvey.detailView.logDate")}
+                        </label>
                         <input
                           type="date"
-                          required
                           value={logDate}
                           onChange={e => setLogDate(e.target.value)}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-emerald-500 transition-colors"
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block mb-1">Nome do {activeCompany.respondentLabel}</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 block mb-1">
+                          {t("admin.smartSurvey.detailView.nameOf", { label: activeCompany.respondentLabel })}
+                        </label>
                         <select
                           value={logCollabId}
                           onChange={e => setLogCollabId(e.target.value)}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-emerald-500 transition-colors"
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                         >
                           {activeCompany.collaborators.map(c => (
                             <option key={c.id} value={c.id}>{c.name} ({c.sector})</option>
@@ -588,221 +593,212 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                         </select>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block mb-1">Qtd Vendas</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={logQtdVendas}
-                            onChange={e => setLogQtdVendas(e.target.value)}
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-emerald-500 transition-colors"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block mb-1">Apresentações</label>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 block mb-1">
+                            {t("admin.smartSurvey.detailView.presentations")}
+                          </label>
                           <input
                             type="number"
                             min="0"
                             value={logApresentacoes}
-                            onChange={e => setLogApresentacoes(e.target.value)}
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-emerald-500 transition-colors"
+                            onChange={e => setLogApresentacoes(parseInt(e.target.value) || 0)}
+                            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 block mb-1">
+                            {t("admin.smartSurvey.detailView.qtySales")}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={logQtdVendas}
+                            onChange={e => setLogQtdVendas(parseInt(e.target.value) || 0)}
+                            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block mb-1">Faturamento Gerado (R$)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 block mb-1">
+                          {t("admin.smartSurvey.detailView.revenueGenerated", { currency: locale === 'pt' ? 'R$' : '$' })}
+                        </label>
                         <input
                           type="number"
+                          step="0.01"
                           min="0"
                           value={logFaturamento}
-                          onChange={e => setLogFaturamento(e.target.value)}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-emerald-500 transition-colors"
+                          onChange={e => setLogFaturamento(parseFloat(e.target.value) || 0)}
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                         />
                       </div>
 
                       <button
-                        type="submit"
-                        disabled={!logCollabId}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer"
+                        type="button"
+                        onClick={handleAddContinuousLog}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest py-3.5 rounded-xl transition-all active:scale-[0.98] cursor-pointer"
                       >
-                        Salvar Log Operacional
+                        {t("admin.smartSurvey.detailView.saveOpLog")}
                       </button>
-                    </form>
+                    </div>
                   </div>
 
                   {/* Right: Logging History Table */}
-                  <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm space-y-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-neutral-100 pb-4">
+                  <div className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm space-y-6 lg:col-span-2">
+                    <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-sm font-black uppercase tracking-wider text-neutral-800">
-                          Inteligência Comercial Contínua
+                          {t("admin.smartSurvey.detailView.continuousCommIntel")}
                         </h2>
-                        <p className="text-xs text-neutral-400 mt-0.5">Métricas de vendas e linha do tempo de relatórios</p>
+                        <p className="text-xs text-neutral-400 mt-1">{t("admin.smartSurvey.detailView.metricsTimeline")}</p>
                       </div>
-
-                      {/* Tab buttons switcher */}
-                      <div className="flex bg-neutral-100 p-1 rounded-xl">
+                      <div className="flex bg-neutral-100 rounded-xl p-1">
                         <button
-                          type="button"
-                          onClick={() => setContinuousViewTab("consolidated")}
-                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                            continuousViewTab === "consolidated"
-                              ? "bg-white text-emerald-700 shadow-sm font-extrabold"
-                              : "text-neutral-500 hover:text-neutral-800"
-                          }`}
+                          onClick={() => setContinuousViewTab("timeline")}
+                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer ${continuousViewTab === 'timeline' ? 'bg-white shadow-sm text-neutral-800' : 'text-neutral-500 hover:text-neutral-700'}`}
                         >
-                          Linha do Tempo
+                          {t("admin.smartSurvey.detailView.timeline")}
                         </button>
                         <button
-                          type="button"
-                          onClick={() => setContinuousViewTab("history")}
-                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                            continuousViewTab === "history"
-                              ? "bg-white text-emerald-700 shadow-sm font-extrabold"
-                              : "text-neutral-500 hover:text-neutral-800"
-                          }`}
+                          onClick={() => setContinuousViewTab("entries")}
+                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer ${continuousViewTab === 'entries' ? 'bg-white shadow-sm text-neutral-800' : 'text-neutral-500 hover:text-neutral-700'}`}
                         >
-                          Lançamentos
+                          {t("admin.smartSurvey.detailView.entries")}
                         </button>
                       </div>
                     </div>
 
                     {/* Scope toggle (Daily, Weekly, Monthly) displayed only in Consolidated Mode */}
-                    {continuousViewTab === "consolidated" && (
-                      <div className="flex items-center justify-between bg-neutral-50 border border-neutral-200/50 p-3 rounded-2xl">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Agrupar por período:</span>
-                        <div className="flex bg-neutral-200/60 p-0.5 rounded-lg">
-                          {(["daily", "weekly", "monthly"] as const).map(scope => (
+                    {continuousViewTab === "timeline" && (
+                      <div className="flex items-center justify-between bg-neutral-50 p-3 rounded-2xl border border-neutral-100">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-2">
+                          {t("admin.smartSurvey.detailView.groupByPeriod")}
+                        </span>
+                        <div className="flex gap-1">
+                          {["daily", "weekly", "monthly"].map(p => (
                             <button
-                              key={scope}
-                              type="button"
-                              onClick={() => setReportScope(scope)}
-                              className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
-                                reportScope === scope
-                                  ? "bg-neutral-900 text-white shadow-sm font-bold"
-                                  : "text-neutral-500 hover:text-neutral-800"
-                              }`}
+                              key={p}
+                              onClick={() => setReportScope(p as any)}
+                              className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${reportScope === p ? 'bg-indigo-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-200/50'}`}
                             >
-                              {scope === "daily" ? "Diário" : scope === "weekly" ? "Semanal" : "Mensal"}
+                              {p === "daily" ? t("admin.smartSurvey.detailView.daily") : p === "weekly" ? t("admin.smartSurvey.detailView.weekly") : t("admin.smartSurvey.detailView.monthly")}
                             </button>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div className="overflow-x-auto">
-                      {continuousViewTab === "consolidated" ? (
-                        aggregatedLogs.length === 0 ? (
-                          <div className="text-center py-16 text-neutral-400 text-xs font-semibold bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
-                            Nenhum registro contínuo lançado. Lançamentos geram a linha do tempo.
-                          </div>
-                        ) : (
-                          <table className="w-full text-left border-collapse">
+                    {continuousViewTab === "timeline" ? (
+                      aggregatedLogs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-neutral-400 space-y-2 border border-dashed border-neutral-200 rounded-2xl bg-neutral-50/50">
+                          <BarChart2 size={24} className="text-neutral-300" />
+                          <span className="text-[10px] font-bold tracking-wide">{t("admin.smartSurvey.detailView.noContinuousLogsGen")}</span>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse">
                             <thead>
-                              <tr className="border-b border-neutral-100 text-[9px] font-black uppercase tracking-widest text-neutral-400">
-                                <th className="pb-3">Período</th>
-                                <th className="pb-3 text-center">Vendas</th>
-                                <th className="pb-3 text-center">Apres.</th>
-                                <th className="pb-3 text-center">Conversão</th>
-                                <th className="pb-3 text-right">Fat. Total</th>
-                                <th className="pb-3 text-right">Ticket Médio</th>
-                                <th className="pb-3 text-right">Top {activeCompany.respondentLabel}</th>
+                              <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-left">{t("admin.smartSurvey.detailView.thPeriod")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.detailView.thSales")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.detailView.thApres")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.detailView.thConversion")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.detailView.thTotalRev")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.detailView.thAvgTicket")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-left pl-6">{t("admin.smartSurvey.detailView.thTopOf", { label: activeCompany.respondentLabel })}</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {aggregatedLogs.map(item => {
-                                const conversionRate = item.apresentacoes > 0 ? (item.qtdVendas / item.apresentacoes) * 100 : 0;
-                                const avgTicket = item.qtdVendas > 0 ? item.faturamento / item.qtdVendas : 0;
+                              {aggregatedLogs.map((g, idx) => {
+                                const conversionRate = g.apresentacoes > 0 ? (g.qtdVendas / g.apresentacoes) * 100 : 0;
+                                const avgTicket = g.qtdVendas > 0 ? g.faturamento / g.qtdVendas : 0;
                                 return (
-                                  <tr key={item.periodKey} className="border-b border-neutral-50 hover:bg-neutral-50/50 text-xs">
-                                    <td className="py-3 font-semibold text-neutral-800">
-                                      {item.label}
-                                    </td>
-                                    <td className="py-3 text-center font-mono font-bold text-neutral-700">{item.qtdVendas}</td>
-                                    <td className="py-3 text-center font-mono font-bold text-neutral-700">{item.apresentacoes}</td>
-                                    <td className="py-3 text-center font-mono font-bold">
-                                      <span className={`px-2 py-0.5 rounded text-[10px] ${
-                                        conversionRate >= 30 
-                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                                          : conversionRate >= 15 
-                                            ? "bg-amber-50 text-amber-700 border border-amber-100" 
-                                            : "bg-red-50 text-red-700 border border-red-100"
-                                      }`}>
+                                  <tr key={idx} className="border-b border-neutral-50 text-xs">
+                                    <td className="p-4 font-bold text-neutral-800">{g.label}</td>
+                                    <td className="p-4 text-right font-mono text-xs font-semibold text-neutral-700">{g.qtdVendas}</td>
+                                    <td className="p-4 text-right font-mono text-xs font-semibold text-neutral-700">{g.apresentacoes}</td>
+                                    <td className="p-4 text-right">
+                                      <span className={`px-2 py-0.5 rounded text-[10px] font-black ${conversionRate >= 30 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                                         {conversionRate.toFixed(0)}%
                                       </span>
                                     </td>
-                                    <td className="py-3 text-right font-mono font-black text-emerald-600">
-                                      R$ {item.faturamento.toLocaleString("pt-BR")}
+                                    <td className="p-4 text-right font-mono text-xs font-semibold text-neutral-700">
+                                      {locale === 'pt' ? 'R$ ' : '$ '}{g.faturamento.toLocaleString(locale === 'en' ? "en-US" : "pt-BR")}
                                     </td>
-                                    <td className="py-3 text-right font-mono font-semibold text-neutral-600">
-                                      R$ {avgTicket.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                                    <td className="p-4 text-right font-mono text-xs font-bold text-indigo-700 bg-indigo-50/30">
+                                      {locale === 'pt' ? 'R$ ' : '$ '}{avgTicket.toLocaleString(locale === 'en' ? "en-US" : "pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </td>
-                                    <td className="py-3 text-right">
-                                      <div className="text-[10px] leading-snug">
-                                        <div className="font-bold text-neutral-800">{item.topSellerName}</div>
-                                        {item.topSellerFaturamento > 0 && (
-                                          <div className="text-[9px] font-mono text-emerald-600">R$ {item.topSellerFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</div>
-                                        )}
-                                      </div>
-                                    </td>
+                                    <td className="p-4 text-left pl-6 font-bold text-neutral-800">{g.topSellerName}</td>
                                   </tr>
                                 );
                               })}
                             </tbody>
                           </table>
-                        )
+                        </div>
+                      )
+                    ) : (
+                      (activeSurvey?.continuousLogs?.length || 0) === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-neutral-400 space-y-2 border border-dashed border-neutral-200 rounded-2xl bg-neutral-50/50">
+                          <List size={24} className="text-neutral-300" />
+                          <span className="text-[10px] font-bold tracking-wide">{t("admin.smartSurvey.detailView.noContinuousLogsForm")}</span>
+                        </div>
                       ) : (
-                        (activeSurvey?.continuousLogs || []).length === 0 ? (
-                          <div className="text-center py-16 text-neutral-400 text-xs font-semibold bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
-                            Nenhum registro contínuo lançado. Insira dados no formulário ao lado.
-                          </div>
-                        ) : (
-                          <table className="w-full text-left border-collapse">
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse">
                             <thead>
-                              <tr className="border-b border-neutral-100 text-[9px] font-black uppercase tracking-widest text-neutral-400">
-                                <th className="pb-3">Data</th>
-                                <th className="pb-3">{activeCompany.respondentLabel}</th>
-                                <th className="pb-3 text-center">Vendas</th>
-                                <th className="pb-3 text-center">Apresentações</th>
-                                <th className="pb-3 text-right">Faturamento</th>
-                                <th className="pb-3 text-right">Ação</th>
+                              <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-left">{t("admin.smartSurvey.detailView.thDate")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-left">{activeCompany.respondentLabel}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-center">{t("admin.smartSurvey.detailView.thSales")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-center">{t("admin.smartSurvey.detailView.thApres")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.detailView.thRevenue")}</th>
+                                <th className="p-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 text-center">{t("admin.smartSurvey.detailView.thAction")}</th>
                               </tr>
                             </thead>
-                            <tbody>
-                              {(activeSurvey?.continuousLogs || []).map(log => {
-                                const collabName = activeCompany.collaborators.find(c => c.id === log.collaboratorId)?.name || "Excluído";
-                                return (
-                                  <tr key={log.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 text-xs">
-                                    <td className="py-3 font-semibold text-neutral-500">
-                                      {new Date(log.date + "T00:00:00").toLocaleDateString("pt-BR")}
-                                    </td>
-                                    <td className="py-3 font-bold text-neutral-800">{collabName}</td>
-                                    <td className="py-3 text-center font-mono font-bold text-neutral-700">{log.qtdVendas}</td>
-                                    <td className="py-3 text-center font-mono font-bold text-neutral-700">{log.apresentacoes}</td>
-                                    <td className="py-3 text-right font-mono font-black text-emerald-600">
-                                      R$ {log.faturamento.toLocaleString("pt-BR")}
-                                    </td>
-                                    <td className="py-3 text-right">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteContinuousLog(log.id)}
-                                        className="text-neutral-400 hover:text-red-600 p-1 rounded transition-colors cursor-pointer"
-                                      >
-                                        <Trash2 size={13} />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                              <tbody>
+                                {(activeSurvey?.continuousLogs || []).map(log => {
+                                  const collabName = activeCompany.collaborators.find(c => c.id === log.collaboratorId)?.name || "Excluído";
+                                  return (
+                                    <tr key={log.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 text-xs">
+                                      <td className="p-4 font-semibold text-neutral-500">
+                                        {new Date(log.date + "T00:00:00").toLocaleDateString(locale === 'en' ? "en-US" : "pt-BR")}
+                                      </td>
+                                      <td className="p-4 font-bold text-neutral-800">
+                                        {collabName}
+                                        {log.deletedAt && (
+                                          <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded text-[8px] font-black uppercase tracking-widest">
+                                            {t("admin.smartSurvey.detailView.excluded")}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="p-4 text-center font-mono text-xs font-semibold text-neutral-700">{log.qtdVendas}</td>
+                                      <td className="p-4 text-center font-mono text-xs font-semibold text-neutral-700">{log.apresentacoes}</td>
+                                      <td className="p-4 text-right font-mono text-xs font-black text-indigo-700">
+                                        {locale === 'pt' ? 'R$ ' : '$ '}{log.faturamento.toLocaleString(locale === 'en' ? "en-US" : "pt-BR")}
+                                      </td>
+                                      <td className="p-4 text-center">
+                                        {!log.deletedAt && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteContinuousLog(log.id)}
+                                            className="text-neutral-400 hover:text-red-600 p-1 rounded transition-colors cursor-pointer"
+                                            title={t("admin.smartSurvey.detailView.excludeLog")}
+                                          >
+                                            <Trash2 size={13} />
+                                          </button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
                         )
                       )}
                     </div>
                   </div>
-                </div>
               )}
             </div>
           )}

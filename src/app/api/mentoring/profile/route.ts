@@ -166,6 +166,7 @@ export async function POST(req: Request) {
       },
       diaryLogs: diaryLogs || [],
       cognitiveState: cognitiveState || "Estável",
+      sessionTemplates: body.sessionTemplates || [],
       updatedAt: new Date()
     };
 

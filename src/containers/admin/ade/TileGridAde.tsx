@@ -25,6 +25,7 @@ import type { Tile } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { TileCard } from "@/components/ui/TileCard";
 import { useCurrentWorkspace } from "@/lib/stores";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface TileGridAdeProps {
   tiles: Tile[];
@@ -114,6 +115,7 @@ export function TileGridAde({
   onSelectDashboard,
   onCreateBlankDashboard,
 }: TileGridAdeProps) {
+  const { t } = useTranslation();
   const [sortOrder, setSortOrder] = useState<
     "newest" | "oldest" | "category" | "manual"
   >("manual");
@@ -122,7 +124,9 @@ export function TileGridAde({
 
   const currentWorkspace = useCurrentWorkspace();
   const isLoveWriters = currentWorkspace?.promptSettings?.templateId === "template_love_writers";
-  const gridTitle = isLoveWriters ? "Book Arcs" : "Insight Cards";
+  const gridTitle = isLoveWriters 
+    ? t("admin.tileGrid.bookArcs") 
+    : t("admin.tileGrid.insightCards");
 
   // Dashboard Data
   const currentDashboard = dashboards.find(d => d.isActive);
@@ -215,7 +219,9 @@ export function TileGridAde({
             className="mt-1 text-sm"
             style={{ color: appearance?.mutedTextColor || "#6b7280" }}
           >
-            {tiles.length} {isLoveWriters ? "arc" : "insight"}{tiles.length !== 1 ? "s" : ""} generated
+            {isLoveWriters 
+              ? t("admin.tileGrid.arcsGenerated", { count: tiles.length }) 
+              : t("admin.tileGrid.insightsGenerated", { count: tiles.length })}
           </p>
         </div>
 
@@ -259,7 +265,7 @@ export function TileGridAde({
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg text-left mt-1"
                     >
                       <Plus className="h-3 w-3" />
-                      <span>New Dashboard</span>
+                      <span>{t("admin.tileGrid.newDashboard")}</span>
                     </button>
                   </motion.div>
                 </>
@@ -296,7 +302,9 @@ export function TileGridAde({
                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                   <Plus className="h-6 w-6" />
                 </div>
-                <span className="text-sm font-medium">Add Manual Arc</span>
+                <span className="text-sm font-medium">
+                  {isLoveWriters ? t("admin.tileGrid.addManualArc") : t("admin.tileGrid.addManualInsight")}
+                </span>
               </button>
             )}
 
@@ -336,7 +344,9 @@ export function TileGridAde({
                   <div className="h-4 bg-gray-200 rounded w-4/6"></div>
                 </div>
                 <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center">
-                  <span className="text-xs font-medium text-gray-400 animate-pulse">Writing next arc...</span>
+                  <span className="text-xs font-medium text-gray-400 animate-pulse">
+                    {isLoveWriters ? t("admin.tileGrid.writingNextArc") : t("admin.tileGrid.writingNextInsight")}
+                  </span>
                 </div>
               </div>
             )}

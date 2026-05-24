@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-
+import { cookies, headers } from "next/headers";
 import { Providers } from "@/lib/providers";
+import { LanguageInitializer } from "@/components/i18n/LanguageInitializer";
+import { Locale } from "@/lib/stores/languageStore";
 
 import "@fontsource-variable/inter";
 import "@fontsource-variable/montserrat";
@@ -17,16 +19,30 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const savedCookie = cookieStore.get("NEXT_LOCALE")?.value;
+  let locale: Locale = "pt";
+
+  if (savedCookie === "pt" || savedCookie === "en") {
+    locale = savedCookie;
+  } else {
+    const headersList = await headers();
+    const acceptLanguage = headersList.get("accept-language") || "";
+    locale = acceptLanguage.toLowerCase().startsWith("en") ? "en" : "pt";
+  }
+
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang={locale === "pt" ? "pt-BR" : "en"} suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
+        <LanguageInitializer initialLocale={locale} />
         <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
+

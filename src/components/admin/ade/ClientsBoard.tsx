@@ -12,6 +12,7 @@ import {
   ShoppingBag
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface Client {
     id: string;
@@ -29,6 +30,7 @@ interface ClientsBoardProps {
 }
 
 export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
+    const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<any>(null);
@@ -62,8 +64,8 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
         <div className="space-y-8 p-4 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Client Database</h2>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Robust portfolio and protocol management</p>
+                    <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight">{t("admin.clients.title")}</h2>
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">{t("admin.clients.subtitle")}</p>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row sm:items-center w-full md:w-auto gap-3 mt-4 md:mt-0">
@@ -71,7 +73,7 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-sky-600 transition-colors" />
                         <input 
                             type="text" 
-                            placeholder="Search by name or WhatsApp..."
+                            placeholder={t("admin.clients.searchPlaceholder")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-11 pr-4 py-3 bg-white border-2 border-gray-100 rounded-2xl text-sm font-semibold w-full md:w-64 focus:border-sky-500 transition-all outline-none"
@@ -81,7 +83,7 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                         onClick={() => { setEditingClient(null); setIsModalOpen(true); }}
                         className="bg-sky-600 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-sky-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-sky-100 cursor-pointer w-full sm:w-auto"
                     >
-                        <UserPlus className="h-4 w-4" /> New Client
+                        <UserPlus className="h-4 w-4" /> {t("admin.clients.newClient")}
                     </button>
                 </div>
             </div>
@@ -115,11 +117,11 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                             <div className="space-y-3 pt-4 border-t border-gray-50 text-sm font-medium text-gray-500">
                                 <div className="flex gap-2">
                                     <MapPin className="h-4 w-4 shrink-0 text-gray-400" />
-                                    <span className="line-clamp-2">{client.address || "No address registered"}</span>
+                                    <span className="line-clamp-2">{client.address || t("admin.clients.noAddress")}</span>
                                 </div>
                                 <div className="flex gap-2 items-center">
                                     <History className="h-4 w-4 shrink-0 text-gray-400" />
-                                    <span>Since {new Date(client.createdAt).toLocaleDateString()}</span>
+                                    <span>{t("admin.clients.since", { date: new Date(client.createdAt).toLocaleDateString() })}</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -129,7 +131,7 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                 {filteredClients.length === 0 && (
                     <div className="col-span-full py-20 text-center bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
                         <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-black text-gray-400 uppercase tracking-tight">No clients found</h3>
+                        <h3 className="text-lg font-black text-gray-400 uppercase tracking-tight">{t("admin.clients.noClientsFound")}</h3>
                     </div>
                 )}
             </div>
@@ -145,35 +147,35 @@ export function ClientsBoard({ tiles, onClientSubmit }: ClientsBoardProps) {
                     >
                         <div className="mb-8">
                             <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                                {editingClient ? "Edit Client" : "Client Registration"}
+                                {editingClient ? t("admin.clients.editClient") : t("admin.clients.registrationTitle")}
                             </h2>
-                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">Enter data for billing and delivery</p>
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">{t("admin.clients.registrationSubtitle")}</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="col-span-2">
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.clients.fullName")}</label>
                                     <input name="name" defaultValue={editingClient?.name} required className="w-full bg-gray-50 rounded-2xl px-5 py-4 text-sm font-semibold border-none focus:ring-2 focus:ring-sky-100 outline-none shadow-inner" />
                                 </div>
                                 <div className="col-span-1">
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.clients.whatsapp")}</label>
                                     <input name="whatsapp" defaultValue={editingClient?.whatsapp} required placeholder="ex: 11988887777" className="w-full bg-gray-50 rounded-2xl px-5 py-4 text-sm font-semibold border-none focus:ring-2 focus:ring-sky-100 outline-none shadow-inner" />
                                 </div>
                                 <div className="col-span-1">
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.clients.email")}</label>
                                     <input name="email" defaultValue={editingClient?.email} type="email" className="w-full bg-gray-50 rounded-2xl px-5 py-4 text-sm font-semibold border-none focus:ring-2 focus:ring-sky-100 outline-none shadow-inner" />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Delivery Address</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.clients.deliveryAddress")}</label>
                                 <textarea name="address" defaultValue={editingClient?.address} rows={2} required className="w-full bg-gray-50 rounded-2xl px-5 py-4 text-sm font-semibold border-none focus:ring-2 focus:ring-sky-100 outline-none resize-none shadow-inner" />
                             </div>
 
                             <div className="flex justify-end gap-4 pt-4">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-4 text-xs font-black uppercase text-gray-400 hover:text-gray-900 transition-colors cursor-pointer">Cancel</button>
-                                <button type="submit" className="bg-sky-600 text-white px-10 py-4 rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-sky-700 shadow-xl shadow-sky-100 transition-all cursor-pointer">Save Client</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-4 text-xs font-black uppercase text-gray-400 hover:text-gray-900 transition-colors cursor-pointer">{t("common.cancel")}</button>
+                                <button type="submit" className="bg-sky-600 text-white px-10 py-4 rounded-3xl text-sm font-black uppercase tracking-widest hover:bg-sky-700 shadow-xl shadow-sky-100 transition-all cursor-pointer">{t("admin.clients.saveClient")}</button>
                             </div>
                         </form>
                     </motion.div>

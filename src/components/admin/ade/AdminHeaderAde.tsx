@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { ChevronDown, Droplet, Plus, Settings } from "lucide-react";
-
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { useUIStore } from "@/lib/stores";
 import { usePaymentFlow } from "@/containers/admin/hooks/usePaymentFlow";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface AdminHeaderAdeProps {
   appearance: AdeAppearanceTokens;
@@ -38,6 +38,7 @@ export function AdminHeaderAde({
   const currentDashboard = dashboards.find(d => d.isActive);
   const otherDashboards = dashboards.filter(d => !d.isActive);
   const { usage, limits, setUpgradeModalOpen } = usePaymentFlow();
+  const { t } = useTranslation();
 
   const handleColorChange = (color: string) => {
     // If a specific color handler is provided (which handles persistence), use it
@@ -74,7 +75,7 @@ export function AdminHeaderAde({
               {/* Current dashboard */}
               <div className="border-b p-3" style={{ borderColor: appearance.cardBorderColor }}>
                 <div className="text-sm font-medium" style={{ color: appearance.textColor }}>
-                  Current Dashboard
+                  {t("admin.header.currentDashboard")}
                 </div>
                 <div className="mt-1 text-sm" style={{ color: appearance.mutedTextColor }}>
                   {currentDashboard?.name}
@@ -85,7 +86,7 @@ export function AdminHeaderAde({
               {otherDashboards.length > 0 && (
                 <div className="border-b p-3" style={{ borderColor: appearance.cardBorderColor }}>
                   <div className="text-sm font-medium" style={{ color: appearance.textColor }}>
-                    Switch Dashboard
+                    {t("admin.header.switchDashboard")}
                   </div>
                   <div className="mt-2 space-y-1">
                     {otherDashboards.map((dashboard) => (
@@ -117,7 +118,7 @@ export function AdminHeaderAde({
                   style={{ color: appearance.textColor }}
                 >
                   <Plus className="h-4 w-4" />
-                  <span>New Dashboard</span>
+                  <span>{t("admin.header.newDashboard")}</span>
                 </button>
               </div>
             </div>
@@ -167,7 +168,6 @@ export function AdminHeaderAde({
           </div>
         )}
 
-        {/* Wallet UI */}
         <div
           className="flex items-center ml-2 border rounded-full px-3 py-1 cursor-pointer hover:bg-black/5 transition"
           style={{ borderColor: appearance.cardBorderColor, backgroundColor: appearance.surfaceColor }}
@@ -176,7 +176,7 @@ export function AdminHeaderAde({
         >
           <div className="flex flex-col">
             <div className="flex justify-between items-center text-[10px] font-bold uppercase mb-0.5" style={{ color: appearance.textColor }}>
-              <span>Wallet</span>
+              <span>{t("admin.header.wallet")}</span>
               <span className="text-blue-500">{(usage as any)?.creditsUsed || 0} / {(limits as any)?.creditsTotal || 0}</span>
             </div>
             <div className="h-1.5 w-24 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">

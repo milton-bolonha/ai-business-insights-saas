@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 
 interface LogisticsBoardProps {
@@ -46,6 +47,7 @@ interface Order {
 }
 
 export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onOpenOrderModal }: LogisticsBoardProps) {
+    const { t, locale } = useTranslation();
     const [showArchived, setShowArchived] = useState(false);
     const [activeRole, setActiveRole] = useState<"admin" | "vendedor" | "montador" | "entregador">("admin");
     const [expandedOrderIds, setExpandedOrderIds] = useState<Record<string, string | null>>({});
@@ -101,12 +103,21 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
         await onUpdateTile(order.tileId, { metadata: newMetadata });
 
         if (newStatus === "Delivered" && onAddNote) {
+            const formattedVal = locale === 'pt'
+                ? 'R$ ' + (order.value || 0).toLocaleString('pt-BR')
+                : '$ ' + (order.value || 0).toLocaleString('en-US');
+            const noteContent = t("admin.logisticsBoard.noteContent", {
+                product: order.product,
+                value: formattedVal,
+                payment: order.paymentMethod || t("admin.logisticsBoard.toDefine"),
+                date: new Date().toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')
+            });
             await onAddNote({
-                title: `Protocol: Order #${order.orderNumber} - ${order.clientName}`,
-                content: `ORDER DELIVERED AND FINISHED\n\nProduct: ${order.product}\nValue: R$ ${order.value || 0}\nPayment: ${order.paymentMethod || 'To Define'}\nDate: ${new Date().toLocaleString()}`
+                title: t("admin.logisticsBoard.noteTitle", { orderNumber: order.orderNumber, clientName: order.clientName }),
+                content: noteContent
             });
         }
-    }, [tiles, onUpdateTile, onAddNote]);
+    }, [tiles, onUpdateTile, onAddNote, locale, t]);
 
     const handleArchive = useCallback(async (order: Order) => {
         if (!onUpdateTile || !order.tileId) return;
@@ -123,7 +134,7 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
     }, [tiles, onUpdateTile]);
 
     const handleDelete = useCallback(async (order: Order) => {
-        if (!onUpdateTile || !order.tileId || !confirm("Are you sure you want to delete this order?")) return;
+        if (!onUpdateTile || !order.tileId || !confirm(t("admin.logisticsBoard.actions.deleteConfirm"))) return;
         const tile = tiles.find(t => t.id === order.tileId);
         if (!tile) return;
 
@@ -149,10 +160,10 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
             {/* Cashier Summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                    { label: "Faturamento", val: cashier.total, icon: Wallet, color: "indigo" },
-                    { label: "Pix / Transfer", val: cashier.pix, icon: ArrowRightLeft, color: "blue" },
-                    { label: "Dinheiro", val: cashier.cash, icon: Wallet, color: "emerald" },
-                    { label: "Maquininha", val: cashier.card, icon: CreditCard, color: "amber" },
+                    { label: t("admin.logisticsBoard.cashier.revenue"), val: cashier.total, icon: Wallet, color: "indigo" },
+                    { label: t("admin.logisticsBoard.cashier.pixTransfer"), val: cashier.pix, icon: ArrowRightLeft, color: "blue" },
+                    { label: t("admin.logisticsBoard.cashier.cash"), val: cashier.cash, icon: Wallet, color: "emerald" },
+                    { label: t("admin.logisticsBoard.cashier.card"), val: cashier.card, icon: CreditCard, color: "amber" },
                 ].map((item, i) => (
                     <div key={i} className="bg-white border border-gray-100 rounded-[1.5rem] p-4 shadow-sm flex flex-col gap-2">
                         <div className={`p-2 bg-${item.color}-50 rounded-xl self-start`}>
@@ -160,7 +171,9 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                         </div>
                         <div>
                             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{item.label}</div>
-                            <div className="text-lg font-black text-gray-900 leading-none">R$ {item.val.toLocaleString()}</div>
+                            <div className="text-lg font-black text-gray-900 leading-none">
+                                {locale === 'pt' ? 'R$ ' + item.val.toLocaleString('pt-BR') : '$ ' + item.val.toLocaleString('en-US')}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -169,10 +182,10 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
             {/* Role Switcher */}
             <div className="grid grid-cols-2 md:flex md:overflow-x-auto hide-scrollbar gap-2 bg-gray-50 p-2 rounded-3xl border border-gray-100">
                 {[
-                    { id: "admin", label: "Admin" },
-                    { id: "vendedor", label: "Vendedor" },
-                    { id: "montador", label: "Montador" },
-                    { id: "entregador", label: "Entregador" }
+                    { id: "admin", label: t("admin.logisticsBoard.roles.admin") },
+                    { id: "vendedor", label: t("admin.logisticsBoard.roles.vendedor") },
+                    { id: "montador", label: t("admin.logisticsBoard.roles.montador") },
+                    { id: "entregador", label: t("admin.logisticsBoard.roles.entregador") }
                 ].map((role) => (
                     <button
                         key={role.id}
@@ -197,7 +210,7 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                         className="flex items-center justify-center gap-2 px-5 py-3 bg-gray-900 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl cursor-pointer w-full sm:w-auto"
                     >
                         <Plus className="h-5 w-5" />
-                        Novo Pedido
+                        {t("admin.logisticsBoard.actions.newOrder")}
                     </button>
                     <button
                         onClick={() => setShowArchived(!showArchived)}
@@ -207,12 +220,12 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                         )}
                     >
                         <Archive className="h-5 w-5" />
-                        {showArchived ? "Ver Ativos" : "Arquivados"}
+                        {showArchived ? t("admin.logisticsBoard.actions.viewActive") : t("admin.logisticsBoard.actions.archived")}
                     </button>
                 </div>
                 <div className="text-left sm:text-right">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Gestão de Pedidos</div>
-                    <div className="text-2xl font-black text-gray-900">{displayOrders.length} {showArchived ? 'Arquivados' : 'Ativos'}</div>
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t("admin.logisticsBoard.headings.orderManagement")}</div>
+                    <div className="text-2xl font-black text-gray-900">{displayOrders.length} {showArchived ? t("admin.logisticsBoard.headings.archived") : t("admin.logisticsBoard.headings.active")}</div>
                 </div>
             </div>
 
@@ -225,13 +238,13 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                         className="w-full appearance-none bg-white border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer uppercase tracking-widest"
                     >
                         {[
-                            { title: "Novos Pedidos" },
-                            { title: "Montagem" },
-                            { title: "Logística" },
-                            { title: "Entregues" }
+                            { key: "newOrders", title: t("admin.logisticsBoard.columns.newOrders") },
+                            { key: "assembly", title: t("admin.logisticsBoard.columns.assembly") },
+                            { key: "logistics", title: t("admin.logisticsBoard.columns.logistics") },
+                            { key: "delivered", title: t("admin.logisticsBoard.columns.delivered") }
                         ].map((col, idx) => {
-                            if (activeRole === "montador" && !["Novos Pedidos", "Montagem"].includes(col.title)) return null;
-                            if (activeRole === "entregador" && !["Logística", "Entregues"].includes(col.title)) return null;
+                            if (activeRole === "montador" && !["newOrders", "assembly"].includes(col.key)) return null;
+                            if (activeRole === "entregador" && !["logistics", "delivered"].includes(col.key)) return null;
                             return (
                                 <option key={idx} value={idx}>
                                     {col.title}
@@ -248,16 +261,16 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
             {/* Kanban Columns Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
                 {[
-                    { title: "Novos Pedidos", statuses: ["Nova Solicitação"], color: "gray" },
-                    { title: "Montagem", statuses: ["To Assemble", "Assembling", "A Montar", "Em Montagem"], color: "blue" },
-                    { title: "Logística", statuses: ["Ready for Delivery", "In Transit", "Pronto Entrega", "Em Rota"], color: "indigo" },
-                    { title: "Entregues", statuses: ["Delivered", "Entregue"], color: "emerald" }
+                    { key: "newOrders", title: t("admin.logisticsBoard.columns.newOrders"), statuses: ["Nova Solicitação"], color: "gray" },
+                    { key: "assembly", title: t("admin.logisticsBoard.columns.assembly"), statuses: ["To Assemble", "Assembling", "A Montar", "Em Montagem"], color: "blue" },
+                    { key: "logistics", title: t("admin.logisticsBoard.columns.logistics"), statuses: ["Ready for Delivery", "In Transit", "Pronto Entrega", "Em Rota"], color: "indigo" },
+                    { key: "delivered", title: t("admin.logisticsBoard.columns.delivered"), statuses: ["Delivered", "Entregue"], color: "emerald" }
                 ].map((col, colIdx) => {
                     const colOrders = displayOrders.filter(o => col.statuses.includes(o.status));
 
                     // Role-based column filtering
-                    if (activeRole === "montador" && !["Novos Pedidos", "Montagem"].includes(col.title)) return null;
-                    if (activeRole === "entregador" && !["Logística", "Entregues"].includes(col.title)) return null;
+                    if (activeRole === "montador" && !["newOrders", "assembly"].includes(col.key)) return null;
+                    if (activeRole === "entregador" && !["logistics", "delivered"].includes(col.key)) return null;
 
                     return (
                         <div
@@ -288,16 +301,16 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                                             exit={{ opacity: 0, scale: 0.9 }}
                                             onClick={() => setExpandedOrderIds(prev => ({
                                                 ...prev,
-                                                [col.title]: prev[col.title] === order.id ? null : order.id
+                                                [col.key]: prev[col.key] === order.id ? null : order.id
                                             }))}
                                             className={cn(
                                                 "group relative bg-white border-2 rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer",
                                                 ((order.priority as string) === "High" || (order.priority as string) === "Alta") ? "border-rose-100" : "border-gray-50",
                                                 ((order.status as string) === "Delivered" || (order.status as string) === "Entregue") && "opacity-80 border-emerald-100 bg-emerald-50/20",
-                                                expandedOrderIds[col.title] === order.id ? "p-5" : "p-3"
+                                                expandedOrderIds[col.key] === order.id ? "p-5" : "p-3"
                                             )}
                                         >
-                                            {expandedOrderIds[col.title] === order.id ? (
+                                            {expandedOrderIds[col.key] === order.id ? (
                                                 <>
                                                     {/* Header Section (Maximized) */}
                                                     <div className="flex items-start justify-between mb-4">
@@ -323,8 +336,12 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                                                     {/* Product Detail */}
                                                     <div className="bg-gray-50 rounded-3xl p-4 mb-4">
                                                         <div className="flex justify-between items-start mb-1">
-                                                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Produto</div>
-                                                            <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 rounded-full">R$ {order.value || 0}</div>
+                                                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{t("admin.logisticsBoard.headings.product")}</div>
+                                                            <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 rounded-full">
+                                                                {locale === 'pt'
+                                                                    ? 'R$ ' + (order.value || 0).toLocaleString('pt-BR')
+                                                                    : '$ ' + (order.value || 0).toLocaleString('en-US')}
+                                                            </div>
                                                         </div>
                                                         <div className="text-sm font-bold text-gray-800 leading-snug">{order.product}</div>
                                                     </div>
@@ -341,6 +358,14 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                                                                     "Em Rota": "In Transit",
                                                                     "Entregue": "Delivered"
                                                                 };
+                                                                const stLabels: Record<string, string> = {
+                                                                    "Nova Solicitação": t("admin.logisticsBoard.statuses.newRequest"),
+                                                                    "A Montar": t("admin.logisticsBoard.statuses.toAssemble"),
+                                                                    "Em Montagem": t("admin.logisticsBoard.statuses.assembling"),
+                                                                    "Pronto Entrega": t("admin.logisticsBoard.statuses.readyForDelivery"),
+                                                                    "Em Rota": t("admin.logisticsBoard.statuses.inTransit"),
+                                                                    "Entregue": t("admin.logisticsBoard.statuses.delivered")
+                                                                };
                                                                 const internalSt = internalStMap[st];
                                                                 const isActive = (order.status as string) === internalSt || (order.status as string) === st;
 
@@ -355,7 +380,7 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                                                                                 : "bg-gray-50 text-gray-400 hover:bg-gray-100"
                                                                         )}
                                                                     >
-                                                                        {st}
+                                                                        {stLabels[st] || st}
                                                                     </button>
                                                                 );
                                                             })}
@@ -365,7 +390,7 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                                                             <div className="flex flex-col gap-1">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                                                    <span className="text-[10px] font-bold text-gray-400 capitalize">{order.paymentMethod}</span>
+                                                                    <span className="text-[10px] font-bold text-gray-400 capitalize">{order.paymentMethod || t("admin.logisticsBoard.toDefine")}</span>
                                                                 </div>
                                                                 {order.assignedStaffName && (
                                                                     <div className="flex items-center gap-2">
@@ -380,7 +405,7 @@ export function LogisticsBoard({ tiles, appearance, onUpdateTile, onAddNote, onO
                                                                 className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors cursor-pointer"
                                                             >
                                                                 <Archive className="h-3 w-3" />
-                                                                {order.archived ? "Desarquivar" : "Arquivar"}
+                                                                {order.archived ? t("admin.logisticsBoard.actions.unarchive") : t("admin.logisticsBoard.actions.archive")}
                                                             </button>
                                                         </div>
                                                     </div>

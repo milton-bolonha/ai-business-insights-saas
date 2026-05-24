@@ -3,8 +3,10 @@
 import React from "react";
 import { ShieldCheck, Building2, Users, ClipboardList, ArrowLeft, Printer, BookOpen } from "lucide-react";
 import type { SmartSurveyBoardViewProps } from "../SmartSurveyBoardView";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export function SmartSurveyHeader(props: SmartSurveyBoardViewProps) {
+  const { t } = useTranslation();
   const {
     selectedCompanyId,
     setSelectedCompanyId,
@@ -27,9 +29,9 @@ export function SmartSurveyHeader(props: SmartSurveyBoardViewProps) {
           </div>
           <p className="text-neutral-500 text-sm font-sans max-w-3xl">
             {activeCompany ? (
-              "Hub Central de Pesquisa e Diagnóstico"
+              t("admin.survey.hubSubtitle")
             ) : (
-              "Selecione uma empresa para visualizar o painel central."
+              t("admin.survey.selectCompanyDesc")
             )}
           </p>
         </div>
@@ -46,7 +48,7 @@ export function SmartSurveyHeader(props: SmartSurveyBoardViewProps) {
             className="flex items-center justify-center gap-2 border border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer"
           >
             <ArrowLeft size={14} />
-            Voltar ao diretório
+            {t("admin.survey.backToDirectory")}
           </button>
         )}
 
@@ -58,7 +60,7 @@ export function SmartSurveyHeader(props: SmartSurveyBoardViewProps) {
             className="flex items-center justify-center gap-2 bg-neutral-900 hover:bg-black text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer disabled:opacity-50"
           >
             <Printer size={14} />
-            Imprimir laudo PDF
+            {t("admin.survey.printReportPdf")}
           </button>
         )}
       </div>

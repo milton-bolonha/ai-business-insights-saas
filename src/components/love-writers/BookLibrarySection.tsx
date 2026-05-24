@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { useBookStream } from "@/lib/hooks/useBookStream";
 import { useWorkspaceStore } from "@/lib/stores/workspaceStore";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 import { 
   generateImageSchedule, 
   buildImagePromptContext,
@@ -67,6 +68,7 @@ export function BookLibrarySection({
   workspaceName,
   onOpenBook,
 }: BookLibrarySectionProps) {
+  const { t, locale } = useTranslation();
   const { data: books, isLoading } = useBooks(workspaceId);
   const { mutate: createBook, isPending: isCreating } = useCreateBook();
   const { mutate: deleteBook } = useDeleteBook();
@@ -485,10 +487,10 @@ export function BookLibrarySection({
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
             <BookOpen className="w-5 h-5 text-pink-500" />
-            Workspace Library
+            {t("loveWriters.libraryTitle")}
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Manage your generated books and publish new ones.
+            {t("loveWriters.librarySubtitle")}
           </p>
         </div>
       </div>
@@ -508,9 +510,9 @@ export function BookLibrarySection({
                   <Plus className="w-6 h-6" />
                 </div>
               )}
-              <h3 className="font-semibold text-gray-700">Publish New Book</h3>
+              <h3 className="font-semibold text-gray-700">{t("loveWriters.publishNewBook")}</h3>
               <p className="text-xs text-gray-400 mt-1 px-4">
-                Create a blank canvas with AI Ghostwriter
+                {t("loveWriters.createBlankCanvas")}
               </p>
             </div>
           ) : (
@@ -521,9 +523,9 @@ export function BookLibrarySection({
               <div className="w-12 h-12 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <Lock className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-gray-700">Members Only</h3>
+              <h3 className="font-semibold text-gray-700">{t("loveWriters.membersOnly")}</h3>
               <p className="text-xs text-gray-500 mt-1 px-4">
-                Create an account to publish AI Books safely.
+                {t("loveWriters.createAccountPublish")}
               </p>
             </div>
           )}
@@ -575,7 +577,7 @@ export function BookLibrarySection({
                       ) : (
                         <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200">
                           <span className="text-[10px] font-bold text-red-500 px-1">
-                            Delete?
+                            {t("loveWriters.deleteConfirm")}
                           </span>
                           <button
                             onClick={(e) => {
@@ -586,7 +588,7 @@ export function BookLibrarySection({
                             }}
                             className="flex h-7 px-2 items-center justify-center rounded-md bg-red-500 text-white text-[10px] font-bold hover:bg-red-600 transition-colors"
                           >
-                            Yes
+                            {t("loveWriters.yes")}
                           </button>
                           <button
                             onClick={(e) => {
@@ -595,7 +597,7 @@ export function BookLibrarySection({
                             }}
                             className="flex h-7 px-2 items-center justify-center rounded-md bg-gray-100 text-gray-600 text-[10px] font-bold hover:bg-gray-200 transition-colors"
                           >
-                            No
+                            {t("loveWriters.no")}
                           </button>
                         </div>
                       )}
@@ -626,9 +628,9 @@ export function BookLibrarySection({
                           <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-pink-600">
                             <span className={isActivelyWriting ? "animate-pulse" : ""}>
                               {isStopped
-                                ? "Stopped"
+                                ? t("loveWriters.stop")
                                 : isPaused
-                                  ? "Paused"
+                                  ? t("loveWriters.pause")
                                   : isDone
                                     ? "Complete ✓"
                                     : gs.status || `Arc ${gs.currentArc + 1} / ${gs.totalArcs}`}
@@ -675,7 +677,7 @@ export function BookLibrarySection({
                           }}
                           className="flex-1 py-1.5 px-2 bg-white text-gray-700 hover:bg-gray-50 rounded-md text-xs font-bold transition-all border border-gray-200 shadow-sm flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <PauseCircle className="w-3.5 h-3.5" /> Pause
+                          <PauseCircle className="w-3.5 h-3.5" /> {t("loveWriters.pause")}
                         </button>
                         <button
                           onClick={(e) => {
@@ -684,7 +686,7 @@ export function BookLibrarySection({
                           }}
                           className="flex-1 py-1.5 px-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-xs font-bold transition-all border border-red-200 flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <StopCircle className="w-3.5 h-3.5" /> Stop
+                          <StopCircle className="w-3.5 h-3.5" /> {t("loveWriters.stop")}
                         </button>
                       </>
                     ) : isPaused ? (
@@ -696,7 +698,7 @@ export function BookLibrarySection({
                           }}
                           className="flex-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-md text-xs font-medium transition-colors border border-gray-200 cursor-pointer"
                         >
-                          Read
+                          {t("loveWriters.read")}
                         </button>
                         <button
                           onClick={(e) => {
@@ -705,7 +707,7 @@ export function BookLibrarySection({
                           }}
                           className="flex-1 py-1.5 px-2 bg-pink-600 text-white hover:bg-pink-700 rounded-md text-xs font-bold transition-all shadow-md shadow-pink-200 flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <PlayCircle className="w-3.5 h-3.5" /> Resume
+                          <PlayCircle className="w-3.5 h-3.5" /> {t("loveWriters.resume")}
                         </button>
                       </>
                     ) : (
@@ -716,7 +718,7 @@ export function BookLibrarySection({
                         }}
                         className="w-full py-1.5 px-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-md text-xs font-medium transition-colors border border-gray-200 cursor-pointer"
                       >
-                        Read
+                        {t("loveWriters.read")}
                       </button>
                     )}
                   </div>
@@ -730,7 +732,7 @@ export function BookLibrarySection({
                 <BookOpen className="w-8 h-8" />
               </div>
               <p className="text-sm font-medium text-gray-500">
-                No books generated yet.
+                {t("loveWriters.noBooksGenerated")}
               </p>
             </div>
           )}

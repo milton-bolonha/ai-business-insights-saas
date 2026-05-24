@@ -1,0 +1,1672 @@
+{
+  "common": {
+    "logoText": "WebApp",
+    "login": "Entrar",
+    "signUp": "Cadastrar-se",
+    "dashboard": "Painel",
+    "startOver": "Recomeçar",
+    "credits": "Créditos",
+    "profile": "Perfil",
+    "error": "Erro",
+    "success": "Sucesso",
+    "loading": "Carregando...",
+    "backToHome": "Voltar para o Início",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "switchWorkspace": "Alterar Workspace",
+    "createWorkspace": "Criar Workspace",
+    "workspaceDetails": "Detalhes do Workspace",
+    "deleteWorkspaceConfirm": "Deseja excluir o workspace \"{name}\" e todos os seus painéis, notas, contatos e arquivos?"
+  },
+  "home": {
+    "chat": {
+      "initialGreeting": "Estou pronto para ajudar! Escolha um App Tag abaixo ou comece a digitar.",
+      "selectedTag": "Você escolheu {title}. Vamos começar. O que é o {label}?",
+      "testModeActive": "Modo de Teste ativo. Compilando Dossiê Comercial para {scenario}...",
+      "missingField": "Entendido. Agora, o que é o {label}?",
+      "generating": "Perfeito! Tenho tudo o que preciso. Gerando seu workspace agora...",
+      "placeholder": "Digite sua mensagem aqui..."
+    },
+    "toasts": {
+      "almostThere": "Quase lá!",
+      "createAccount": "Crie sua conta gratuita para visualizar seus insights.",
+      "workspaceCleared": "Workspace limpo",
+      "workspaceClearedDesc": "Envie o formulário novamente para gerar um novo workspace.",
+      "errorOccurred": "Ocorreu um erro. Por favor, tente novamente.",
+      "calculating": "Calculando valor comercial...",
+      "savingStory": "Salvando sua ideia de história...",
+      "loadingPanel": "Carregando painel..."
+    }
+  },
+  "appTags": {
+    "business_insights": {
+      "label": "I/O - Insights de Negócios",
+      "subtitle": "Gere análises profundas a partir de dados da empresa."
+    },
+    "love_writers": {
+      "label": "I/O - Escritores de Romance",
+      "subtitle": "Crie seu romance arco por arco de forma interativa."
+    },
+    "trade_ranking": {
+      "label": "I/O - Ranking de Produtos",
+      "subtitle": "Sistema paramétrico profissional de avaliação de trocas."
+    },
+    "furniture_logistics": {
+      "label": "I/O - Logística de Móveis",
+      "subtitle": "Painel KDS de montagem, controle de caixa e logística."
+    },
+    "furniture_layout": {
+      "label": "I/O - Layout de Loja",
+      "subtitle": "Mapeamento inteligente de gôndolas e monetização de espaço."
+    },
+    "furniture_store": {
+      "label": "I/O - Vitrine Virtual",
+      "subtitle": "Exponha seus móveis em uma vitrine premium integrada ao painel."
+    },
+    "io_mentoring": {
+      "label": "I/O - Mentoria Inteligente",
+      "subtitle": "Evolua sua mentoria com quadros Kanban e resumos IA."
+    },
+    "smart_survey": {
+      "label": "I/O - Pesquisa NR-1 / NR-17",
+      "subtitle": "Plataforma de compliance ergonômico e psicossocial brasileiro."
+    }
+  },
+  "attributes": {
+    "company": {
+      "label": "Empresa do Vendedor",
+      "placeholder": "Qual empresa você representa?"
+    },
+    "companyWebsite": {
+      "label": "Meu Site",
+      "placeholder": "ex: www.empresa.com"
+    },
+    "solution": {
+      "label": "Solução",
+      "placeholder": "O que você está vendendo?"
+    },
+    "researchTarget": {
+      "label": "Empresa Alvo",
+      "placeholder": "Quem você deseja pesquisar?"
+    },
+    "researchWebsite": {
+      "label": "Website Alvo",
+      "placeholder": "ex: www.empresa-alvo.com"
+    },
+    "user_name": {
+      "label": "Seu Nome",
+      "placeholder": "Qual é o seu nome?"
+    },
+    "partner_name": {
+      "label": "Nome do Parceiro",
+      "placeholder": "Qual é o nome do seu parceiro(a)?"
+    },
+    "meeting_story": {
+      "label": "História do Encontro",
+      "placeholder": "Como vocês dois se conheceram?"
+    },
+    "product_category": {
+      "label": "Categoria do Produto",
+      "placeholder": "Ex: Geladeira, Smartphone"
+    },
+    "product_condition": {
+      "label": "Condição",
+      "placeholder": "Novo, Semi-novo, Usado, Ruim"
+    },
+    "catDeprec": {
+      "label": "Categoria de Depreciação",
+      "placeholder": "Smartphone, Notebook, Console, Eletro, Generico"
+    },
+    "mes": {
+      "label": "Mês de Referência",
+      "placeholder": "0 (Jan) a 11 (Dez)"
+    },
+    "product_repair_cost": {
+      "label": "Custo de Reparo (R$)",
+      "placeholder": "Estime os custos de reparo (ex: 200)"
+    },
+    "market_value_new": {
+      "label": "Preço Novo (R$)",
+      "placeholder": "Preço de mercado para item novo"
+    },
+    "market_value_used_avg": {
+      "label": "Preço Usado Médio (R$)",
+      "placeholder": "Preço comum em OLX/Mercado Livre"
+    },
+    "market_demand": {
+      "label": "Demanda de Mercado (0-1)",
+      "placeholder": "Nível de interesse (0.8 = Alto)"
+    },
+    "market_time_to_sell": {
+      "label": "Dias Médios para Vender",
+      "placeholder": "ex: 7, 15, 30 dias"
+    },
+    "trader_mode": {
+      "label": "Modo de Negociação",
+      "placeholder": "Giro, Margem, Agressivo"
+    },
+    "trader_risk": {
+      "label": "Tolerância a Risco (0-1)",
+      "placeholder": "0.2 = Conservador, 0.9 = Arrojado"
+    },
+    "market_pricing_power": {
+      "label": "Poder de Precificação (0-1)",
+      "placeholder": "Quanto controle você tem sobre o preço?"
+    },
+    "store_name": {
+      "label": "Nome da Loja",
+      "placeholder": "Qual o nome da sua loja?"
+    },
+    "staff_count": {
+      "label": "Tamanho da Equipe",
+      "placeholder": "Quantos montadores você tem?"
+    },
+    "layout_store_name": {
+      "label": "Nome da Loja",
+      "placeholder": "Qual o nome da sua loja?"
+    },
+    "store_size": {
+      "label": "Tamanho da Loja (m²)",
+      "placeholder": "ex: 200, 500, 1000"
+    },
+    "aisle_count": {
+      "label": "Número de Gôndolas",
+      "placeholder": "ex: 4, 8, 12"
+    },
+    "vitrine_name": {
+      "label": "Nome do Showroom",
+      "placeholder": "Ex: Bolonha Móveis - Coleção 2026"
+    },
+    "primary_niche": {
+      "label": "Nicho Principal",
+      "placeholder": "Ex: Móveis Rústicos, Moderno, Decoração"
+    },
+    "mentor_name": {
+      "label": "Nome do Instituto",
+      "placeholder": "Qual o nome do instituto/empresa?"
+    },
+    "student_name": {
+      "label": "Nome do Mentor",
+      "placeholder": "Quem será o mentor?"
+    },
+    "mentoring_goal": {
+      "label": "Objetivo da Mentoria",
+      "placeholder": "Qual o foco principal dessa mentoria?"
+    },
+    "survey_company": {
+      "label": "Organização",
+      "placeholder": "Qual a Organização pesquisada?"
+    }
+  },
+  "admin": {
+    "mentoringProfileBoard": {
+      "myProfile": "Meu Perfil de Mentoria",
+      "specialty": "Especialidade",
+      "specialtyDesc": "Calculado dinamicamente a partir dos seus objetivos e habilidades.",
+      "mentees": "Mentorados",
+      "level": "Nível",
+      "focus": "Foco",
+      "focusIndex": "Índice de Foco",
+      "focusDesc": "Métrica de foco diário (Esforço Mental / Tempo Dedicado)",
+      "tasks": "Tarefas",
+      "tasksExecuted": "Tarefas Executadas",
+      "tasksDesc": "Seu progresso de atividades concluídas no quadro Kanban",
+      "nextSession": "Próxima Sessão",
+      "noSessionScheduled": "Sem sessão agendada",
+      "aiSecretary": "Secretaria IA",
+      "evolutionPanel": "Painel de Evolução",
+      "professionalDream": "Sonho Profissional",
+      "newProject": "Novo Projeto",
+      "saveProfile": "Salvar Perfil",
+      "newDiaryEntry": "Nova Entrada do Diário",
+      "diaryEntryDesc": "Registre suas métricas cognitivas e aprendizados do dia",
+      "mentalEffort": "Esforço Mental / Foco",
+      "easy": "Tranquilo",
+      "overload": "Sobrecarga",
+      "timeDedicated": "Tempo Dedicado / Foco",
+      "veryFast": "Muito Rápido",
+      "slow": "Demorado",
+      "realProgress": "Progresso Real",
+      "stopped": "Parado",
+      "completed": "Concluído",
+      "registerEntry": "Registrar Entrada",
+      "diaryHistory": "Histórico de Diários",
+      "diaryHistoryDesc": "Acompanhe sua carga diária e distorções cognitivas",
+      "noDiaryNotes": "Nenhuma anotação registrada até o momento.",
+      "tension": "Tensão",
+      "distortion": "Distorção",
+      "savedSessionModels": "Modelos de Sessão Salvos",
+      "projectSaved": "Projeto atualizado com sucesso!",
+      "newProjectAdded": "Novo projeto adicionado com sucesso!",
+      "deleteConfirm": "Deseja realmente excluir este projeto?",
+      "projectDeleted": "Projeto excluído com sucesso!",
+      "projectStatusUpdated": "Status de destaque do projeto atualizado com sucesso!",
+      "profileUpdated": "Perfil atualizado com sucesso!",
+      "linkedinImportSuccess": "Dados importados do LinkedIn real com sucesso!"
+    },
+    "clients": {
+      "title": "Banco de Clientes",
+      "subtitle": "Gestão robusta de portfólio e protocolos",
+      "searchPlaceholder": "Buscar por nome ou WhatsApp...",
+      "newClient": "Novo Cliente",
+      "noAddress": "Nenhum endereço cadastrado",
+      "since": "Desde {date}",
+      "noClientsFound": "Nenhum cliente encontrado",
+      "editClient": "Editar Cliente",
+      "registrationTitle": "Cadastro de Cliente",
+      "registrationSubtitle": "Insira os dados para faturamento e entrega",
+      "fullName": "Nome Completo",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "deliveryAddress": "Endereço de Entrega",
+      "saveClient": "Salvar Cliente"
+    },
+    "staff": {
+      "title": "Equipe e Cargos",
+      "subtitle": "Gestão de pessoal e atribuição de rotas",
+      "searchPlaceholder": "Buscar por nome ou setor...",
+      "newMember": "Novo Integrante",
+      "statusActive": "Ativo",
+      "statusOffDuty": "Folga",
+      "statusOnTour": "Em Rota",
+      "sectorAssembly": "Montagem",
+      "sectorDelivery": "Entrega",
+      "sectorSales": "Vendas",
+      "sectorLogistics": "Logística",
+      "sectorFinance": "Finanças",
+      "modalTitle": "Equipe",
+      "modalSubtitle": "Gestão de capital humano",
+      "staffName": "Nome do Integrante",
+      "role": "Cargo / Função",
+      "rolePlaceholder": "ex: Montador Mestre",
+      "sector": "Setor",
+      "status": "Status Operacional",
+      "saveMember": "Salvar Integrante"
+    },
+    "members": {
+      "title": "Gestão de Cadastros",
+      "subtitleWorkspace": "Controle de acessos e status dos convites",
+      "subtitleGlobal": "Todos os usuários do SaaS",
+      "tabWorkspace": "Workspace",
+      "tabGlobal": "Global",
+      "invitePlaceholder": "Convidar por e-mail...",
+      "inviteBtn": "Convidar",
+      "searchPlaceholder": "Buscar cadastros...",
+      "countLabel": "{count} Cadastros",
+      "loading": "Carregando cadastros...",
+      "noMembers": "Nenhum cadastro encontrado",
+      "colName": "Nome",
+      "colEmail": "E-mail",
+      "colPermission": "Permissão",
+      "colStatus": "Status da Conta",
+      "accessTotal": "Acesso Total",
+      "statusVerified": "Verificado",
+      "statusExpired": "Expirado",
+      "statusPending": "Pendente",
+      "removeAccessTitle": "Remover acesso",
+      "memberAdded": "Membro adicionado",
+      "memberAddedDesc": "O usuário foi adicionado ao workspace com sucesso.",
+      "errorAdding": "Erro ao adicionar",
+      "errorAddingDesc": "Verifique se o e-mail está correto e já cadastrado na plataforma.",
+      "permissionUpdated": "Permissão atualizada",
+      "permissionUpdatedDesc": "O nível de acesso foi alterado com sucesso.",
+      "errorUpdating": "Erro ao atualizar",
+      "removeConfirm": "Tem certeza que deseja remover este membro?",
+      "memberRemoved": "Membro removido",
+      "memberRemovedDesc": "O usuário não tem mais acesso a este workspace.",
+      "errorRemoving": "Erro ao remover"
+    },
+    "chat": {
+      "title": "Histórico de IA",
+      "subtitle": "Conversas salvas deste painel",
+      "newConversation": "Nova Conversa",
+      "noConversations": "Nenhuma conversa encontrada",
+      "newConversationHint": "Clique em 'Nova Conversa' para falar com a IA.",
+      "actionDetails": "Detalhes da Ação"
+    },
+    "notes": {
+      "title": "Notas Técnicas",
+      "addNote": "Adicionar Nota",
+      "newNote": "Nova nota",
+      "noteTitlePlaceholder": "Título da nota",
+      "noteContentPlaceholder": "Conteúdo da nota",
+      "editingNote": "Editando nota",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "navigation": {
+      "tabs": {
+        "arcs": "Arcos Narrativos",
+        "store": "Showroom de Móveis",
+        "layout": "Layout da Loja",
+        "logistics": "Logística Operacional",
+        "clients": "Banco de Clientes",
+        "staff": "Equipe de Montagem",
+        "notes": "Notas Técnicas",
+        "files": "Banco de Arquivos",
+        "ranking": "Ranking de Valuation",
+        "mentoring_profile": "Perfil RPG de Mentoria",
+        "mentoring_tasks": "Quadro Kanban",
+        "mentoring_schedule": "Agenda de Sessões",
+        "mentoring_insights": "Métricas e Evolução",
+        "survey": "Pesquisa de Riscos",
+        "chat_history": "Assistente IA",
+        "library": "Biblioteca",
+        "characters": "Elenco / Contatos",
+        "members": "Cadastros",
+        "reports": "Relatórios",
+        "analysis": "Análise",
+        "dashboard": "Dashboard"
+      }
+    },
+    "sidebar": {
+      "preview": "Visualizar",
+      "publish": "Publicar",
+      "newWorkspace": "Novo Workspace",
+      "addCharacter": "Adicionar Personagem",
+      "resetUser": "Redefinir Usuário",
+      "resetUserConfirm": "Tem certeza que deseja redefinir seu usuário? Isso limpará todos os dados locais e recarregará a página.",
+      "arcs": "Arcos",
+      "chars": "Personagens",
+      "notes": "Notas"
+    },
+    "dashboardLabels": {
+      "cast": "Elenco",
+      "teamClients": "Equipe/Clientes",
+      "team": "Equipe",
+      "contacts": "Contatos",
+      "newCharacter": "Novo Personagem",
+      "newMember": "Novo Integrante",
+      "newContact": "Novo Contato",
+      "narrativeArcs": "Arcos e Cenas",
+      "reportsProtocols": "Relatórios e Protocolos",
+      "floorplansAdjustments": "Plantas e Ajustes",
+      "notes": "Notas"
+    },
+    "tradeMeter": {
+      "title": "Análise de Desempenho de Trocas",
+      "systemName": "Sistema Paramétrico de Valuation",
+      "deviation": "Desvio de Mercado",
+      "advancedInsights": "Insights Avançados Sazonais & ROI",
+      "negotiationBrackets": "Margens de Negociação",
+      "anchorPrice": "Preço de Ancoragem",
+      "firstOffer": "Primeira Oferta",
+      "maxConcession": "Concessão Máxima",
+      "walkAway": "Preço de Abandono",
+      "totalRoi": "Meta de ROI Total",
+      "monthlyYield": "Rendimento Mensal",
+      "marketSource": "Lógica de Fonte de Mercado",
+      "confidence": "Confiança:",
+      "mlMedian": "Mediana ML",
+      "mlRange": "Intervalo ML (P10-P90)",
+      "mlDescription": "Baseado em {sampleSize} anúncios filtrados no Mercado Livre (MLB). O algoritmo aplicou um blend de 60% dos dados reais de mercado com o modelo teórico.",
+      "historicalTrend": "Tendência Sazonal Histórica",
+      "priceNew": "Preço (Novo)",
+      "priceUsed": "Mercado (Usado)",
+      "idealBuy": "Compra Ideal",
+      "targetSale": "Venda Alvo",
+      "liquidity": "Liquidez",
+      "downloadReport": "Baixar Relatório",
+      "extreme": "EXTREMA",
+      "high": "ALTA",
+      "low": "BAIXA"
+    },
+    "trade": {
+      "valuationTitle": "Dossiê de Avaliação Comercial",
+      "rankingScore": "Score de Valuation",
+      "depreciationAnalysis": "Análise de Depreciação",
+      "exitStrategy": "Estratégia de Liquidez & Saída",
+      "liquidity": "Liquidez do Mercado"
+    },
+    "furniture": {
+      "layoutTitle": "Visualizador de Layout & Mapa Térmico",
+      "sqmMonetization": "Monetização por Metro Quadrado",
+      "addAisle": "Adicionar Nova Gôndola",
+      "kdsTitle": "Painel Operacional KDS",
+      "pendingAssembly": "Fila de Pedidos para Montagem",
+      "cashControl": "Controle de Fluxo de Caixa",
+      "virtualShowroom": "Showroom Mobiliário Virtual"
+    },
+    "mentoring": {
+      "executiveBio": "Biografia Executiva",
+      "experienceJourney": "Trajetória & Experiência",
+      "coreCompetencies": "Competências Chaves",
+      "mentoringLevel": "Nível de Evolução",
+      "xpLabel": "Pontos de Experiência (XP)",
+      "heartsTitle": "Consistência e Engajamento",
+      "verifiedMentor": "Mentor Verificado pelo Instituto",
+      "eliteConsistency": "Consistência Elite"
+    },
+    "mentoringKanban": {
+      "title": "Kanban de Mentoria",
+      "subtitle": "Acompanhamento de Evolução",
+      "addTask": "Adicionar Tarefa",
+      "taskTitlePlaceholder": "Título da tarefa...",
+      "xpReward": "+{xp} XP",
+      "sideQuestXp": "Side-Quest (0 XP)",
+      "noTasks": "Nenhuma tarefa",
+      "columns": {
+        "todo": "A Fazer",
+        "doing": "Em Andamento",
+        "approval": "Aprovação",
+        "done": "Concluído"
+      },
+      "toasts": {
+        "taskCreated": "Tarefa criada com sucesso!",
+        "taskCreateError": "Erro ao criar tarefa",
+        "accessDenied": "Acesso Negado",
+        "onlyMentorCompleteStrategic": "Apenas o Mentor pode marcar tarefas estratégicas como concluídas. Mova para 'Aprovação'.",
+        "statusUpdateError": "Erro ao atualizar status",
+        "menteesOnlyEditSidequests": "Mentees só podem editar Side-quests.",
+        "taskUpdated": "Tarefa atualizada com sucesso!",
+        "saveChangesError": "Erro ao salvar alterações"
+      },
+      "detailsModal": {
+        "title": "Detalhes da Tarefa",
+        "subtitle": "Roteiro de Estudos & Metas",
+        "statusLabel": "Coluna / Status da Tarefa",
+        "titleLabel": "Título",
+        "descriptionLabel": "Roteiro & Descrição",
+        "noDescription": "Nenhuma descrição detalhada informada.",
+        "assignedTo": "Atribuído a",
+        "unassigned": "Sem responsável / Não atribuído",
+        "unassignedText": "Não atribuído",
+        "roleMentor": "Mentor",
+        "roleMentee": "Mentorado",
+        "supportMaterials": "Materiais de Apoio & Referências",
+        "watchVideo": "Assistir Vídeo explicativo",
+        "openPdf": "Abrir Documento PDF",
+        "dueDateLabel": "Data de Entrega / Prazo",
+        "noDueDate": "Sem prazo definido.",
+        "importanceWithVal": "Importância: {value}",
+        "sideQuest": "Quest Secundária (Side-quest)",
+        "sideQuestVal0": "Side-quest (Valor 0)",
+        "maxPriorityVal10": "Prioridade Máxima (Valor 10)",
+        "rewardXp": "Recompensa: {xp} XP",
+        "menteeRestrictionMessage": "Como Mentorado, você pode apenas criar Side-quests (Importância zero, +0 XP).",
+        "importanceMentorView": "★ Importância: {importance} de 10 (+{xp} XP)",
+        "close": "Fechar",
+        "saving": "Salvando...",
+        "saveChanges": "Salvar Alterações"
+      }
+    },
+    "mentoringSchedule": {
+      "title": "Agenda de Sessões",
+      "subtitle": "Encontros síncronos agendados",
+      "sendMessageBtn": "Enviar Mensagem",
+      "newSessionBtn": "Nova Sessão",
+      "upcomingSessions": "Próximas Sessões",
+      "noSessions": "Nenhuma sessão agendada para este workspace.",
+      "onlineStatus": "Online",
+      "addToCalendarLabel": "Adicionar à agenda:",
+      "joinCallTitle": "Entrar na chamada",
+      "confirmations": {
+        "deletePreset": "Deseja realmente excluir este modelo?"
+      },
+      "toasts": {
+        "messageSent": "Mensagem enviada com sucesso!",
+        "messageSendError": "Erro ao enviar mensagem",
+        "presetUpdated": "Modelo atualizado com sucesso!",
+        "presetCreated": "Modelo criado com sucesso!",
+        "presetSaveError": "Erro ao salvar modelo",
+        "presetDeleted": "Modelo excluído com sucesso!",
+        "presetDeleteError": "Erro ao excluir modelo",
+        "sessionScheduled": "Sessão agendada & Tarefa criada no Kanban!",
+        "sessionScheduleError": "Erro ao agendar sessão"
+      },
+      "dbHeaders": {
+        "goalsAndRefs": "Metas e Referências",
+        "objective": "Objetivo",
+        "videoRef": "Vídeo de Referência",
+        "pdfSupport": "Material de Apoio (PDF)"
+      },
+      "taskCreation": {
+        "preparationPrefix": "Preparação",
+        "desc": "Tarefa automática criada para preparação da sessão de mentoria: \"{title}\".\n\n**Objetivo**: {objective}\n\n**Materiais de Apoio**:\n",
+        "youtubeLabel": "Vídeo do YouTube",
+        "pdfLabel": "PDF / Material de Referência"
+      },
+      "insights": {
+        "title": "Insight da Agenda",
+        "description": "Você tem {count, plural, =0 {nenhuma sessão agendada} =1 {1 sessão agendada} other {{count} sessões agendadas}}. Lembre-se de revisar os materiais de apoio e o roteiro antes de iniciar.",
+        "totalLabel": "Total",
+        "monthLabel": "Mês"
+      },
+      "scheduleModal": {
+        "title": "Agendar Nova Sessão",
+        "subtitle": "Planejamento & Roteiro",
+        "presetsLabel": "Predefinições de Mentoria",
+        "managePresetsBtn": "⚙️ Gerenciar Modelos",
+        "customPresetOption": "-- Personalizado (Em Branco) --",
+        "sessionTitleLabel": "Título da Sessão",
+        "sessionTitlePlaceholder": "Ex: Boas-vindas e Alinhamento",
+        "objectiveLabel": "Objetivo Principal",
+        "objectivePlaceholder": "Qual é a meta deste encontro?",
+        "descriptionLabel": "Roteiro / Descrição",
+        "descriptionPlaceholder": "Tópicos que serão abordados na mentoria...",
+        "videoLinkLabel": "Link de Vídeo (YouTube)",
+        "pdfLinkLabel": "Material de Apoio (PDF / Link)",
+        "meetingLinkLabel": "Link da Chamada (Google Meet/Zoom)",
+        "startDateLabel": "Data & Horário de Início",
+        "confirmBtn": "Confirmar Agendamento"
+      },
+      "presetsModal": {
+        "title": "Gerenciar Predefinições de Mentoria",
+        "subtitle": "Painel do Administrador",
+        "currentPresetsLabel": "Modelos Atuais",
+        "createNewBtn": "Criar Novo",
+        "defaultPresetsLabel": "Modelos Padrão (Leitura)",
+        "defaultTag": "Padrão",
+        "customPresetsLabel": "Meus Modelos Customizados",
+        "noCustomPresets": "Nenhum modelo customizado criado.",
+        "editPresetHeader": "Editar Modelo: {name}",
+        "createPresetHeader": "Criar Novo Modelo Customizado",
+        "shortNameLabel": "Nome (Curto)",
+        "shortNamePlaceholder": "Ex: Módulo 3",
+        "mainTitleLabel": "Título Principal",
+        "mainTitlePlaceholder": "Ex: Sessão 3: Alinhamento de Metas",
+        "objectiveLabel": "Objetivo",
+        "objectivePlaceholder": "Ex: Definir os KPIs principais do negócio...",
+        "descriptionLabel": "Descrição / Roteiro da Mentoria",
+        "descriptionPlaceholder": "Roteiro que será carregado automaticamente...",
+        "videoLinkLabel": "Vídeo YouTube (Opcional)",
+        "pdfLinkLabel": "Material PDF (Opcional)",
+        "meetingLinkLabel": "Link Padrão da Chamada",
+        "clearNewBtn": "Limpar / Novo",
+        "saveChangesBtn": "Salvar Alterações",
+        "createPresetBtn": "Criar Modelo"
+      },
+      "messageModal": {
+        "title": "Enviar Mensagem ao Mentorado",
+        "subtitle": "Alerta Direto",
+        "subjectLabel": "Assunto / Título",
+        "subjectPlaceholder": "Ex: Lembrete importante sobre a mentoria",
+        "contentLabel": "Mensagem / Conteúdo",
+        "contentPlaceholder": "Escreva a mensagem curta que será enviada diretamente para o sino de notificações do seu mentorado...",
+        "iconLabel": "Ícone de Notificação",
+        "icons": {
+          "bell": "🔔 Geral",
+          "sparkles": "✨ Novidade",
+          "award": "🏆 Parabéns",
+          "alert": "⚠️ Alerta"
+        },
+        "sendBtn": "Enviar Mensagem"
+      },
+      "presets": {
+        "welcome": {
+          "label": "Boas-vindas",
+          "title": "Boas-vindas e Alinhamento Inicial",
+          "objective": "Recepção do aluno, alinhamento de expectativas e definição do cronograma inicial.",
+          "description": "Nesta primeira sessão, vamos nos conhecer, entender suas principais metas e estruturar os próximos passos da nossa jornada de mentoria."
+        },
+        "initial": {
+          "label": "Mentoria Inicial",
+          "title": "Sessão Estratégica Inicial",
+          "objective": "Mapeamento detalhado de desafios e definição das primeiras metas de curto prazo.",
+          "description": "Análise aprofundada do cenário atual do mentorado, levantamento de gargalos e criação do plano de ação imediato."
+        },
+        "sales": {
+          "label": "Apresentação Comercial",
+          "title": "Pitch e Apresentação Comercial",
+          "objective": "Refinamento do pitch de vendas e técnicas de abordagem comercial.",
+          "description": "Simulação de reuniões comerciais, feedback de postura e ajustes finos na proposta de valor."
+        },
+        "session1": {
+          "label": "Sessão 1: Diagnóstico e Baseline",
+          "title": "Sessão 1: Diagnóstico e Baseline",
+          "objective": "Estabelecimento do ponto de partida (baseline) e metas de longo prazo.",
+          "description": "Definição clara das métricas de sucesso e dos principais indicadores de performance (KPIs) para a mentoria."
+        },
+        "session2": {
+          "label": "Sessão 2: Plano de Execução",
+          "title": "Sessão 2: Plano de Execução",
+          "objective": "Estruturação detalhada das tarefas e processos de execução.",
+          "description": "Foco no desdobramento das metas em tarefas práticas de execução semanal e processos operacionais."
+        }
+      }
+    },
+    "survey": {
+      "complianceTitle": "Módulo de Compliance de Riscos Ocupacionais",
+      "generateTechnicalReport": "Gerar Relatório Ergonômico Técnico",
+      "psychosocialErgonomics": "Avaliação Psicossocial e Ergonômica NR-1/NR-17",
+      "hubSubtitle": "Hub Central de Pesquisa e Diagnóstico",
+      "selectCompanyDesc": "Selecione uma empresa para visualizar o painel central.",
+      "backToDirectory": "Voltar ao diretório",
+      "printReportPdf": "Imprimir laudo PDF"
+    },
+    "smartSurvey": {
+      "newQuestion": "Nova Pergunta...",
+      "option1": "Opção 1",
+      "option2": "Opção 2",
+      "disagree": "Discordo",
+      "agree": "Concordo",
+      "studioTitle": "Estúdio do Avaliador (Maker)",
+      "newForm": "Novo Formulário",
+      "saveForm": "Salvar Formulário",
+      "basicInfo": "Info. Básica",
+      "questions": "Perguntas",
+      "formTitle": "Título do Formulário",
+      "formTitlePlaceholder": "Ex: Avaliação Ergonômica",
+      "descObjective": "Descrição / Objetivo",
+      "visualIdentity": "Identidade Visual (Cor)",
+      "numericScale": "Escala Numérica",
+      "singleChoice": "Única Escolha",
+      "multipleChoice": "Múltipla",
+      "openText": "Texto Aberto",
+      "weight": "Peso",
+      "topologyTitle": "Topologia da Avaliação",
+      "topologyDesc": "Selecione uma pergunta para definir seu peso estrutural no cálculo global de risco corporativo.",
+      "paramConfig": "Configuração de Parâmetro",
+      "deleteQuestion": "Excluir Pergunta",
+      "questionLabel": "Enunciado / Pergunta (Visível ao Colaborador)",
+      "structuralWeight": "Peso Estrutural (Importância)",
+      "weightDesc": "Este valor define o impacto matemático desta resposta na Média Ponderada da empresa. <strong>O colaborador não visualiza este peso.</strong>",
+      "weightLow": "Baixo (Peso 1)",
+      "weightMedium": "Médio (Peso 2)",
+      "weightHigh": "Alto (Peso 3)",
+      "answerOptions": "Opções de Resposta",
+      "newOption": "Nova Opção",
+      "addOption": "Adicionar Opção",
+      "minLabel": "Rótulo Mínimo (Nota 0)",
+      "minPlaceholder": "Ex: Excelente",
+      "maxLabel": "Rótulo Máximo (Nota 10)",
+      "maxPlaceholder": "Ex: Risco Alto"
+    },
+    "tileGrid": {
+      "bookArcs": "Arcos do Livro",
+      "insightCards": "Cards de Insights",
+      "arcsGenerated": "{count, plural, =0 {nenhum arco gerado} =1 {1 arco gerado} other {{count} arcos gerados}}",
+      "insightsGenerated": "{count, plural, =0 {nenhum insight gerado} =1 {1 insight gerado} other {{count} insights gerados}}",
+      "addManualArc": "Adicionar Arco Manual",
+      "addManualInsight": "Adicionar Insight Manual",
+      "writingNextArc": "Escrevendo próximo arco...",
+      "writingNextInsight": "Analisando próximos insights...",
+      "newDashboard": "Novo Dashboard"
+    },
+    "loveWriters": {
+      "defaultAuthor": "Autores Apaixonados",
+      "defaultDescription": "Uma história de amor apaixonante",
+      "defaultBook": "Livro",
+      "defaultInspiration": "Uma história de amor apaixonante",
+      "viewCover": "Ver Capa",
+      "viewContent": "Ver Conteúdo",
+      "exportCover": "Exportar Capa",
+      "exportContent": "Exportar Conteúdo",
+      "preparingPdf": "Preparando PDF...",
+      "previewGenerated": "Preview gerado",
+      "previewUnavailable": "Preview indisponível. Tente gerar novamente.",
+      "bookNotFound": "Livro não encontrado ou carregando...",
+      "libraryTitle": "Biblioteca do Workspace",
+      "librarySubtitle": "Gerencie seus livros gerados e publique novos.",
+      "publishNewBook": "Publicar Novo Livro",
+      "ghostwriterSettings": "Configurações do Ghostwriter",
+      "createBlankCanvas": "Crie um livro em branco com Ghostwriter IA",
+      "membersOnly": "Apenas Membros",
+      "createAccountPublish": "Crie uma conta para publicar Livros IA com segurança.",
+      "noBooksGenerated": "Nenhum livro gerado ainda.",
+      "read": "Ler",
+      "resume": "Retomar",
+      "pause": "Pausar",
+      "stop": "Parar",
+      "deleteConfirm": "Excluir?",
+      "yes": "Sim",
+      "no": "Não",
+      "deleteBook": "Excluir Livro",
+      "bookTitle": "Título do Livro",
+      "inspirationStyle": "Inspiração / Estilo",
+      "original": "Original",
+      "pagesGoal": "Meta de Páginas"
+    },
+    "storeLayout": {
+      "toast": {
+        "layoutSaved": "Layout Salvo",
+        "layoutSavedDesc": "As alterações foram sincronizadas com sucesso.",
+        "itemAdded": "Item Adicionado e Salvo",
+        "itemAddedDesc": "{name} vinculado ao slot {spot}.",
+        "productLinked": "Produto Vinculado",
+        "productLinkedDesc": "{name} agora está no slot {spot}.",
+        "error": "Erro",
+        "selectSlotError": "Selecione um slot para o produto.",
+        "productCreated": "Produto Criado",
+        "productCreatedDesc": "{name} foi adicionado ao slot {spot}."
+      },
+      "header": {
+        "title": "Mapa da Loja",
+        "liveAi": "Live AI",
+        "stats": "In: {inCount} | Out: {outCount}",
+        "configureLayout": "Configurar Layout",
+        "newSector": "Novo Setor"
+      },
+      "empty": {
+        "noSector": "Nenhum setor configurado.",
+        "configureFloorplan": "Configurar Planta"
+      },
+      "status": {
+        "available": "Vazio",
+        "occupied": "Ocupado",
+        "reserved": "Reservado",
+        "blocked": "Bloqueado"
+      },
+      "drawer": {
+        "sector": "Setor: {sector}",
+        "slotContent": "Conteúdo do Slot ({count})",
+        "newProduct": "Novo Produto",
+        "linkCatalog": "Vincular Catálogo",
+        "slotEmpty": "Este slot está vazio.",
+        "aiAssistant": "Assistente AI",
+        "aiAssistantDesc": "Use comandos de voz ou foto para atualizar este inventário instantaneamente.",
+        "voice": "Voz",
+        "camera": "Câmera",
+        "manualStatus": "Alterar Status Manual"
+      },
+      "productDrawer": {
+        "price": "Preço",
+        "condition": "Condição",
+        "slot": "Slot",
+        "qty": "Qtd",
+        "details": "Detalhes",
+        "removeFromSlot": "Remover deste Slot"
+      },
+      "modal": {
+        "editSector": "Editar Setor",
+        "newSector": "Novo Setor",
+        "identifierLabel": "Identificador (Ex: A1)",
+        "rows": "Fileiras",
+        "cols": "Colunas",
+        "orientation": "Orientação",
+        "horizontal": "Horiz",
+        "vertical": "Vert",
+        "showcase": "Expositor",
+        "wall": "Parede",
+        "rack": "Rack",
+        "cancel": "Cancelar",
+        "save": "Salvar",
+        "add": "Adicionar",
+        "activeSectors": "Setores Ativos ({count})",
+        "sectorTitle": "Setor {id}",
+        "exportData": "Exportar Dados",
+        "saveLayout": "Salvar Layout"
+      },
+      "linkModal": {
+        "title": "Vincular Produto",
+        "activeSlot": "Slot Ativo: {code}",
+        "searchPlaceholder": "Buscar no catálogo..."
+      },
+      "addProductModal": {
+        "title": "Adicionar Produto",
+        "namePlaceholder": "Nome do Produto",
+        "skuPlaceholder": "SKU (Opcional)",
+        "pricePlaceholder": "Preço (Opc.)",
+        "conditionPlaceholder": "Condição (Ex: A Vista, Usado...)",
+        "detailsPlaceholder": "Detalhes adicionais...",
+        "submitButton": "Adicionar ao Armazém"
+      },
+      "assistant": {
+        "title": "Assistente AI Nexus",
+        "listening": "Ouvindo seu comando...",
+        "pointingCamera": "Aponte a câmera para o produto",
+        "inputPlaceholder": "Ex: Crie um novo setor A1 com 4 colunas...",
+        "sendCommand": "Enviar Comando",
+        "processing": "Processando...",
+        "detectedItems": "Itens Detectados",
+        "close": "Fechar Assistente"
+      }
+    },
+    "furnitureAnalytics": {
+      "title": "Painel Executivo",
+      "subtitle": "Indicadores em Tempo Real da Loja",
+      "kpi": {
+        "totalRevenue": "Faturamento Fechado",
+        "pendingRevenue": "Receita Pendente (Orçamentos)",
+        "inPipeline": "Em Pipeline",
+        "activeItems": "Itens no Catálogo Ativo"
+      },
+      "funnel": {
+        "title": "Funil Operacional (Pedidos)",
+        "newRequests": "Novas Solicitações",
+        "assembling": "Em Montagem (KDS)",
+        "ready": "Pronto para Entrega",
+        "inTransit": "Em Rota",
+        "delivered": "Finalizado / Entregue"
+      },
+      "topProducts": {
+        "title": "Top Móveis Procurados",
+        "orderCount": "Pedido {count}x",
+        "noData": "Ainda sem dados de venda"
+      }
+    },
+    "logisticsBoard": {
+      "cashier": {
+        "revenue": "Faturamento",
+        "pixTransfer": "Pix / Transfer",
+        "cash": "Dinheiro",
+        "card": "Maquininha"
+      },
+      "roles": {
+        "admin": "Admin",
+        "vendedor": "Vendedor",
+        "montador": "Montador",
+        "entregador": "Entregador"
+      },
+      "actions": {
+        "newOrder": "Novo Pedido",
+        "viewActive": "Ver Ativos",
+        "archived": "Arquivados",
+        "archive": "Arquivar",
+        "unarchive": "Desarquivar",
+        "deleteConfirm": "Tem certeza que deseja excluir este pedido?"
+      },
+      "headings": {
+        "orderManagement": "Gestão de Pedidos",
+        "active": "Ativos",
+        "archived": "Arquivados",
+        "product": "Produto"
+      },
+      "columns": {
+        "newOrders": "Novos Pedidos",
+        "assembly": "Montagem",
+        "logistics": "Logística",
+        "delivered": "Entregues"
+      },
+      "statuses": {
+        "newRequest": "Nova Solicitação",
+        "toAssemble": "A Montar",
+        "assembling": "Em Montagem",
+        "readyForDelivery": "Pronto Entrega",
+        "inTransit": "Em Rota",
+        "delivered": "Entregue"
+      },
+      "toDefine": "A definir",
+      "noteTitle": "Protocolo: Pedido #{orderNumber} - {clientName}",
+      "noteContent": "PEDIDO ENTREGUE E FINALIZADO\n\nProduto: {product}\nValor: {value}\nPagamento: {payment}\nData: {date}"
+    },
+    "furnitureStore": {
+      "deleteConfirm": "Remover este produto da loja permanentemente?",
+      "title": "Gestão de Vitrine",
+      "activeCount": "{count, plural, =0 {Nenhum Ativo} =1 {1 Ativo} other {{count} Ativos}}",
+      "featuredCount": "{count, plural, =0 {Nenhum Destaque} =1 {1 Destaque} other {{count} Destaques}}",
+      "totalValueLabel": "Valor em Exposição",
+      "newItem": "Novo Item",
+      "categoriesStock": "Categorias & Estoque",
+      "copiedLink": "Link da Loja copiado: {url}",
+      "copyPublicLink": "Copiar Link Público",
+      "viewAsClient": "Ver Como Cliente",
+      "itemsCount": "{count, plural, =0 {0 ITENS} =1 {1 ITEM} other {{count} ITENS}}",
+      "featured": "Destaques",
+      "activeFeed": "Feed de Produtos Ativos",
+      "edit": "Editar",
+      "archive": "Arquivar",
+      "featuredBadge": "Destaque",
+      "noDescription": "Sem descrição.",
+      "locationNotDefined": "Localização Não Definida",
+      "inBox": "Na Caixa",
+      "assembledShowroom": "Montado no Showroom"
+    },
+    "mentoringProfile": {
+      "title": "Meu Perfil de Mentoria",
+      "subtitleEdit": "Configurando Detalhes do Perfil",
+      "subtitleView": "Visualização de evolução e trajetória",
+      "levelPrefix": "LV",
+      "xp": "XP",
+      "noName": "Sem Nome Definido",
+      "roleMentor": "Mentor",
+      "roleMentee": "Mentorado",
+      "noTagline": "Tagline não especificada",
+      "mentorExec": "Mentor Executivo",
+      "bizEstrategista": "Estrategista de Negócios",
+      "specTooltipTitle": "Especialidade",
+      "specTooltipDesc": "Calculado dinamicamente a partir dos seus objetivos, trajetória profissional e competências.",
+      "menteesCount": "Mentorados: {count}",
+      "levelLabel": "Nível: {level}",
+      "focusLabel": "Foco: {focus}",
+      "focusTooltipTitle": "Índice de Foco",
+      "focusTooltipDesc": "Métrica de foco diário (Esforço Mental / Tempo Dedicado) calculada dos seus diários de bordo recentes.",
+      "tasksLabel": "Tarefas: {completed}/{total}",
+      "tasksTooltipTitle": "Tarefas Executadas",
+      "tasksTooltipDesc": "Seu progresso de atividades concluídas no quadro Kanban operacional.",
+      "nextSession": "Próxima Sessão: {date}",
+      "noSession": "Sem sessão agendada",
+      "publicLink": "Link Público",
+      "motivationalQuotePlaceholder": "Defina sua frase de efeito ou citação nas configurações do perfil para exibi-la aqui.",
+      "achievements": {
+        "consistent": {
+          "title": "Foco Consistente",
+          "desc": "Mais de 75% de engajamento em tarefas ativas."
+        },
+        "implacavel": {
+          "title": "Implacável",
+          "desc": "Completou pelo menos 5 tarefas no workspace."
+        },
+        "resiliente": {
+          "title": "Operador Resiliente",
+          "desc": "Escreveu seu primeiro relatório no Diário de Bordo."
+        },
+        "visionario": {
+          "title": "Líder Visionário",
+          "desc": "Estruturou sua visão de futuro nas configurações."
+        },
+        "unlocked": "Desbloqueado",
+        "locked": "Bloqueado"
+      },
+      "social": {
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "instagram": "Instagram",
+        "website": "Website",
+        "whatsapp": "WhatsApp"
+      },
+      "tabs": {
+        "dashboard": "Painel de Evolução",
+        "diary": "Diário de Bordo",
+        "tasks": "Tarefas (Kanban)",
+        "schedule": "Agenda Sessões",
+        "inventory": "Painel do Mentor",
+        "admin_controls": "Configurações",
+        "secretary": "Secretaria IA"
+      },
+      "secReportHeader": "Secretaria IA (I/O) • Relatório de Evolução",
+      "secReportSubtitle": "Diretrizes estratégicas e próximos passos operacionais",
+      "viewHistory": "Ver Histórico",
+      "reportTitle": "📄 Relatório de Evolução",
+      "createdAt": "Criado em: {date}",
+      "collapseReport": "↑ recolher relatório",
+      "expandReport": "↓ clique para expandir relatório completo",
+      "noReportGenerated": "Nenhum relatório de evolução gerado para este ciclo.",
+      "compiling": "Compilando...",
+      "generateReport": "Gerar Relatório de Evolução",
+      "guideTitle": "Diretrizes & Alinhamento de Evolução",
+      "guideSubtitle": "Seu planejamento estratégico pessoal e alinhamento de propósito na mentoria",
+      "expectationLabel": "Expectativas da Mentoria",
+      "notFilled": "Não preenchido nas configurações.",
+      "shortTermLabel": "Objetivos de Curto Prazo",
+      "mediumTermLabel": "Objetivos de Médio Prazo",
+      "professionalDreamLabel": "Sonho Profissional (Estrela Guia)",
+      "hobbiesLabel": "Hobbies, Artes & Talentos",
+      "bioTrajectoryLabel": "Biografia & Trajetória",
+      "noBio": "Nenhuma biografia disponível.",
+      "experienceLabel": "Experiência Profissional",
+      "noExperience": "Histórico de experiência não preenchido.",
+      "skillsLabel": "Habilidades & Competências",
+      "noSkills": "Nenhuma competência cadastrada.",
+      "personalGoalLabel": "Objetivo Pessoal",
+      "notDefined": "Não definido.",
+      "careerGoalLabel": "Objetivo de Carreira",
+      "personalAttributesLabel": "3 Atributos Pessoais",
+      "notFilledShort": "Não preenchido",
+      "greatestAchievementsLabel": "3 Grandes Conquistas",
+      "greatestQualityLabel": "Maior Qualidade",
+      "howOthersSeeMe": "Como os outros me veem",
+      "greatestQualityPlaceholder": "Não especificado",
+      "diary": {
+        "newEntry": "Nova Entrada do Diário",
+        "xpNote": "Registre suas métricas cognitivas e aprendizados do dia (+200 XP)",
+        "mentalEffort": "Esforço Mental / Foco: {cc} / 10",
+        "ccTranquil": "Tranquilo",
+        "ccOverload": "Sobrecarga",
+        "timeDedicated": "Tempo Dedicado / Foco: {te} / 10",
+        "teFast": "Muito Rápido",
+        "teSlow": "Demorado",
+        "realProgress": "Progresso Real: {progress}%",
+        "progressStopped": "Parado",
+        "progressCompleted": "100% Concluído",
+        "notesLabel": "Anotações & Relato de Aprendizados",
+        "notesPlaceholder": "Quais foram seus desafios hoje? O que você aprendeu ou realizou?",
+        "formulaTension": "Fórmula de Tensão: TC = CC / TE | Fórmula de Distorção: D = TC / (Progress %)",
+        "writeNotesWarning": "Escreva algo nas anotações antes de registrar seu {termDiary}!",
+        "registerEntry": "Registrar Entrada",
+        "diaryRegistered": "{termDiary} registrado! +{xp} XP recebidos!",
+        "historyTitle": "Histórico de Diários",
+        "historySubtitle": "Acompanhe sua carga diária e distorções cognitivas",
+        "noEntriesYet": "Nenhuma anotação registrada até o momento.",
+        "tensionLabel": "Tensão",
+        "distortionLabel": "Distorção",
+        "flowHigh": "Fluxo Alto",
+        "flowBalanced": "Equilibrado",
+        "flowBurnoutRisk": "Risco Burnout"
+      },
+      "projects": {
+        "title": "Projetos Profissionais",
+        "subtitle": "Apresente e gerencie seus portfólios, startups e cases de sucesso na mentoria",
+        "newProject": "Novo Projeto",
+        "editProject": "Editar Projeto",
+        "addProject": "Cadastrar Novo Projeto",
+        "deleteConfirm": "Deseja realmente excluir este projeto?",
+        "deletedSuccess": "Projeto excluído com sucesso!",
+        "savedSuccess": "Projeto atualizado com sucesso!",
+        "addedSuccess": "Novo projeto adicionado com sucesso!",
+        "featuredUpdated": "Status de destaque do projeto atualizado com sucesso!",
+        "removeFeatured": "Remover dos Destaques",
+        "featurePublic": "Destacar na Vitrine Pública",
+        "uploadSuccess": "Imagem do projeto carregada com sucesso!",
+        "uploadError": "Erro ao fazer upload da imagem",
+        "projectTitleLabel": "Título do Projeto",
+        "projectTitlePlaceholder": "Ex: App de Telemedicina, MVP de Finanças",
+        "tagsLabel": "Tags / Tecnologias (separadas por vírgula)",
+        "tagsPlaceholder": "Ex: NextJS, React Native, SaaS",
+        "descLabel": "Descrição Detalhada",
+        "descPlaceholder": "Explique o objetivo do projeto, tecnologia e os resultados alcançados...",
+        "imgLabel": "Imagem do Case / Logotipo (URL ou Upload)",
+        "imgPlaceholder": "Cole a URL da imagem ou use o botão à direita",
+        "uploadBtn": "Fazer Upload",
+        "removeBtn": "Remover",
+        "cancelBtn": "Cancelar",
+        "saveBtn": "Salvar Alterações",
+        "addBtn": "Adicionar Projeto",
+        "emptyTitle": "Nenhum projeto cadastrado",
+        "emptySubtitle": "Registre seus principais casos de sucesso profissionais ou de estudos",
+        "addFirstProject": "Adicionar Primeiro Projeto"
+      },
+      "mentorControls": {
+        "nomenclaturasTitle": "Nomenclaturas Chaves",
+        "nomenclaturasSubtitle": "Personalize os termos chaves usados em toda a jornada do mentorado",
+        "termDiaryLabel": "Termo Diário de Bordo",
+        "termTensionLabel": "Termo Tensão Cognitiva",
+        "termDistortionLabel": "Termo Distorção Cognitiva",
+        "termSidequestLabel": "Termo Side-quest",
+        "algoXpTitle": "Configurações do Algoritmo & XP",
+        "algoXpSubtitle": "Ajuste os limiares de burnout e os multiplicadores de experiência da mentoria",
+        "xpTaskLabel": "XP por Tarefa: {value}",
+        "xpDiaryLabel": "XP por Registro: {value}",
+        "xpSessionLabel": "XP por Sessão: {value}",
+        "burnoutLimitLabel": "Limiar Burnout: {value}",
+        "templatesTitle": "Gerenciador de Templates de Sessão",
+        "templatesSubtitle": "Adicione modelos de sessões e agendas rápidas para seus alunos",
+        "createNewTemplate": "Criar Novo Template",
+        "templateTitleLabel": "Título da Sessão",
+        "templateTitlePlaceholder": "Ex: Planejamento Trimestral",
+        "templateDurationLabel": "Duração (Minutos)",
+        "templateDescLabel": "Descrição/Foco",
+        "templateDescPlaceholder": "Foco da mentoria e tópicos a abordar...",
+        "templateAddBtn": "Adicionar Modelo",
+        "templatesSavedTitle": "Modelos de Sessão Salvos",
+        "deleteTemplate": "Excluir Template",
+        "fillTemplateWarning": "Preencha pelo menos o título do template!",
+        "templateAddedToast": "Template de Sessão adicionado!",
+        "templateDeletedToast": "Template de Sessão excluído!"
+      },
+      "edit": {
+        "realLinkedinImportTitle": "Importador LinkedIn Real",
+        "realLinkedinImportDesc": "Preencha sua biografia e trajetórias automaticamente a partir do seu LinkedIn público",
+        "realLinkedinBtn": "Importar do LinkedIn Real",
+        "realLinkedinConnecting": "Conectando...",
+        "realLinkedinExtracting": "Extraindo...",
+        "realLinkedinPopulating": "Populando...",
+        "realLinkedinImported": "Importado!",
+        "cancelBtn": "Cancelar",
+        "cancelSuccessToast": "Importação cancelada com sucesso.",
+        "generalInfoTitle": "Informações Gerais",
+        "roleLabel": "Papel na Mentoria",
+        "roleMentor": "Mentor",
+        "roleMentee": "Mentorado",
+        "fullNameLabel": "Nome Completo",
+        "fullNamePlaceholder": "Seu nome",
+        "usernameLabel": "Username / Slug do Perfil Público",
+        "usernamePlaceholder": "seu-username",
+        "usernameRules": "Apenas letras minúsculas, números e hífens. Ex: milton-bolonha",
+        "photoLabel": "Foto de Perfil (Cloudinary Upload / URL)",
+        "photoUploading": "Enviando...",
+        "photoUploadBtn": "Upload",
+        "taglineLabel": "Tagline de Chamada",
+        "taglinePlaceholder": "Ex: CEO na 21 Miles | Desenvolvedor Upwork",
+        "genderLabel": "Gênero / Tratamento do Perfil",
+        "genderMaleOption": "Masculino (Mentorado)",
+        "genderFemaleOption": "Feminino (Mentorada)",
+        "genderNeutralOption": "Neutro (Mentoradx)",
+        "linkedinLinkLabel": "Link LinkedIn",
+        "motivationalLabel": "Frase Motivacional",
+        "motivationalPlaceholder": "Uma frase curta que te inspire...",
+        "contactsTitle": "Contatos & Redes Sociais",
+        "phoneLabel": "Telefone / Fixo",
+        "phonePlaceholder": "Ex: (11) 99999-9999",
+        "whatsappLabel": "WhatsApp (Número Limpo)",
+        "whatsappPlaceholder": "Ex: 5511999999999",
+        "emailLabel": "E-mail Profissional",
+        "emailPlaceholder": "Ex: milton@21miles.com.br",
+        "githubLabel": "GitHub Link",
+        "instagramLabel": "Instagram Link",
+        "websiteLabel": "Website / Portfolio Link",
+        "mentorInfoTitle": "Informações de Mentor",
+        "mentorBioLabel": "Biografia Profissional",
+        "mentorBioPlaceholder": "Descreva sua jornada, liderança profissional e foco...",
+        "mentorExperienceLabel": "Histórico de Experiência / Conquistas de Carreira",
+        "mentorExperiencePlaceholder": "Quais foram seus maiores cargos, empresas fundadas ou tempo no mercado...",
+        "skillsLabel": "Skills / Habilidades",
+        "skillsPlaceholder": "Adicionar skill...",
+        "addBtn": "Adicionar",
+        "clickToRemove": "Clique para remover",
+        "menteeInfoTitle": "Informações de Mentorado",
+        "personalGoalLabel": "Objetivo Pessoal",
+        "personalGoalPlaceholder": "Ex: Ter mais inteligência emocional, foco familiar ou equilíbrio...",
+        "careerGoalLabel": "Objetivo de Carreira",
+        "careerGoalPlaceholder": "Ex: Transição de carreira para Tech Leader, fundar minha própria startup...",
+        "personalAttributesLabel": "3 Atributos que se destaca em si",
+        "attributePlaceholder": "Atributo {num}",
+        "experiencesLabel": "3 Experiências de sucesso na vida (Geral/Conquistas)",
+        "experiencePlaceholder": "Conquista {num}",
+        "futureVisionLabel": "Como se vê no futuro (Visão de Médio/Longo prazo)",
+        "futureVisionPlaceholder": "Descreva seus sonhos e onde se vê nos próximos anos...",
+        "greatestAttributeLabel": "Maior Atributo / Qualidade Pessoal",
+        "greatestAttributePlaceholder": "Se as pessoas pudenem descrever você em um único atributo forte, qual seria?",
+        "familyGroupLabel": "Grupo Familiar (Descreva brevemente)",
+        "familyGroupPlaceholder": "Ex: Casado, 2 filhos, convivência próxima com os pais...",
+        "hobbiesLabel": "Hobbies, Talentos & Habilidades Artísticas",
+        "hobbiesPlaceholder": "Ex: Pintura digital, tocar violão clássico, jogar tênis...",
+        "expectationsTitle": "Diretrizes & Alinhamento de Evolução",
+        "expectationsSubtitle": "Defina suas metas estratégicas, sonhos e alinhamento profissional na mentoria",
+        "expectationsLabel": "O que espera da mentoria (Expectativas)",
+        "expectationsPlaceholder": "Ex: Alinhamento metodológico prático, feedbacks francos, network estratégico...",
+        "shortTermGoalsLabel": "Objetivos a Curto Prazo (Foco Imediato)",
+        "shortTermGoalsPlaceholder": "Ex: Concluir MVP da nova plataforma em 3 meses, organizar cronograma semanal...",
+        "mediumTermGoalsLabel": "Objetivos a Médio Prazo (Construção)",
+        "mediumTermGoalsPlaceholder": "Ex: Escalar equipe para 10 desenvolvedores, atingir breakeven financeiro...",
+        "professionalDreamLabel": "Sonho Profissional (Sua Estrela Guia)",
+        "professionalDreamPlaceholder": "Ex: Ser a maior referência de SaaS educacional do país, criar um negócio autossustentável...",
+        "cancelBtnGeneral": "Cancelar",
+        "saveBtnGeneral": "Salvar Alterações"
+      },
+      "toasts": {
+        "triggerAde": "Acionando a ADE...",
+        "triggerAdeDesc": "Aguarde enquanto sua Secretaria IA compila seu relatório de evolução.",
+        "generated": "Relatório Gerado!",
+        "generatedDesc": "A ADE estruturou seus próximos passos estratégicos.",
+        "failed": "Falha na Geração",
+        "nameRequired": "O Nome é obrigatório",
+        "saveError": "Erro ao salvar perfil",
+        "saveSuccess": "Perfil atualizado com sucesso!",
+        "photoSuccess": "Foto de perfil enviada!",
+        "photoError": "Erro no upload: {error}",
+        "linkedinUrlRequired": "Informe a URL do seu LinkedIn primeiro!",
+        "linkedinImportSuccess": "Dados importados do LinkedIn real com sucesso!",
+        "linkedinImportError": "Erro ao importar: {error}"
+      },
+      "secretaryPanel": {
+        "title": "Secretaria IA (I/O) • Relatório de Evolução",
+        "subtitle": "Diretrizes estratégicas e próximos passos operacionais",
+        "viewHistory": "Ver Histórico",
+        "noReport": "Nenhum relatório de evolução gerado para este ciclo.",
+        "generateBtn": "Gerar Relatório de Evolução",
+        "historyTitle": "Histórico de IA"
+      },
+      "classes": {
+        "techArch": "Arquiteto Tecnológico",
+        "bizStrat": "Estrategista de Negócios",
+        "highPerf": "Executor de Alta Performance",
+        "multidisciplinary": "Analista Multidisciplinar",
+        "operator": "Operador em Evolução"
+      },
+      "inventory": {
+        "jack_1": {
+          "name": "Jaqueta Corta-Vento Executive",
+          "desc": "Design aerodinâmico cinza fosco."
+        },
+        "jack_2": {
+          "name": "Sobretudo Italiano Lã",
+          "desc": "Tecido estruturado elegante de lã natural."
+        },
+        "jack_3": {
+          "name": "Trench Coat Clássico",
+          "desc": "Corte alongado premium resistente à água."
+        },
+        "jack_4": {
+          "name": "Blazer Minimalista Slim",
+          "desc": "Corte descontraído cinza mescla em algodão nobre."
+        },
+        "jack_5": {
+          "name": "Blazer Linho Rústico Noir",
+          "desc": "Linho puro respirável com corte sob medida."
+        },
+        "jack_6": {
+          "name": "Casaco Sob Medida Cashmere",
+          "desc": "Cashmere italiano de ultra luxo feito por alfaiates."
+        },
+        "sneakers_1": {
+          "name": "Sneaker Casual Couro",
+          "desc": "Sola amortecedora e acabamento clássico."
+        },
+        "sneakers_2": {
+          "name": "Sapato Derby Nobre",
+          "desc": "Couro legítimo polido feito à mão."
+        },
+        "sneakers_3": {
+          "name": "Mocassim Casual Camurça",
+          "desc": "Conforto clássico para dias operacionais dinâmicos."
+        },
+        "sneakers_4": {
+          "name": "Sapatênis Slip-on Knit",
+          "desc": "Facilidade de calce e design elegante."
+        },
+        "back_1": {
+          "name": "Mochila Slim Resistente",
+          "desc": "Compacta, ideal para transporte diário."
+        },
+        "back_2": {
+          "name": "Pasta Executiva Minimalista",
+          "desc": "Couro legítimo com divisórias acolchoadas premium."
+        },
+        "back_3": {
+          "name": "Mochila Executiva Premium",
+          "desc": "Compartimentos modulares inteligentes magnéticos."
+        },
+        "head_1": {
+          "name": "Fone Noise-Canceling Matte",
+          "desc": "Isolamento acústico eficiente para foco profundo."
+        },
+        "head_2": {
+          "name": "Earbuds Invisíveis Premium",
+          "desc": "Design ultra-discreto com drivers de alta fidelidade."
+        },
+        "head_3": {
+          "name": "Headphone Estúdio Carbono",
+          "desc": "Drivers profissionais de berílio com almofadas térmicas."
+        },
+        "watch_1": {
+          "name": "Relógio Inteligente Stealth",
+          "desc": "Monitoramento de produtividade e hábitos diários."
+        },
+        "watch_2": {
+          "name": "Relógio Aço Safira Classic",
+          "desc": "Vidro em cristal safira e caixa de aço escovado."
+        },
+        "watch_3": {
+          "name": "Cronógrafo Híbrido Titânio",
+          "desc": "Mostrador e-ink clássico de altíssimo prestígio."
+        },
+        "glass_1": {
+          "name": "Óculos Anti-Fadiga Blue Light",
+          "desc": "Proteção contra telas digitais e cansaço visual."
+        },
+        "glass_2": {
+          "name": "Óculos Titanium Ultraleve",
+          "desc": "Apenas 4 gramas, conforto invisível para longas horas."
+        },
+        "aura_1": {
+          "name": "Sem Aura (Padrão)",
+          "desc": "Aparência natural clássica e sem distorções."
+        },
+        "aura_2": {
+          "name": "Brilho Âmbar de Produtividade",
+          "desc": "Sutil pulsação dourada inspirada em foco total."
+        },
+        "aura_3": {
+          "name": "Aura Focus Ciano",
+          "desc": "Efeito suave que inspira estado de fluxo mental."
+        },
+        "aura_4": {
+          "name": "Partículas Code Matrix",
+          "desc": "Cascata minimalista digital de alta tecnologia."
+        },
+        "aura_5": {
+          "name": "Espectro Prismático Executivo",
+          "desc": "Efeito iridescente sutil exclusivo de alto escalão."
+        }
+      },
+      "sections": {
+        "alignment": "Diretrizes & Alinhamento de Evolução",
+        "alignmentSub": "Seu planejamento estratégico pessoal e alinhamento de propósito na mentoria",
+        "expectations": "Expectativas da Mentoria",
+        "shortTerm": "Objetivos de Curto Prazo",
+        "midTerm": "Objetivos de Médio Prazo",
+        "longTerm": "Sonho Profissional (Estrela Guia)",
+        "hobbies": "Hobbies, Artes & Talentos",
+        "bio": "Biografia & Trajetória",
+        "exp": "Experiência Profissional",
+        "skills": "Habilidades & Competências",
+        "notFilled": "Não preenchido nas configurações."
+      }
+    },
+    "membersBoard": {
+      "title": "Gestão de Cadastros",
+      "subtitle": "Gerenciamento robusto de portfólio e protocolos",
+      "searchPlaceholder": "Buscar cadastros...",
+      "filterAll": "Todos",
+      "newMember": "Novo Cadastro",
+      "staffRoles": "Staff & Roles",
+      "activeCount": "{count} Ativos",
+      "pendingCount": "{count} Pendentes",
+      "table": {
+        "member": "Membro",
+        "contact": "Contato",
+        "status": "Status",
+        "joined": "Entrada",
+        "actions": "Ações"
+      }
+    },
+    "manageMembersModal": {
+      "title": "Gerenciar Cadastro",
+      "subtitle": "Editar detalhes do cadastro",
+      "save": "Salvar",
+      "cancel": "Cancelar"
+    },
+    "clientsBoard": {
+      "title": "Base de Clientes",
+      "subtitle": "Gerenciar clientes e leads"
+    },
+    "smartSurvey": {
+      "directory": {
+        "title": "Diretório Corporativo SST",
+        "subtitle": "Gestão consolidada de todas as entidades pesquisadas",
+        "searchPlaceholder": "Pesquisar empresa...",
+        "filterAll": "TODOS OS TEMPLATES",
+        "filterNR1": "RISCOS ERGONÔMICOS NR-1",
+        "filterLogs": "LOGS CONTÍNUOS",
+        "filterTodo": "ALGORITMO TO-DO",
+        "newOrg": "Nova Organização",
+        "thOrg": "Organização",
+        "thTemplate": "Template Metodológico",
+        "thSampling": "Amostragem (n/N)",
+        "thCoverage": "Cobertura n/N",
+        "thMetric": "Métrica Ativa (IRO)",
+        "thActions": "Ações",
+        "sectors": "{count} Setores Ocupacionais",
+        "badgeNR1": "Riscos NR-1 (13 Módulos)",
+        "badgeMetrics": "Métricas de {label}",
+        "badgeTodo": "Algoritmo To-do",
+        "pending": "Pendente",
+        "logs": "{count} Logs",
+        "invoiced": "Faturado: {value}",
+        "actionPanel": "Painel",
+        "actionRemove": "Remover Organização",
+        "noOrganizations": "Nenhuma organização encontrada para os filtros aplicados."
+      },
+      "intervieweePortal": {
+        "title": "Meu espaço de entrevista",
+        "survey": "Pesquisa: {title}",
+        "identify": "Identifique-se",
+        "selectName": "Selecione seu nome...",
+        "progress": "Progresso",
+        "resumeSurvey": "Retomar inquérito",
+        "startSurvey": "Iniciar inquérito",
+        "orStartForm": "Ou inicie um formulário",
+        "myProfile": "Meu perfil (configuração)"
+      },
+      "collabPanel": {
+        "sp": "Sp — média ponderada por módulo",
+        "resumeSurvey": "Retomar inquérito",
+        "startSurvey": "Iniciar inquérito",
+        "customSurvey": "Inquérito Customizado",
+        "answeredCount": "{answered}/{total} respondidas",
+        "openQuestionnaire": "Abrir questionário",
+        "questionsWeight": "{answered}/{total} perguntas · peso {weight}",
+        "openModule": "Abrir módulo"
+      },
+      "detailView": {
+        "tabs": {
+          "dashboard": "Diagnóstico",
+          "surveys": "Pesquisas",
+          "settings": "Ajustes",
+          "auditorPanel": "Coleta Auditor",
+          "portalOf": "Portal do {label}"
+        },
+        "active": "Ativa:",
+        "methodology": "Metodologia",
+        "aiSummary": "Sumário da Inteligência Artificial",
+        "iroSp": "IRO — média Sp (ponderada por módulo)",
+        "totalRevenue": "Total Faturamento",
+        "sumCorporateRevenue": "Soma de faturamento corporativo",
+        "sampleCoverage": "Cobertura da amostra",
+        "completedUniverse": "n={completed} concluídos · universo N={population}",
+        "marginOfError": "Margem de erro ≈ ±{margin}% (95%)",
+        "censusDeclared": "Censo do universo declarado",
+        "salesQty": "Quantidade de Vendas",
+        "totalClosings": "Fechamentos totais no período",
+        "sectorPolarization": "Polarização Setorial",
+        "severeDivergence": "⚠️ Divergências Agudas",
+        "generalConsensus": "Consenso Geral",
+        "presentations": "Apresentações",
+        "commercialDemos": "Demonstrações comerciais realizadas",
+        "controlsDev": "Controles & Dev",
+        "simulateResponses": "Simular Respostas",
+        "continuousLogOf": "Log Contínuo de {label}",
+        "pleaseWait": "Aguarde...",
+        "regenerateReport": "Re-gerar Laudo",
+        "generateSstReport": "Gerar Laudo SST",
+        "globalDispersion": "Dispersão global",
+        "dispersionDesc": "Desvio dos Sp_i — detecta “média OK, guerra interna”",
+        "iroVariation": "Variação do IRO",
+        "comparedToPrevious": "Comparado ao registro anterior desta pesquisa",
+        "changeRate": "Ritmo de mudança: {val}",
+        "sampleBias": "Viés amostral",
+        "noSample": "Sem amostra",
+        "scoreDiversity": "Diversidade de scores",
+        "avgRiskPerSector": "Média de risco por setor (Sp)",
+        "aggBySector": "Agregação por setor na pesquisa ativa",
+        "noInterviews": "Sem Entrevistas",
+        "startInterviewsPanel": "Inicie entrevistas no painel para gerar gráficos setoriais.",
+        "severePolarizationDetected": "Polarização grave detectada",
+        "resCount": "{count} res",
+        "aiTechReport": "Parecer técnico SST (IA)",
+        "analyticSummary": "Sumário Analítico — pesquisa ativa",
+        "compilingPrelimReport": "Compilando laudo SST preliminar...",
+        "logRecordOf": "Logar Registro de {label}",
+        "postDailyMetrics": "Lançar métricas operacionais diárias",
+        "logDate": "Data do Log",
+        "nameOf": "Nome do {label}",
+        "qtySales": "Qtd Vendas",
+        "revenueGenerated": "Faturamento Gerado ({currency})",
+        "saveOpLog": "Salvar Log Operacional",
+        "continuousCommIntel": "Inteligência Comercial Contínua",
+        "metricsTimeline": "Métricas de vendas e linha do tempo de relatórios",
+        "timeline": "Linha do Tempo",
+        "entries": "Lançamentos",
+        "groupByPeriod": "Agrupar por período:",
+        "daily": "Diário",
+        "weekly": "Semanal",
+        "monthly": "Mensal",
+        "noContinuousLogsGen": "Nenhum registro contínuo lançado. Lançamentos geram a linha do tempo.",
+        "thPeriod": "Período",
+        "thSales": "Vendas",
+        "thApres": "Apres.",
+        "thConversion": "Conversão",
+        "thTotalRev": "Fat. Total",
+        "thAvgTicket": "Ticket Médio",
+        "thTopOf": "Top {label}",
+        "noContinuousLogsForm": "Nenhum registro contínuo lançado. Insira dados no formulário ao lado.",
+        "thDate": "Data",
+        "thRevenue": "Faturamento",
+        "thAction": "Ação",
+        "excluded": "Excluído",
+        "excludeLog": "Excluir Log"
+      }
+    },
+    "checkout": {
+      "preparingTitle": "Preparando o Checkout",
+      "preparingDescription": "Por favor, aguarde enquanto redirecionamos você para nosso processador de pagamentos seguro...",
+      "failedTitle": "Falha no checkout",
+      "failedDescription": "Por favor, tente novamente"
+    },
+    "modals": {
+      "paymentConfirmationTitle": "Confirmação de Pagamento",
+      "paymentConfirmationDescription": "Por favor, insira seu endereço de e-mail para receber a confirmação do pagamento e instruções de acesso.",
+      "emailAddressLabel": "Endereço de E-mail",
+      "emailPlaceholder": "seu@email.com",
+      "cancel": "Cancelar",
+      "sending": "Enviando...",
+      "sendConfirmation": "Enviar Confirmação",
+      "upgradeToProTitle": "Fazer Upgrade para Pro",
+      "walletBuffer": "Saldo da Carteira",
+      "creditsUsed": "Créditos Usados:",
+      "needMoreCredits": "Você precisa de mais créditos para realizar esta ação.",
+      "proPlanBenefits": "Benefícios do Plano Pro",
+      "benefitUnlimitedWorkspaces": "Workspaces ilimitados",
+      "benefitUnlimitedContacts": "Contatos ilimitados",
+      "benefitAiChat": "Chat com IA com insights",
+      "benefitAdvancedAi": "Modelos avançados de IA",
+      "benefitCloudStorage": "Armazenamento em nuvem",
+      "processing": "Processando...",
+      "upgradeToPro": "Fazer Upgrade para Pro",
+      "markAsPaid": "Já é um membro? Marcar como pago",
+      "reachedLimit": "Você atingiu seu limite gratuito para {action}.",
+      "actions": {
+          "createWorkspace": "criar workspaces",
+          "createContact": "adicionar contatos",
+          "tileChat": "conversar com insights",
+          "regenerate": "regenerar conteúdo",
+          "default": "usar esta funcionalidade"
+      },
+      "featureLocked": "Funcionalidade Bloqueada",
+      "usageLimits": "Limites de Uso",
+      "paymentHistory": "Histórico de Pagamentos",
+      "usageHistory": "Histórico de Uso",
+      "featureLockedDescription": "Esta funcionalidade está disponível exclusivamente para membros <strong>Pro</strong>. Faça upgrade do seu plano para desbloqueá-la imediatamente.",
+      "currentBalance": "Saldo Atual",
+      "credits": "Créditos",
+      "costTable": "Tabela de Custos",
+      "needMoreResources": "Precisa de mais recursos?",
+      "loading": "Carregando...",
+      "buyCredits": "Comprar Créditos",
+      "loadingHistory": "Carregando histórico...",
+      "noTransactionHistory": "Nenhum histórico de transações encontrado.",
+      "actionLabels": {
+          "buy_credits": "Compra de Créditos",
+          "createWorkspace": "Workspace Criado",
+          "createTile": "Insight Gerado (Arc)",
+          "createContact": "Novo Personagem",
+          "tileChat": "Chat do Mapa de Insights",
+          "contactChat": "Chat do Personagem",
+          "regenerate": "Regeneração de IA",
+          "bookGenerationsCount": "Capítulo do Livro",
+          "imageGenerationsCount": "Imagem do Livro com IA",
+          "marketEnrichmentCount": "Enriquecimento de Mercado",
+          "assetsCount": "Upload de Ativo"
+      },
+      "costs": {
+          "generateInsight": "Gerar Insight (Arc)",
+          "newCharacter": "Novo Personagem",
+          "createWorkspace": "Criar Workspace",
+          "sendMessage": "Enviar Mensagem",
+          "bookChapter": "Capítulo do Livro / Arc",
+          "marketEnrichment": "Enriquecimento de Mercado",
+          "aiBookImage": "Imagem de Livro com IA"
+      }
+    },
+    "header": {
+      "notifications": "Anúncios & Notificações",
+      "messagesAndNotices": "Mensagens & Avisos",
+      "newMessages": "{count} novos",
+      "markAllRead": "Marcar todas lidas",
+      "noNotifications": "Nenhuma notificação por enquanto.",
+      "from": "De:",
+      "superAdmin": "Super Admin",
+      "mentor": "Mentor",
+      "currentDashboard": "Dashboard Atual",
+      "switchDashboard": "Trocar de Dashboard",
+      "newDashboard": "Novo Dashboard",
+      "wallet": "Carteira",
+      "presets": "Predefinições",
+      "customColor": "Cor Personalizada"
+    }
+  },
+  "public": {
+    "v": {
+      "loadingStore": "Carregando Vitrine Virtual...",
+      "storeNotFound": "Showroom não localizado ou offline.",
+      "oops": "Ops! 🪑",
+      "purchaseRequest": "Solicitar Compra",
+      "requestSent": "Pedido de compra enviado com sucesso para o painel!",
+      "poweredBy": "Tecnologia por"
+    },
+    "mentor": {
+      "loadingProfile": "Carregando Perfil do Especialista...",
+      "restrictedAccess": "Acesso Restrito",
+      "restrictedDesc": "O perfil solicitado não pôde ser localizado em nossa base.",
+      "noSkills": "Nenhuma competência cadastrada.",
+      "noBio": "Biografia não cadastrada.",
+      "noExperience": "Trajetória profissional ainda não cadastrada.",
+      "footer": "I/O MENTORIA • TODOS OS DIREITOS RESERVADOS"
+    },
+    "mentee": {
+      "loadingProfile": "Carregando Perfil...",
+      "profileNotFound": "Perfil não encontrado",
+      "errorLoadingProfile": "Erro ao carregar o perfil público",
+      "unknownError": "Erro desconhecido",
+      "restrictedAccess": "Acesso Restrito",
+      "profileNotFoundDesc": "O perfil solicitado não pôde ser localizado em nossa base.",
+      "backToHome": "Voltar para o Início",
+      "techArchitect": "Arquiteto Tecnológico",
+      "businessStrategist": "Estrategista de Negócios",
+      "highPerformanceExecutor": "Executor de Alta Performance",
+      "multidisciplinaryAnalyst": "Analista Multidisciplinar",
+      "evolvingOperator": "Operador em Evolução",
+      "verifiedMentee": "Mentorado Registrado",
+      "verifiedMenteeDesc": "Membro matriculado ativo em acompanhamento individual de mentoria executiva.",
+      "activeSpecialtyDesc": "Especialidade ativa determinada pelo algoritmo com base nos objetivos analíticos cadastrados: {class}.",
+      "highPerformance": "Desempenho Alto",
+      "highPerformanceDesc": "Taxa de engajamento semanal e aproveitamento de tarefas acima do baseline operacional.",
+      "ioMentoring": "I/O MENTORIA",
+      "mentors": "Mentores",
+      "mentees": "Mentorados",
+      "featuredProjects": "Projetos em Destaque",
+      "mentor": "Mentor",
+      "mentee": "Mentorado",
+      "defaultTagline": "Operador de Negócios em Aceleração",
+      "yield": "Rendimento: {engagement}%",
+      "xp": "XP",
+      "evolutionClass": "Classe de Evolução",
+      "evolutionClassDesc": "Calculado dinamicamente a partir dos seus objetivos, trajetória profissional e competências.",
+      "tension": "Tensão: 1.00",
+      "cognitiveTension": "Tensão Cognitiva",
+      "cognitiveTensionDesc": "Balanço de esforço diário (Carga Cognitiva / Tempo Executado) nos diários de bordo recentes.",
+      "tasks": "Tarefas: {completed}/{total}",
+      "executedTasks": "Tarefas Executadas",
+      "executedTasksDesc": "Seu progresso de atividades concluídas no quadro Kanban operacional.",
+      "projectsAndCases": "Projetos Acadêmicos & Casos de Sucesso",
+      "personalGoal": "Objetivo Pessoal",
+      "notRegistered": "Não cadastrado.",
+      "careerGoal": "Objetivo de Carreira",
+      "skills": "Competências",
+      "noSkillsRegistered": "Nenhuma competência cadastrada.",
+      "hobbiesAndArts": "Hobbies & Artes",
+      "notSpecified": "Não especificado.",
+      "allRightsReserved": "I/O MENTORIA • TODOS OS DIREITOS RESERVADOS",
+      "lv": "LV",
+      "linkedin": "LinkedIn",
+      "github": "GitHub",
+      "instagram": "Instagram",
+      "website": "Website"
+    },
+    "furnitureStore": {
+      "virtualStoreActive": "Loja Virtual Ativa",
+      "heroTitlePrefix": "Design que",
+      "heroTitleSuffix": "Transforma.",
+      "heroSubtitle": "Explore nossa coleção exclusiva de móveis com montagem profissional incluída. Direto da fábrica para sua casa.",
+      "featuredSeason": "Destaques da Temporada",
+      "specialOffer": "Oferta Especial",
+      "requestQuote": "Solicitar Orçamento",
+      "allCategories": "Todos",
+      "itemsFound": "{count, plural, =0 {Nenhum item encontrado} =1 {1 item encontrado} other {{count} itens encontrados}}",
+      "interestSent": "Interesse enviado! Nossa equipe entrará em contato."
+    },
+    "ranking": {
+      "tabs": {
+        "mentors": "Mentores",
+        "mentees": "Mentorados",
+        "projects": "Projetos em Destaque"
+      },
+      "title": "Ranking de Evolução",
+      "activeSeason": "Temporada Ativa: {season}",
+      "loading": "Classificando Quadros...",
+      "noProfiles": "Nenhum perfil classificado nesta temporada ainda.",
+      "noProjects": "Nenhum projeto cadastrado por mentorados nesta temporada.",
+      "headers": {
+        "rank": "Rank",
+        "name": "Avatar & Nome",
+        "class": "Classe",
+        "mentees": "Mentorados",
+        "projectsSessions": "Projetos & Sessões",
+        "level": "Nível",
+        "exp": "EXP"
+      },
+      "classes": {
+        "techArchitect": "Arquiteto Tecnológico",
+        "businessStrategist": "Estrategista de Negócios",
+        "highPerformer": "Executor de Alta Performance",
+        "multidisciplinary": "Analista Multidisciplinar",
+        "evolvingOperator": "Operador em Evolução"
+      },
+      "featuredTag": "Destaque do Mês",
+      "projectAuthor": "Por: {author}",
+      "viewAuthor": "Ver Autor",
+      "footer": "I/O MENTORIA • TODOS OS DIREITOS RESERVADOS"
+    }
+  }
+}

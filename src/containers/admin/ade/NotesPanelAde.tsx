@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 
 import type { Note } from "@/lib/types";
 import type { AdeAppearanceTokens } from "@/lib/ade-theme";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface NotesPanelAdeProps {
   notes: Note[];
@@ -26,6 +27,7 @@ export function NotesPanelAde({
   appearance,
   title = "Notes"
 }: NotesPanelAdeProps) {
+  const { t } = useTranslation();
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [newNoteTitle, setNewNoteTitle] = useState("");
@@ -84,22 +86,14 @@ export function NotesPanelAde({
   const handleDeleteNote = async (noteId: string) => {
     console.log("[DEBUG] NotesPanelAde.handleDeleteNote called:", noteId);
     try {
-      // Need workspaceId and dashboardId to properly delete from store (for guests)
-      // These should be passed or available in context/props?
-      // For now, let's assume the parent handles it OR we need to pass them.
-      // Actually, NotesPanelAde doesn't know about workspaceId/dashboardId directly unless passed.
-      // We should check where NotesPanelAde is used (AdminContainer) and see if we can pass them there.
-      // But wait, the prop `onDeleteNote` signature in `NotesPanelAde` needs to match `note.queries.ts` mutation input?
-      // No, `onDeleteNote` prop here is likely just `(id) => void`.
-      // The CALLER (AdminContainer) calls `deleteNoteMutation.mutate(...)`.
-      // So we need to update `AdminContainer.tsx`.
-
       await onDeleteNote?.(noteId);
       console.log("[DEBUG] NotesPanelAde.handleDeleteNote completed");
     } catch (error) {
       console.error("[DEBUG] NotesPanelAde.handleDeleteNote error:", error);
     }
   };
+
+  const displayTitle = title === "Notes" ? t("admin.notes.title") : title;
 
   return (
     <div className="space-y-4">
@@ -110,7 +104,7 @@ export function NotesPanelAde({
             className="text-lg font-semibold"
             style={{ color: appearance?.textColor || "#111827" }}
           >
-            {title}
+            {displayTitle}
           </h3>
         </div>
       </div>
@@ -130,7 +124,7 @@ export function NotesPanelAde({
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
             <Plus className="h-5 w-5" />
           </div>
-          <span className="text-sm font-medium">Add Note</span>
+          <span className="text-sm font-medium">{t("admin.notes.addNote")}</span>
         </button>
 
         {isAddingNote && (
@@ -141,27 +135,27 @@ export function NotesPanelAde({
             }}
           >
             <div className="flex items-center justify-between bg-[#E87C2A] px-4 py-3 text-white">
-              <h4 className="text-sm font-semibold">New note</h4>
+              <h4 className="text-sm font-semibold">{t("admin.notes.newNote")}</h4>
               <div className="flex space-x-2 text-xs">
                 <button
                   onClick={() => setIsAddingNote(false)}
                   className="rounded px-2 py-1 hover:bg-white/10"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={handleSaveNewNote}
                   disabled={!newNoteTitle.trim() || !newNoteContent.trim()}
                   className="rounded bg-white/20 px-2 py-1 font-semibold text-white hover:bg-white/30 disabled:opacity-50"
                 >
-                  Save
+                  {t("common.save")}
                 </button>
               </div>
             </div>
             <div className="flex flex-1 flex-col gap-3 bg-white p-4">
               <input
                 type="text"
-                placeholder="Note title"
+                placeholder={t("admin.notes.noteTitlePlaceholder")}
                 value={newNoteTitle}
                 onChange={(e) => setNewNoteTitle(e.target.value)}
                 className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -172,7 +166,7 @@ export function NotesPanelAde({
                 }}
               />
               <textarea
-                placeholder="Note content"
+                placeholder={t("admin.notes.noteContentPlaceholder")}
                 value={newNoteContent}
                 onChange={(e) => setNewNoteContent(e.target.value)}
                 rows={3}
@@ -199,7 +193,7 @@ export function NotesPanelAde({
             >
               <div className="flex items-center justify-between bg-[#E87C2A] px-4 py-3 text-white">
                 <h4 className="text-sm font-semibold truncate">
-                  {isEditing ? "Editing note" : note.title}
+                  {isEditing ? t("admin.notes.editingNote") : note.title}
                 </h4>
                 <div className="flex space-x-2 text-xs">
                   {!isEditing ? (
@@ -207,7 +201,7 @@ export function NotesPanelAde({
                       onClick={() => handleEditNote(note)}
                       className="rounded px-2 py-1 hover:bg-white/10"
                     >
-                      Edit
+                      {t("admin.notes.edit")}
                     </button>
                   ) : (
                     <>
@@ -215,7 +209,7 @@ export function NotesPanelAde({
                         onClick={() => setEditingNoteId(null)}
                         className="rounded px-2 py-1 hover:bg-white/10"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                       <button
                         onClick={handleSaveEdit}
@@ -224,7 +218,7 @@ export function NotesPanelAde({
                         }
                         className="rounded bg-white/20 px-2 py-1 font-semibold text-white hover:bg-white/30 disabled:opacity-50"
                       >
-                        Save
+                        {t("common.save")}
                       </button>
                     </>
                   )}
@@ -266,7 +260,7 @@ export function NotesPanelAde({
                         onClick={() => handleDeleteNote(note.id)}
                         className="rounded px-3 py-1 text-sm text-red-600 transition hover:bg-red-50"
                       >
-                        Delete
+                        {t("admin.notes.delete")}
                       </button>
                     </div>
                   </>

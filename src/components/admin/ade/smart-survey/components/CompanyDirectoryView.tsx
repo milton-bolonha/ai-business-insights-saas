@@ -4,6 +4,7 @@ import React from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { calculateSamplingStats } from "../risk-engine";
 import type { SmartSurveyBoardViewProps } from "../SmartSurveyBoardView";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
   const {
@@ -20,6 +21,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
     getRiskLevel,
     calculateCompanyGlobalRisk,
   } = props;
+  const { t } = useTranslation();
 
   return (
 <>
@@ -33,9 +35,9 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white rounded-[2rem] border border-neutral-100 p-6 shadow-sm">
             <div>
               <h2 className="text-lg font-black uppercase tracking-wider text-neutral-800 font-sans">
-                Diretório Corporativo SST
+                {t("admin.smartSurvey.directory.title")}
               </h2>
-              <p className="text-xs text-neutral-400 mt-0.5">Gestão consolidada de todas as entidades pesquisadas</p>
+              <p className="text-xs text-neutral-400 mt-0.5">{t("admin.smartSurvey.directory.subtitle")}</p>
             </div>
 
             {/* Premium Search, Filter & Trigger */}
@@ -44,7 +46,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                 type="text"
                 value={companySearchQuery}
                 onChange={e => setCompanySearchQuery(e.target.value)}
-                placeholder="Pesquisar empresa..."
+                placeholder={t("admin.smartSurvey.directory.searchPlaceholder")}
                 className="bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/80 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all w-full sm:w-48 placeholder:text-neutral-400"
               />
               
@@ -53,10 +55,10 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                 onChange={e => setCompanyTemplateFilter(e.target.value as any)}
                 className="bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer outline-none w-full sm:w-auto"
               >
-                <option value="all">TODOS OS TEMPLATES</option>
-                <option value="nr1_compliance">RISCOS ERGONÔMICOS NR-1</option>
-                <option value="continuous_reporting">LOGS CONTÍNUOS</option>
-                <option value="todo_algorithm">ALGORITMO TO-DO</option>
+                <option value="all">{t("admin.smartSurvey.directory.filterAll")}</option>
+                <option value="nr1_compliance">{t("admin.smartSurvey.directory.filterNR1")}</option>
+                <option value="continuous_reporting">{t("admin.smartSurvey.directory.filterLogs")}</option>
+                <option value="todo_algorithm">{t("admin.smartSurvey.directory.filterTodo")}</option>
               </select>
 
               <button
@@ -64,7 +66,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 w-full sm:w-auto justify-center"
               >
                 <Plus size={14} strokeWidth={2.5} />
-                Nova Organização
+                {t("admin.smartSurvey.directory.newOrg")}
               </button>
             </div>
           </div>
@@ -75,12 +77,12 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="bg-neutral-50/70 border-b border-neutral-100">
-                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Organização</th>
-                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Template Metodológico</th>
-                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-center">Amostragem (n/N)</th>
-                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-center">Cobertura n/N</th>
-                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-right">Métrica Ativa (IRO)</th>
-                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-right">Ações</th>
+                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.directory.thOrg")}</th>
+                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">{t("admin.smartSurvey.directory.thTemplate")}</th>
+                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-center">{t("admin.smartSurvey.directory.thSampling")}</th>
+                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-center">{t("admin.smartSurvey.directory.thCoverage")}</th>
+                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.directory.thMetric")}</th>
+                    <th className="p-5 text-[10px] font-black uppercase tracking-widest text-neutral-400 text-right">{t("admin.smartSurvey.directory.thActions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-50">
@@ -120,7 +122,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                                   {company.name}
                                 </h3>
                                 <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
-                                  {company.sectors.length} Setores Ocupacionais
+                                  {t("admin.smartSurvey.directory.sectors", { count: company.sectors.length })}
                                 </p>
                               </div>
                             </div>
@@ -130,15 +132,15 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                           <td className="p-5">
                             {(company.surveys?.[0]?.template === "nr1_compliance") ? (
                               <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-100/80 px-2.5 py-1 rounded-full">
-                                Riscos NR-1 (13 Módulos)
+                                {t("admin.smartSurvey.directory.badgeNR1")}
                               </span>
                             ) : company.surveys?.[0]?.template === "continuous_reporting" ? (
                               <span className="text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 border border-indigo-100/80 px-2.5 py-1 rounded-full">
-                                Métricas de {company.respondentLabel}
+                                {t("admin.smartSurvey.directory.badgeMetrics", { label: company.respondentLabel })}
                               </span>
                             ) : (
                               <span className="text-[9px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-full">
-                                Algoritmo To-do
+                                {t("admin.smartSurvey.directory.badgeTodo")}
                               </span>
                             )}
                           </td>
@@ -168,7 +170,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                             {company.surveys?.[0]?.template === "nr1_compliance" ? (
                               <div className="space-y-0.5">
                                 <span className={`text-xs font-black ${risk.color}`}>
-                                  {globalScore !== null ? `${globalScore.toFixed(1)}` : "Pendente"}
+                                  {globalScore !== null ? `${globalScore.toFixed(1)}` : t("admin.smartSurvey.directory.pending")}
                                 </span>
                                 {globalScore !== null && (
                                   <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 block">
@@ -179,10 +181,10 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                             ) : (
                               <div className="space-y-0.5">
                                 <span className="text-xs font-black text-neutral-800">
-                                  {company.surveys?.[0]?.continuousLogs?.length || 0} Logs
+                                  {t("admin.smartSurvey.directory.logs", { count: company.surveys?.[0]?.continuousLogs?.length || 0 })}
                                 </span>
                                 <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 block">
-                                  Faturado: R$ {company.surveys?.[0]?.continuousLogs?.reduce((sum: number, log: any) => sum + log.faturamento, 0).toLocaleString("pt-BR")}
+                                  {t("admin.smartSurvey.directory.invoiced", { value: `R$ ${(company.surveys?.[0]?.continuousLogs?.reduce((sum: number, log: any) => sum + log.faturamento, 0) || 0).toLocaleString(t("common.locale") === 'en' ? "en-US" : "pt-BR")}` })}
                                 </span>
                               </div>
                             )}
@@ -198,12 +200,12 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                                 }}
                                 className="bg-neutral-50 hover:bg-neutral-900 hover:text-white text-neutral-700 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border border-neutral-200/50"
                               >
-                                Painel
+                                {t("admin.smartSurvey.directory.actionPanel")}
                               </button>
                               <button
                                 onClick={() => handleDeleteCompany(company.id, company.name)}
                                 className="text-neutral-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 p-2 rounded-lg transition-all cursor-pointer"
-                                title="Remover Organização"
+                                title={t("admin.smartSurvey.directory.actionRemove")}
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -219,7 +221,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                   }).length === 0 && (
                     <tr>
                       <td colSpan={6} className="p-12 text-center text-neutral-400 text-xs font-semibold bg-neutral-50/20">
-                        Nenhuma organização encontrada para os filtros aplicados.
+                        {t("admin.smartSurvey.directory.noOrganizations")}
                       </td>
                     </tr>
                   )}

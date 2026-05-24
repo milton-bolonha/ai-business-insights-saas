@@ -6,6 +6,7 @@ import { FaHome, FaChartPie, FaBook, FaGavel } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { APP_TAGS, APP_ATTRIBUTES, AppTagId, AppAttribute } from "@/lib/app-tags";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface ChatInterfaceProps {
     activeAppTag: AppTagId;
@@ -27,6 +28,7 @@ export function ChatInterface({
     const [isTagChooserOpen, setIsTagChooserOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const chooserRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     const activeTag = APP_TAGS.find((t) => t.id === activeAppTag) || APP_TAGS[0];
     const currentAttributes = APP_ATTRIBUTES.filter(
@@ -151,7 +153,7 @@ export function ChatInterface({
                             )}
                         >
                             <span style={{ color: activeTag.id === 'home' ? 'white' : activeTag.color }}>{getTagIcon(activeAppTag)}</span>
-                            <span className="font-medium text-sm">{activeTag.label}</span>
+                            <span className="font-medium text-sm">{t(activeTag.labelKey)}</span>
                             <ChevronUp className="h-4 w-4 text-gray-400" />
                         </button>
 
@@ -162,7 +164,7 @@ export function ChatInterface({
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                     className="absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl bg-[#333] p-1 shadow-xl ring-1 ring-white/10"
-                                >
+                               >
                                     {APP_TAGS.map((tag) => (
                                         <button
                                             key={tag.id}
@@ -177,7 +179,7 @@ export function ChatInterface({
                                             )}
                                         >
                                             <span style={{ color: tag.id === 'home' ? 'white' : tag.color }}>{getTagIcon(tag.id)}</span>
-                                            <span className="flex-1 text-left">{tag.label}</span>
+                                            <span className="flex-1 text-left">{t(tag.labelKey)}</span>
                                         </button>
                                     ))}
                                 </motion.div>
@@ -199,7 +201,7 @@ export function ChatInterface({
                                             : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                                     )}
                                 >
-                                    {attr.label}
+                                    {t(attr.labelKey)}
                                 </button>
                             ))}
                         </div>
@@ -221,10 +223,10 @@ export function ChatInterface({
                             disabled={isSubmitting}
                             placeholder={
                                 activeAppTag === "home"
-                                    ? "Ask me anything..."
+                                    ? t("home.chat.placeholder")
                                     : activeAttributeId
-                                        ? currentAttributes.find(a => a.id === activeAttributeId)?.placeholder || "Type your answer..."
-                                        : `Select an attribute above to start...`
+                                        ? t(currentAttributes.find(a => a.id === activeAttributeId)?.placeholderKey || "") || "Type your answer..."
+                                        : t("home.chat.placeholder")
                             }
                             className={cn(
                                 "flex-1 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none cursor-text",

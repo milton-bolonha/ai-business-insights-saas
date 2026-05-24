@@ -5,11 +5,13 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/lib/state/toast-context";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export default function CheckoutPage() {
     const { user, isLoaded, isSignedIn } = useUser();
     const router = useRouter();
     const { push } = useToast();
+    const { t } = useTranslation();
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
@@ -48,8 +50,8 @@ export default function CheckoutPage() {
             } catch (error) {
                 console.error("Checkout error:", error);
                 push({
-                    title: "Checkout failed",
-                    description: error instanceof Error ? error.message : "Please try again",
+                    title: t("admin.checkout.failedTitle"),
+                    description: error instanceof Error ? error.message : t("admin.checkout.failedDescription"),
                     variant: "destructive",
                 });
                 setIsProcessing(false);
@@ -68,10 +70,10 @@ export default function CheckoutPage() {
                     </div>
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Preparing Checkout
+                    {t("admin.checkout.preparingTitle")}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                    Please wait while we redirect you to our secure payment processor...
+                    {t("admin.checkout.preparingDescription")}
                 </p>
             </div>
         </div>

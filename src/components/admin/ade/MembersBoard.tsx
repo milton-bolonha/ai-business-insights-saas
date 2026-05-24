@@ -12,6 +12,7 @@ import {
   useRemoveWorkspaceMember 
 } from "@/lib/state/query/workspace.queries";
 import { GlobalUsersBoard } from "./GlobalUsersBoard";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface MembersBoardProps {
   workspaceId: string;
@@ -19,6 +20,7 @@ interface MembersBoardProps {
 }
 
 export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
+  const { t, locale } = useTranslation();
   const { push } = useToast();
   const [activeSubTab, setActiveSubTab] = useState<"workspace" | "global">("workspace");
   const [email, setEmail] = useState("");
@@ -52,14 +54,14 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
       });
       setEmail("");
       push({
-        title: "Membro adicionado",
-        description: "O usuário foi adicionado ao workspace com sucesso.",
+        title: t("admin.members.memberAdded"),
+        description: t("admin.members.memberAddedDesc"),
         variant: "success"
       });
     } catch (error: any) {
       push({
-        title: "Erro ao adicionar",
-        description: error.message || "Verifique se o e-mail está correto e já cadastrado na plataforma.",
+        title: t("admin.members.errorAdding"),
+        description: error.message || t("admin.members.errorAddingDesc"),
         variant: "destructive"
       });
     }
@@ -73,13 +75,13 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
         accessLevel: newLevel
       });
       push({
-        title: "Permissão atualizada",
-        description: "O nível de acesso foi alterado com sucesso.",
+        title: t("admin.members.permissionUpdated"),
+        description: t("admin.members.permissionUpdatedDesc"),
         variant: "success"
       });
     } catch (error: any) {
       push({
-        title: "Erro ao atualizar",
+        title: t("admin.members.errorUpdating"),
         description: error.message,
         variant: "destructive"
       });
@@ -87,7 +89,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!window.confirm("Tem certeza que deseja remover este membro?")) return;
+    if (!window.confirm(t("admin.members.removeConfirm"))) return;
     
     try {
       await removeMemberMutation.mutateAsync({
@@ -95,13 +97,13 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
         memberId
       });
       push({
-        title: "Membro removido",
-        description: "O usuário não tem mais acesso a este workspace.",
+        title: t("admin.members.memberRemoved"),
+        description: t("admin.members.memberRemovedDesc"),
         variant: "success"
       });
     } catch (error: any) {
       push({
-        title: "Erro ao remover",
+        title: t("admin.members.errorRemoving"),
         description: error.message,
         variant: "destructive"
       });
@@ -129,10 +131,10 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
             </div>
             <div>
               <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
-                Gestão de Cadastros
+                {t("admin.members.title")}
               </h2>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                {activeSubTab === "workspace" ? "Controle de acessos e status dos convites" : "Todos os usuários do SaaS"}
+                {activeSubTab === "workspace" ? t("admin.members.subtitleWorkspace") : t("admin.members.subtitleGlobal")}
               </p>
             </div>
           </div>
@@ -150,7 +152,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                 )}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                Workspace
+                {t("admin.members.tabWorkspace")}
               </button>
               <button
                 onClick={() => setActiveSubTab("global")}
@@ -162,7 +164,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                 )}
               >
                 <Globe className="w-3.5 h-3.5" />
-                Global
+                {t("admin.members.tabGlobal")}
               </button>
             </div>
           )}
@@ -178,7 +180,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Convidar por e-mail..."
+                placeholder={t("admin.members.invitePlaceholder")}
                 className="w-full pl-11 pr-4 py-2.5 bg-slate-50 rounded-lg border-none focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold"
               />
             </div>
@@ -188,7 +190,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
               className="px-3 py-2.5 bg-slate-50 rounded-lg border-none focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold uppercase tracking-wider appearance-none cursor-pointer text-slate-600"
             >
               <option value="manager">Manager</option>
-              <option value="member">Mentorado/a</option>
+              <option value="member">Member</option>
               <option value="viewer">Viewer</option>
             </select>
             <button
@@ -197,7 +199,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
               className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-xs"
             >
               {addMemberMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
-              <span>Convidar</span>
+              <span>{t("admin.members.inviteBtn")}</span>
             </button>
           </form>
         )}
@@ -215,12 +217,12 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar cadastros..."
+                  placeholder={t("admin.members.searchPlaceholder")}
                   className="w-full pl-11 pr-4 py-2.5 bg-white rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 text-xs font-medium"
                 />
               </div>
               <div className="px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {filteredMembers.length} Cadastros
+                {t("admin.members.countLabel").replace("{count}", String(filteredMembers.length))}
               </div>
             </div>
 
@@ -229,21 +231,21 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Carregando cadastros...</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">{t("admin.members.loading")}</p>
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3 opacity-40">
                   <Users className="w-12 h-12 text-slate-200" />
-                  <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Nenhum cadastro encontrado</p>
+                  <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">{t("admin.members.noMembers")}</p>
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50">
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Nome</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">E-mail</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Permissão</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Status da Conta</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.members.colName")}</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.members.colEmail")}</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("admin.members.colPermission")}</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{t("admin.members.colStatus")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -280,7 +282,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                           {member.isOwner ? (
                             <div className="flex items-center gap-1.5 text-amber-600 font-bold text-[10px] uppercase tracking-wider">
                               <Shield className="w-3.5 h-3.5" />
-                              <span>Acesso Total</span>
+                              <span>{t("admin.members.accessTotal")}</span>
                             </div>
                           ) : (
                             <div className="relative inline-block">
@@ -290,7 +292,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                                 className="pl-2 pr-6 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg border-none text-[9px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-indigo-100 outline-none transition-all appearance-none cursor-pointer"
                               >
                                 <option value="manager">Manager</option>
-                                <option value="member">Mentorado/a</option>
+                                <option value="member">Member</option>
                                 <option value="viewer">Viewer</option>
                               </select>
                               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
@@ -304,15 +306,15 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                             {/* Account Status Badge */}
                             {member.isOwner || member.status === 'active' ? (
                               <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md border border-emerald-100">
-                                Verificado
+                                {t("admin.members.statusVerified")}
                               </span>
                             ) : member.status === 'expired' ? (
                               <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md border border-slate-100">
-                                Expirado
+                                {t("admin.members.statusExpired")}
                               </span>
                             ) : (
                               <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-amber-50 text-amber-600 rounded-md border border-amber-100 animate-pulse">
-                                Pendente
+                                {t("admin.members.statusPending")}
                               </span>
                             )}
 
@@ -321,7 +323,7 @@ export function MembersBoard({ workspaceId, userRole }: MembersBoardProps) {
                               <button
                                 onClick={() => handleRemoveMember(member.id)}
                                 className="p-2 text-slate-300 hover:text-red-650 hover:bg-red-50 rounded-lg transition-all"
-                                title="Remover acesso"
+                                title={t("admin.members.removeAccessTitle")}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>

@@ -34,6 +34,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/uiStore";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey";
 
@@ -47,6 +48,7 @@ interface AdminNavigationProps {
 }
 
 export function AdminNavigation({ activeTab, onTabChange, templateId = "template_1", onSwitchToChat, userRole = "user", currentUserRole = "mentor" }: AdminNavigationProps) {
+    const { t } = useTranslation();
     const isDesktopSidebarOpen = useUIStore(state => state.isDesktopSidebarOpen);
     const toggleDesktopSidebar = useUIStore(state => state.toggleDesktopSidebar);
     const setDesktopSidebarOpen = useUIStore(state => state.setDesktopSidebarOpen);
@@ -101,48 +103,52 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
     const isMentee = isMentoring && currentUserRole === "mentee";
 
     const navItems = [
-        ...(isWriters ? [{ id: "library", label: "Biblioteca", icon: Library }] : []),
-        ...(isTrade ? [{ id: "ranking", label: "Ranking", icon: FaGavel }] : []),
-        ...(isSurvey ? [{ id: "survey", label: "Inquérito", icon: ClipboardList }] : []),
+        ...(isWriters ? [{ id: "library", label: t("admin.navigation.tabs.library"), icon: Library }] : []),
+        ...(isTrade ? [{ id: "ranking", label: t("admin.navigation.tabs.ranking"), icon: FaGavel }] : []),
+        ...(isSurvey ? [{ id: "survey", label: t("admin.navigation.tabs.survey"), icon: ClipboardList }] : []),
 
         ...(isFurniture ? [
-            { id: "store", label: "Loja", icon: ShoppingBag },
-            { id: "logistics", label: "Painel Pedidos", icon: ClipboardList },
-            { id: "layout", label: "Mapa Loja", icon: MapIcon },
-            { id: "clients", label: "Clientes", icon: Users },
-            { id: "staff", label: "Equipe", icon: Shield },
-            { id: "chat_history", label: "Histórico IA", icon: MessageSquare },
+            { id: "store", label: t("admin.navigation.tabs.store"), icon: ShoppingBag },
+            { id: "logistics", label: t("admin.navigation.tabs.logistics"), icon: ClipboardList },
+            { id: "layout", label: t("admin.navigation.tabs.layout"), icon: MapIcon },
+            { id: "clients", label: t("admin.navigation.tabs.clients"), icon: Users },
+            { id: "staff", label: t("admin.navigation.tabs.staff"), icon: Shield },
+            { id: "chat_history", label: t("admin.navigation.tabs.chat_history"), icon: MessageSquare },
         ] : []),
 
         ...(isMentoring ? [
-            { id: "mentoring_profile", label: "Painel de Evolução", icon: User },
-            { id: "mentoring_tasks", label: "Tarefas (Kanban)", icon: ClipboardList },
-            { id: "mentoring_schedule", label: "Agenda Sessões", icon: CalendarDays },
+            { id: "mentoring_profile", label: t("admin.navigation.tabs.mentoring_profile"), icon: User },
+            { id: "mentoring_tasks", label: t("admin.navigation.tabs.mentoring_tasks"), icon: ClipboardList },
+            { id: "mentoring_schedule", label: t("admin.navigation.tabs.mentoring_schedule"), icon: CalendarDays },
         ] : []),
 
         ...(!isMentee ? [{
             id: "arcs",
-            label: isTrade ? "Análise" : isWriters ? "Arcos" : isFurniture ? "Insights" : isSurvey ? "Análise IA" : "Dashboard",
+            label: isTrade ? t("admin.navigation.tabs.analysis") 
+                 : isWriters ? t("admin.navigation.tabs.arcs") 
+                 : isFurniture ? t("admin.navigation.tabs.mentoring_insights") 
+                 : isSurvey ? t("admin.navigation.tabs.analysis") 
+                 : t("admin.navigation.tabs.dashboard"),
             icon: LayoutGrid
         }] : []),
         ...((!isFurniture && !isMentee) ? [{
             id: "characters",
-            label: isWriters ? "Elenco" : "Contatos",
+            label: isWriters ? t("admin.navigation.tabs.characters") : t("admin.navigation.tabs.clients"),
             icon: isTrade ? Shapes : Users
         }] : []),
         ...((!isFurniture && !isMentoring) ? [{
             id: "notes",
-            label: "Notas",
+            label: t("admin.navigation.tabs.notes"),
             icon: FileText
         }] : (isFurniture && !isMentee) ? [{
             id: "notes",
-            label: "Relatórios",
+            label: t("admin.navigation.tabs.reports"),
             icon: FileText
         }] : []),
-        ...(!isMentee ? [{ id: "files", label: "Arquivos", icon: FolderOpen }] : []),
+        ...(!isMentee ? [{ id: "files", label: t("admin.navigation.tabs.files"), icon: FolderOpen }] : []),
         ...(!isMentee ? [{ 
             id: "members", 
-            label: "Cadastros", 
+            label: t("admin.navigation.tabs.members"), 
             icon: Users 
         }] : []),
         ...(userRole === "admin" ? [{
@@ -150,7 +156,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
             label: "Global Admin",
             icon: Globe
         }] : []),
-    ] as const;
+    ];
 
     return (
         <>

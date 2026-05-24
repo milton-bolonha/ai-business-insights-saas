@@ -4,6 +4,7 @@ import React from "react";
 import { X, PlayCircle } from "lucide-react";
 import { NR1_TOPICS } from "../nr1-topics";
 import type { SmartSurveyBoardViewProps } from "../SmartSurveyBoardView";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 type Props = SmartSurveyBoardViewProps & {
   collaboratorId: string;
@@ -21,6 +22,7 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
     handleStartSurveySequential,
     handleStartSurveySingleModule,
   } = props;
+  const { t } = useTranslation();
 
   if (!activeCompany) return null;
   const collab = activeCompany.collaborators.find(c => c.id === collaboratorId);
@@ -48,7 +50,7 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
 
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">Sp — média ponderada por módulo</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">{t("admin.smartSurvey.collabPanel.sp")}</span>
           <span className={`text-3xl font-black font-mono ${globalRisk.color}`}>
             {globalScore !== null ? globalScore.toFixed(1) : "—"}
           </span>
@@ -60,7 +62,7 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
           className="ml-auto bg-neutral-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
         >
           <PlayCircle size={14} />
-          {respObj ? "Retomar inquérito" : "Iniciar inquérito"}
+          {respObj ? t("admin.smartSurvey.collabPanel.resumeSurvey") : t("admin.smartSurvey.collabPanel.startSurvey")}
         </button>
       </div>
 
@@ -69,9 +71,9 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
           <div className="p-4 border border-neutral-200/70 rounded-2xl bg-neutral-50/40 space-y-4">
             <div className="flex justify-between items-start gap-2">
               <div>
-                <h4 className="text-xs font-black text-neutral-800 uppercase tracking-wide">Inquérito Customizado</h4>
+                <h4 className="text-xs font-black text-neutral-800 uppercase tracking-wide">{t("admin.smartSurvey.collabPanel.customSurvey")}</h4>
                 <p className="text-[10px] text-neutral-400 font-semibold">
-                  {Object.keys(respObj?.answers || {}).length}/{activeSurvey.questions!.length} respondidas
+                  {t("admin.smartSurvey.collabPanel.answeredCount", { answered: Object.keys(respObj?.answers || {}).length, total: activeSurvey.questions!.length })}
                 </p>
               </div>
             </div>
@@ -81,7 +83,7 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
                 onClick={() => handleStartSurveySequential(collaboratorId)}
                 className="text-[9px] font-black uppercase tracking-widest border border-neutral-200 bg-white hover:bg-neutral-50 px-3 py-1.5 rounded-lg cursor-pointer"
               >
-                Abrir questionário
+                {t("admin.smartSurvey.collabPanel.openQuestionnaire")}
               </button>
             </div>
             {respObj && (
@@ -117,7 +119,7 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
                   <div>
                     <h4 className="text-xs font-black text-neutral-800 uppercase tracking-wide">{topic.title}</h4>
                     <p className="text-[10px] text-neutral-400 font-semibold">
-                      {answeredInTopic}/{topic.questions.length} perguntas · peso {topic.weight}
+                      {t("admin.smartSurvey.collabPanel.questionsWeight", { answered: answeredInTopic, total: topic.questions.length, weight: topic.weight })}
                     </p>
                   </div>
                   <span className={`text-sm font-black font-mono shrink-0 ${topicRisk.color}`}>
@@ -130,7 +132,7 @@ export function CollaboratorDetailPanel({ collaboratorId, onClose, ...props }: P
                     onClick={() => handleStartSurveySingleModule(collaboratorId, topic.id)}
                     className="text-[9px] font-black uppercase tracking-widest border border-neutral-200 bg-white hover:bg-neutral-50 px-3 py-1.5 rounded-lg cursor-pointer"
                   >
-                    Abrir módulo
+                    {t("admin.smartSurvey.collabPanel.openModule")}
                   </button>
                 </div>
                 {respObj && (

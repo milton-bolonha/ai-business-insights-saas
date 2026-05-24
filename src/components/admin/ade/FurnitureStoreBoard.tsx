@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface FurnitureStoreBoardProps {
   tiles: Tile[];
@@ -48,6 +49,7 @@ export function FurnitureStoreBoard({
     onToggleViewMode,
     workspaceId
 }: FurnitureStoreBoardProps) {
+  const { t, locale } = useTranslation();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Parse products from specialized tile
@@ -71,7 +73,7 @@ export function FurnitureStoreBoard({
   };
 
   const handleDelete = async (product: Product) => {
-    if (!onUpdateTile || !productTile || !confirm("Remover este produto da loja permanentemente?")) return;
+    if (!onUpdateTile || !productTile || !confirm(t("admin.furnitureStore.deleteConfirm"))) return;
     const updated = products.filter(p => p.id !== product.id);
     await onUpdateTile(productTile.id, { metadata: { ...productTile.metadata, products: updated } });
   };
@@ -83,25 +85,27 @@ export function FurnitureStoreBoard({
          <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/20 rounded-full blur-3xl -mr-20 -mt-20" />
          <div className="relative z-10 flex flex-col gap-6">
             <div>
-                <h2 className="text-2xl sm:text-4xl font-black tracking-tight uppercase mb-2">Gestão de Vitrine</h2>
+                <h2 className="text-2xl sm:text-4xl font-black tracking-tight uppercase mb-2">{t("admin.furnitureStore.title")}</h2>
                 <div className="flex items-center gap-4 text-sky-300 text-xs font-bold uppercase tracking-widest">
-                    <span className="flex items-center gap-1"><Package className="h-4 w-4" /> {activeProducts.length} Ativos</span>
+                    <span className="flex items-center gap-1"><Package className="h-4 w-4" /> {t("admin.furnitureStore.activeCount", { count: activeProducts.length })}</span>
                     <span className="w-1 h-1 bg-sky-800 rounded-full" />
-                    <span className="flex items-center gap-1"><Star className="h-4 w-4 fill-sky-300" /> {featuredCount} Destaques</span>
+                    <span className="flex items-center gap-1"><Star className="h-4 w-4 fill-sky-300" /> {t("admin.furnitureStore.featuredCount", { count: featuredCount })}</span>
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                    <div className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1">Valor em Exposição</div>
-                    <div className="text-xl sm:text-2xl font-black text-white">R$ {totalValue.toLocaleString()}</div>
+                    <div className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1">{t("admin.furnitureStore.totalValueLabel")}</div>
+                    <div className="text-xl sm:text-2xl font-black text-white">
+                        {locale === 'pt' ? 'R$ ' + totalValue.toLocaleString('pt-BR') : '$ ' + totalValue.toLocaleString('en-US')}
+                    </div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center justify-center">
                     <button 
                         onClick={() => onOpenProductModal()}
                         className="bg-white text-sky-950 px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-sky-50 transition-all flex items-center justify-center gap-2 shadow-xl w-full"
                     >
-                        <Plus className="h-4 w-4" /> Novo Item
+                        <Plus className="h-4 w-4" /> {t("admin.furnitureStore.newItem")}
                     </button>
                 </div>
             </div>
@@ -112,24 +116,24 @@ export function FurnitureStoreBoard({
       <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                 <Layers className="h-5 w-5 text-sky-600" /> Categorias & Estoque
+                 <Layers className="h-5 w-5 text-sky-600" /> {t("admin.furnitureStore.categoriesStock")}
               </h3>
               <div className="flex flex-col sm:flex-row bg-gray-100 p-1 rounded-2xl gap-2">
                   <button 
                     onClick={() => {
                         const url = `${window.location.origin}/v/${workspaceId || 'share'}`;
                         navigator.clipboard.writeText(url);
-                        alert("Link da Loja copiado: " + url);
+                        alert(t("admin.furnitureStore.copiedLink", { url }));
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-white text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border border-emerald-50 transition-all hover:bg-emerald-50 cursor-pointer"
                   >
-                    <ShoppingBag className="h-4 w-4" /> Copiar Link Público
+                    <ShoppingBag className="h-4 w-4" /> {t("admin.furnitureStore.copyPublicLink")}
                   </button>
                   <button 
                     onClick={onToggleViewMode}
                     className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border border-gray-100 transition-all hover:bg-sky-50 hover:text-sky-600"
                   >
-                    <Eye className="h-4 w-4" /> Ver Como Cliente
+                    <Eye className="h-4 w-4" /> {t("admin.furnitureStore.viewAsClient")}
                   </button>
               </div>
           </div>
@@ -155,7 +159,7 @@ export function FurnitureStoreBoard({
                             <div className="text-2xl font-black">{idx + 1}</div>
                             <div className="text-right">
                                 <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{cat}</div>
-                                <div className="text-xs font-bold leading-none">{count} ITENS</div>
+                                <div className="text-xs font-bold leading-none">{t("admin.furnitureStore.itemsCount", { count })}</div>
                             </div>
                         </motion.div>
                       );
@@ -169,8 +173,8 @@ export function FurnitureStoreBoard({
               >
                   <Star className="h-5 w-5 fill-white" />
                   <div className="text-right">
-                      <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Destaques</div>
-                      <div className="text-xs font-bold leading-none">{featuredCount} ITENS</div>
+                      <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{t("admin.furnitureStore.featured")}</div>
+                      <div className="text-xs font-bold leading-none">{t("admin.furnitureStore.itemsCount", { count: featuredCount })}</div>
                   </div>
               </motion.div>
           </div>
@@ -179,7 +183,7 @@ export function FurnitureStoreBoard({
       {/* Main Product Feed */}
       <div className="space-y-6">
         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <div className="text-sm font-black text-gray-400 uppercase tracking-widest">Feed de Produtos Ativos</div>
+            <div className="text-sm font-black text-gray-400 uppercase tracking-widest">{t("admin.furnitureStore.activeFeed")}</div>
             <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setViewMode("grid")}
@@ -227,7 +231,7 @@ export function FurnitureStoreBoard({
                             )}
                             {product.isFeatured && (
                                 <div className="absolute top-3 left-3 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                                    <Star className="h-3 w-3 fill-white" /> Destaque
+                                    <Star className="h-3 w-3 fill-white" /> {t("admin.furnitureStore.featuredBadge")}
                                 </div>
                             )}
                         </div>
@@ -235,20 +239,22 @@ export function FurnitureStoreBoard({
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black text-sky-600 uppercase tracking-widest bg-sky-50 px-3 py-1 rounded-full">{product.category}</span>
-                                <span className="text-lg font-black text-gray-900">R$ {product.price.toLocaleString()}</span>
+                                <span className="text-lg font-black text-gray-900">
+                                    {locale === 'pt' ? 'R$ ' + product.price.toLocaleString('pt-BR') : '$ ' + product.price.toLocaleString('en-US')}
+                                </span>
                             </div>
                             <h4 className="text-lg font-black text-gray-900 leading-tight">{product.name}</h4>
-                            <p className="text-sm text-gray-400 line-clamp-2">{product.description || 'Sem descrição.'}</p>
+                            <p className="text-sm text-gray-400 line-clamp-2">{product.description || t("admin.furnitureStore.noDescription")}</p>
                             
                             <div className="flex flex-col gap-1.5 pt-3 border-t border-gray-50">
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                     <MapPin className="h-3 w-3 text-sky-500" />
-                                    {product.location || "Localização Não Definida"}
+                                    {product.location || t("admin.furnitureStore.locationNotDefined")}
                                 </div>
                                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
                                     <Package className={cn("h-3 w-3", product.displayStatus === "Montado no Showroom" ? "text-amber-500" : "text-emerald-500")} />
                                     <span className={product.displayStatus === "Montado no Showroom" ? "text-amber-600" : "text-emerald-600"}>
-                                        {product.displayStatus || "Na Caixa"}
+                                        {product.displayStatus === "Montado no Showroom" ? t("admin.furnitureStore.assembledShowroom") : (product.displayStatus || t("admin.furnitureStore.inBox"))}
                                     </span>
                                 </div>
                             </div>
@@ -256,10 +262,10 @@ export function FurnitureStoreBoard({
                             {/* Mobile inline actions (touch-friendly) */}
                             <div className="flex sm:hidden gap-2 pt-2 border-t border-gray-50 mt-1">
                                 <button onClick={() => onOpenProductModal(product)} className="flex-1 py-2 bg-sky-50 text-sky-600 rounded-xl text-[10px] font-black uppercase hover:bg-sky-100 transition-all flex items-center justify-center gap-1 cursor-pointer">
-                                    <Edit className="h-3 w-3" /> Editar
+                                    <Edit className="h-3 w-3" /> {t("admin.furnitureStore.edit")}
                                 </button>
                                 <button onClick={() => handleToggleArchive(product)} className="flex-1 py-2 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase hover:bg-amber-100 transition-all flex items-center justify-center gap-1 cursor-pointer">
-                                    <ArchiveIcon className="h-3 w-3" /> Arquivar
+                                    <ArchiveIcon className="h-3 w-3" /> {t("admin.furnitureStore.archive")}
                                 </button>
                                 <button onClick={() => handleDelete(product)} className="px-3 py-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all cursor-pointer">
                                     <Trash2 className="h-3 w-3" />

@@ -3,6 +3,7 @@ import { Mic, Info, History, CheckCircle2 } from "lucide-react";
 import { useChatStore } from "@/lib/stores/chatStore";
 import type { Dashboard, WorkspaceWithDashboards } from "@/lib/types/dashboard";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface ChatBoardProps {
   workspace: WorkspaceWithDashboards;
@@ -10,6 +11,7 @@ interface ChatBoardProps {
 }
 
 export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
+  const { t, locale } = useTranslation();
   const { messages, fetchMessages, isLoading } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -30,8 +32,8 @@ export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
             <History className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Histórico de IA</h2>
-            <p className="text-xs text-gray-500">Conversas salvas deste painel</p>
+            <h2 className="text-lg font-bold text-gray-900">{t("admin.chat.title")}</h2>
+            <p className="text-xs text-gray-500">{t("admin.chat.subtitle")}</p>
           </div>
         </div>
         <button 
@@ -39,7 +41,7 @@ export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md transition-colors"
         >
           <Mic className="h-4 w-4" />
-          Nova Conversa
+          {t("admin.chat.newConversation")}
         </button>
       </div>
 
@@ -59,8 +61,8 @@ export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
               <Mic className="h-8 w-8 text-gray-300" />
             </div>
             <div>
-              <p className="font-medium text-gray-500">Nenhuma conversa encontrada</p>
-              <p className="text-sm">Clique em "Nova Conversa" para falar com a IA.</p>
+              <p className="font-medium text-gray-500">{t("admin.chat.noConversations")}</p>
+              <p className="text-sm">{t("admin.chat.newConversationHint")}</p>
             </div>
           </div>
         ) : (
@@ -81,7 +83,7 @@ export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
                     {/* Hover tooltip for metadata details */}
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-max max-w-xs bg-gray-900 text-white text-xs p-3 rounded-xl shadow-xl z-50">
                         <div className="font-bold mb-1 border-b border-gray-700 pb-1 flex items-center gap-1">
-                           <Info className="w-3.5 h-3.5" /> Detalhes da Ação
+                           <Info className="w-3.5 h-3.5" /> {t("admin.chat.actionDetails")}
                         </div>
                         <pre className="text-[10px] overflow-x-auto whitespace-pre-wrap font-mono mt-1 text-gray-300">
                             {JSON.stringify(msg.metadata, null, 2)}
@@ -94,7 +96,7 @@ export function ChatBoard({ workspace, dashboard }: ChatBoardProps) {
                   "text-[10px] mt-1 opacity-60 text-right",
                   msg.role === 'user' ? "text-blue-100" : "text-gray-400"
                 )}>
-                  {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(msg.createdAt).toLocaleTimeString(locale === 'pt' ? 'pt-BR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             </div>

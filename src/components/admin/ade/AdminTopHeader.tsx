@@ -29,6 +29,7 @@ import type { AdeAppearanceTokens } from "@/lib/ade-theme";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { BookWriterView } from "@/components/love-writers/BookWriterView";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 import {
     useWorkspaceStore,
@@ -61,6 +62,7 @@ export function AdminTopHeader({
     const [isBookWriterOpen, setIsBookWriterOpen] = useState(false);
     const [isBookLibraryOpen, setIsBookLibraryOpen] = useState(false);
     const pathname = usePathname();
+    const { t, locale, setLocale } = useTranslation();
 
     // Zustand and auth store selectors (moved to top to avoid block-scope lint usage errors)
     const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -131,7 +133,7 @@ export function AdminTopHeader({
         name: currentWorkspace.name,
         type: isLoveWriters ? 'love_writers' :
             currentWorkspace.promptSettings?.templateId === "template_trade_ranking" ? 'trade_ranking' : 'business_insights'
-    } : { id: 'none', name: 'Select Workspace', type: 'business_insights' };
+    } : { id: 'none', name: t("common.switchWorkspace"), type: 'business_insights' };
 
     const handleColorChange = (color: string) => {
         if (onSetSpecificColor) {
@@ -186,7 +188,7 @@ export function AdminTopHeader({
                                         >
                                             <div className="p-2">
                                                 <div className="mb-2 px-2 text-xs font-semibold text-gray-500 uppercase">
-                                                    Switch Workspace
+                                                    {t("common.switchWorkspace")}
                                                 </div>
                                                 {availableWorkspaces.map((ws) => (
                                                     <div key={ws.id} className="group/item relative">
@@ -219,7 +221,7 @@ export function AdminTopHeader({
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if (window.confirm(`Delete workspace "${ws.name}" and all dashboards, cards, contacts, and notes?`)) {
+                                                                    if (window.confirm(t("common.deleteWorkspaceConfirm", { name: ws.name }))) {
                                                                         onDeleteWorkspace(ws.id);
                                                                         if (currentWorkspace?.id === ws.id) {
                                                                             setIsWorkspaceOpen(false);
@@ -247,7 +249,7 @@ export function AdminTopHeader({
                                                     <div className="flex h-5 w-5 items-center justify-center rounded border border-dashed border-gray-400">
                                                         <Plus className="h-3 w-3" />
                                                     </div>
-                                                    <span>Create Workspace</span>
+                                                    <span>{t("common.createWorkspace")}</span>
                                                 </button>
                                             </div>
                                         </motion.div>
@@ -298,7 +300,7 @@ export function AdminTopHeader({
                                             <div className="space-y-4">
                                                 {/* Quick color presets inside modal */}
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Presets</label>
+                                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t("admin.header.presets")}</label>
                                                     <div className="grid grid-cols-4 gap-2">
                                                         {[
                                                             { color: "#f7f7f7", name: "Beige" },
@@ -321,7 +323,7 @@ export function AdminTopHeader({
                                                 </div>
 
                                                 <div className="border-t border-gray-100 pt-3">
-                                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Custom Color</label>
+                                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t("admin.header.customColor")}</label>
                                                     <div className="flex items-center gap-2">
                                                         <input
                                                             type="color"
@@ -383,7 +385,7 @@ export function AdminTopHeader({
                                     }
                                 }}
                                 className="relative flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5 text-gray-500 hover:text-indigo-600 transition-colors cursor-pointer"
-                                title="Anúncios & Notificações"
+                                title={t("admin.header.notifications")}
                             >
                                 <Bell className="h-5 w-5 cursor-pointer" />
                                 {unreadCount > 0 && (
@@ -404,9 +406,9 @@ export function AdminTopHeader({
                                         >
                                             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-black uppercase tracking-wider text-slate-800">Mensagens & Avisos</span>
+                                                    <span className="text-xs font-black uppercase tracking-wider text-slate-800">{t("admin.header.messagesAndNotices")}</span>
                                                     {unreadCount > 0 && (
-                                                        <span className="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">{unreadCount} novos</span>
+                                                        <span className="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">{t("admin.header.newMessages", { count: unreadCount })}</span>
                                                     )}
                                                 </div>
                                                 {unreadCount > 0 && (
@@ -414,7 +416,7 @@ export function AdminTopHeader({
                                                         onClick={handleMarkAsRead}
                                                         className="text-[9px] font-black uppercase text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
                                                     >
-                                                        Marcar todas lidas
+                                                        {t("admin.header.markAllRead")}
                                                     </button>
                                                 )}
                                             </div>
@@ -422,7 +424,7 @@ export function AdminTopHeader({
                                             <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px]">
                                                 {notifications.length === 0 ? (
                                                     <div className="text-center py-8 text-xs font-semibold text-slate-400">
-                                                        Nenhuma notificação por enquanto.
+                                                        {t("admin.header.noNotifications")}
                                                     </div>
                                                 ) : (
                                                     notifications.map((notif: any) => {
@@ -460,8 +462,8 @@ export function AdminTopHeader({
                                                                         {notif.message}
                                                                     </p>
                                                                     <div className="mt-1 flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-slate-400">
-                                                                        <span>De:</span>
-                                                                        <span className="text-indigo-600">{notif.workspaceId === "global" ? "Super Admin" : "Mentor"}</span>
+                                                                        <span>{t("admin.header.from")}</span>
+                                                                        <span className="text-indigo-600">{notif.workspaceId === "global" ? t("admin.header.superAdmin") : t("admin.header.mentor")}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -473,6 +475,36 @@ export function AdminTopHeader({
                                     </>
                                 )}
                             </AnimatePresence>
+                        </div>
+
+                        <div className="h-6 w-px bg-gray-200/20 mx-1" />
+
+                        {/* Language Selector */}
+                        <div className="flex items-center gap-1 rounded-lg border border-gray-200/50 bg-white/5 p-0.5 text-xs text-slate-500 font-semibold shadow-xs mr-1">
+                            <button
+                                onClick={() => setLocale("pt")}
+                                className={cn(
+                                    "px-2 py-1 rounded-md transition-all cursor-pointer font-bold text-[10px]",
+                                    locale === "pt"
+                                        ? "bg-slate-800 text-white shadow-sm"
+                                        : "hover:bg-black/5 text-gray-500 hover:text-slate-700"
+                                )}
+                                title="Português"
+                            >
+                                PT
+                            </button>
+                            <button
+                                onClick={() => setLocale("en")}
+                                className={cn(
+                                    "px-2 py-1 rounded-md transition-all cursor-pointer font-bold text-[10px]",
+                                    locale === "en"
+                                        ? "bg-slate-800 text-white shadow-sm"
+                                        : "hover:bg-black/5 text-gray-500 hover:text-slate-700"
+                                )}
+                                title="English"
+                            >
+                                EN
+                            </button>
                         </div>
 
                         <div className="h-6 w-px bg-gray-200/20 mx-1" />

@@ -35,6 +35,7 @@ import type { Tile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/lib/state/toast-context";
 import { useWMSOrchestrator } from "@/containers/admin/hooks/useWMSOrchestrator";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 interface ProductReference {
     id: string;
@@ -67,10 +68,10 @@ interface MapSection {
 }
 
 const STATUS_MAP = {
-    available: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-400', label: 'Vazio' },
-    occupied: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-600', label: 'Ocupado' },
-    reserved: { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-600', label: 'Reservado' },
-    blocked: { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-600', label: 'Bloqueado' },
+    available: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-400', key: 'available' },
+    occupied: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-600', key: 'occupied' },
+    reserved: { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-600', key: 'reserved' },
+    blocked: { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-600', key: 'blocked' },
 };
 
 interface StoreLayoutGridProps {
@@ -81,6 +82,7 @@ interface StoreLayoutGridProps {
 }
 
 export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: StoreLayoutGridProps) {
+    const { t, locale } = useTranslation();
     const { push } = useToast();
     const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -152,7 +154,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
     const handleSave = () => {
         if (onSaveLayout) {
             onSaveLayout(sections);
-            push({ title: "Layout Salvo", description: "As alterações foram sincronizadas com sucesso.", variant: "success" });
+            push({ title: t("admin.storeLayout.toast.layoutSaved"), description: t("admin.storeLayout.toast.layoutSavedDesc"), variant: "success" });
         }
         setIsEditorMode(false);
     };
@@ -179,8 +181,8 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
         }
 
         push({
-            title: "Item Adicionado e Salvo",
-            description: `${item.name} vinculado ao slot ${item.suggestedSpot || selectedSpot?.code}.`,
+            title: t("admin.storeLayout.toast.itemAdded"),
+            description: t("admin.storeLayout.toast.itemAddedDesc", { name: item.name, spot: item.suggestedSpot || selectedSpot?.code || "" }),
             variant: "success"
         });
         setDetectedItems(prev => prev.filter(i => i.id !== item.id));
@@ -223,14 +225,14 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                         <MapIcon size={20} className="text-blue-600" />
                     </div>
                     <div>
-                        <h2 className="font-black text-slate-800 text-base leading-none">Mapa da Loja</h2>
+                        <h2 className="font-black text-slate-800 text-base leading-none">{t("admin.storeLayout.header.title")}</h2>
                         <div className="flex items-center gap-2 mt-1">
                             <div className="flex items-center gap-1.5 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-100">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Live AI</span>
+                                <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">{t("admin.storeLayout.header.liveAi")}</span>
                             </div>
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                In: {spotsWithProducts.length} | Out: {allSpots.length - spotsWithProducts.length}
+                                {t("admin.storeLayout.header.stats", { inCount: spotsWithProducts.length, outCount: allSpots.length - spotsWithProducts.length })}
                             </span>
                         </div>
                     </div>
@@ -239,7 +241,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                     <button
                         onClick={() => { setIsAssistantOpen(true); setAssistantMode(null); }}
                         className="p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all"
-                        title="Configurar Layout"
+                        title={t("admin.storeLayout.header.configureLayout")}
                     >
                         <Settings size={18} />
                     </button>
@@ -271,7 +273,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                     onClick={() => { setIsAssistantOpen(true); setAssistantMode(null); setEditingSectorId(null); setNewSector({ name: '', rows: 4, cols: 6, orientation: 'horizontal', type: 'Showcase' }); }}
                     className="px-3 py-1.5 rounded-xl font-bold text-xs bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all flex items-center gap-1.5 shrink-0"
                 >
-                    <Plus size={12} /> Novo Setor
+                    <Plus size={12} /> {t("admin.storeLayout.header.newSector")}
                 </button>
             </div>
         </div>
@@ -281,8 +283,8 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
         if (!activeSection) return (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 p-12">
                 <Warehouse size={48} className="opacity-20" />
-                <p className="italic text-sm">Nenhum setor configurado.</p>
-                <button onClick={() => setIsEditorMode(true)} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">Configurar Planta</button>
+                <p className="italic text-sm">{t("admin.storeLayout.empty.noSector")}</p>
+                <button onClick={() => setIsEditorMode(true)} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">{t("admin.storeLayout.empty.configureFloorplan")}</button>
             </div>
         );
 
@@ -382,7 +384,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                             {Object.entries(STATUS_MAP).map(([key, val]) => (
                                 <div key={key} className="flex items-center gap-1.5">
                                     <span className={cn("w-2.5 h-2.5 rounded-full border shadow-sm", val.bg, val.border)} />
-                                    <span className="text-slate-500 uppercase tracking-tight">{val.label}</span>
+                                    <span className="text-slate-500 uppercase tracking-tight">{t("admin.storeLayout.status." + val.key)}</span>
                                 </div>
                             ))}
                         </div>
@@ -425,7 +427,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     </div>
                                     <div>
                                         <h3 className="text-2xl font-black text-slate-800">{selectedSpot.code}</h3>
-                                        <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Setor: {activeSection?.label || activeSection?.id}</p>
+                                        <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">{t("admin.storeLayout.drawer.sector", { sector: activeSection?.label || activeSection?.id || "" })}</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setSelectedSpot(null)} className="bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-colors text-slate-500"><X size={20} /></button>
@@ -436,18 +438,18 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 {/* Product List */}
                                 <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
                                     <div className="flex justify-between mb-4 items-center border-b border-slate-50 pb-2">
-                                        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Conteúdo do Slot ({selectedSpot.products?.length || 0})</h4>
+                                        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("admin.storeLayout.drawer.slotContent", { count: selectedSpot.products?.length || 0 })}</h4>
                                         <button
                                             onClick={() => setShowAddSku(true)}
                                             className="text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
                                         >
-                                            <Plus size={14} /> Novo Produto
+                                            <Plus size={14} /> {t("admin.storeLayout.drawer.newProduct")}
                                         </button>
                                         <button
                                             onClick={() => setIsListOpen(true)}
                                             className="text-slate-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors ml-2"
                                         >
-                                            <Plus size={14} /> Vincular Catálogo
+                                            <Plus size={14} /> {t("admin.storeLayout.drawer.linkCatalog")}
                                         </button>
                                     </div>
                                     <div className="space-y-3">
@@ -471,7 +473,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                         ) : (
                                             <div className="text-center text-slate-400 text-xs py-12 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center gap-3 bg-slate-50/50">
                                                 <Box size={32} className="opacity-10" />
-                                                Este slot está vazio.
+                                                {t("admin.storeLayout.drawer.slotEmpty")}
                                             </div>
                                         )}
                                     </div>
@@ -481,30 +483,30 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 <div className="bg-blue-600 p-6 rounded-3xl text-white shadow-xl shadow-blue-200 relative overflow-hidden group">
                                     <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
                                     <h5 className="font-black text-lg mb-2 flex items-center gap-2">
-                                        <Bot size={22} /> Assistente AI
+                                        <Bot size={22} /> {t("admin.storeLayout.drawer.aiAssistant")}
                                     </h5>
                                     <p className="text-blue-100 text-xs leading-relaxed font-medium mb-4">
-                                        Use comandos de voz ou foto para atualizar este inventário instantaneamente.
+                                        {t("admin.storeLayout.drawer.aiAssistantDesc")}
                                     </p>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => { setAssistantMode("voice"); setIsAssistantOpen(true); }}
                                             className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                                         >
-                                            Voz
+                                            {t("admin.storeLayout.drawer.voice")}
                                         </button>
                                         <button
                                             onClick={() => { setAssistantMode("camera"); setIsAssistantOpen(true); }}
                                             className="flex-1 bg-white text-blue-600 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
                                         >
-                                            Câmera
+                                            {t("admin.storeLayout.drawer.camera")}
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Status Toggle (Quick Control) */}
                                 <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Alterar Status Manual</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">{t("admin.storeLayout.drawer.manualStatus")}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         {Object.entries(STATUS_MAP).map(([key, val]) => (
                                             <button
@@ -523,7 +525,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                                 )}
                                             >
                                                 <span className={cn("w-2 h-2 rounded-full", val.bg, val.border)} />
-                                                {val.label}
+                                                {t("admin.storeLayout.status." + val.key)}
                                             </button>
                                         ))}
                                     </div>
@@ -548,14 +550,14 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-4">
                                         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-3">
-                                            {selectedProduct.item.price && <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Preço</span><span className="font-black text-slate-800">{selectedProduct.item.price}</span></div>}
-                                            {selectedProduct.item.condition && <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Condição</span><span className="font-black text-slate-800">{selectedProduct.item.condition}</span></div>}
-                                            <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Slot</span><span className="font-black text-slate-800">{selectedSpot?.code}</span></div>
-                                            <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">Qtd</span><span className="font-black text-slate-800">{selectedProduct.item.quantity ?? 1}</span></div>
+                                            {selectedProduct.item.price && <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">{t("admin.storeLayout.productDrawer.price")}</span><span className="font-black text-slate-800">{selectedProduct.item.price}</span></div>}
+                                            {selectedProduct.item.condition && <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">{t("admin.storeLayout.productDrawer.condition")}</span><span className="font-black text-slate-800">{selectedProduct.item.condition}</span></div>}
+                                            <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">{t("admin.storeLayout.productDrawer.slot")}</span><span className="font-black text-slate-800">{selectedSpot?.code}</span></div>
+                                            <div className="flex justify-between text-sm"><span className="text-slate-400 font-bold">{t("admin.storeLayout.productDrawer.qty")}</span><span className="font-black text-slate-800">{selectedProduct.item.quantity ?? 1}</span></div>
                                         </div>
                                         {selectedProduct.item.description && (
                                             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Detalhes</p>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t("admin.storeLayout.productDrawer.details")}</p>
                                                 <p className="text-sm text-slate-700 leading-relaxed">{selectedProduct.item.description}</p>
                                             </div>
                                         )}
@@ -571,7 +573,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                             }}
                                             className="w-full py-3 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl hover:bg-rose-100 transition-all flex items-center justify-center gap-2 text-sm"
                                         >
-                                            <Trash2 size={16} /> Remover deste Slot
+                                            <Trash2 size={16} /> {t("admin.storeLayout.productDrawer.removeFromSlot")}
                                         </button>
                                     </div>
                                 </motion.div>
@@ -590,7 +592,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                             className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
                         >
                             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Settings size={20} className="text-slate-500" /> Configurar Layout</h3>
+                                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Settings size={20} className="text-slate-500" /> {t("admin.storeLayout.header.configureLayout")}</h3>
                                 <button onClick={() => { setIsAssistantOpen(false); setEditingSectorId(null); }} className="p-1.5 bg-slate-200 rounded-full text-slate-500 hover:bg-slate-300 transition-all"><X size={18} /></button>
                             </div>
 
@@ -598,10 +600,10 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 {/* New Section Form */}
                                 <div className="bg-blue-50/50 border border-blue-100 p-5 rounded-2xl mb-6 space-y-4">
                                     <h4 className="text-xs font-black text-blue-800 uppercase tracking-wider flex items-center gap-1">
-                                        <Plus size={14} /> {editingSectorId ? 'Editar Setor' : 'Novo Setor'}
+                                        <Plus size={14} /> {editingSectorId ? t("admin.storeLayout.modal.editSector") : t("admin.storeLayout.modal.newSector")}
                                     </h4>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Identificador (Ex: A1)</label>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1.5">{t("admin.storeLayout.modal.identifierLabel")}</label>
                                         <input
                                             type="text"
                                             value={newSector.name}
@@ -613,38 +615,38 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     </div>
                                     <div className="flex gap-3">
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Fileiras</label>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1.5">{t("admin.storeLayout.modal.rows")}</label>
                                             <input type="number" min="1" max="20" value={newSector.rows ?? 4} onChange={(e) => setNewSector({ ...newSector, rows: e.target.value })} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 font-bold outline-none focus:border-blue-500" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-xs font-bold text-slate-600 mb-1.5">Colunas</label>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1.5">{t("admin.storeLayout.modal.cols")}</label>
                                             <input type="number" min="1" max="20" value={newSector.cols ?? 6} onChange={(e) => setNewSector({ ...newSector, cols: e.target.value })} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 font-bold outline-none focus:border-blue-500" />
                                         </div>
                                     </div>
 
-                                    <label className="block text-xs font-bold text-slate-600 mb-1 mt-2">Orientação</label>
+                                    <label className="block text-xs font-bold text-slate-600 mb-1 mt-2">{t("admin.storeLayout.modal.orientation")}</label>
                                     <div className="flex gap-2">
-                                        <button onClick={() => setNewSector({ ...newSector, orientation: 'horizontal' })} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-colors", newSector.orientation === 'horizontal' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500')}><GripHorizontal size={16} /> Horiz</button>
-                                        <button onClick={() => setNewSector({ ...newSector, orientation: 'vertical' })} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-colors", newSector.orientation === 'vertical' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500')}><GripVertical size={16} /> Vert</button>
+                                        <button onClick={() => setNewSector({ ...newSector, orientation: 'horizontal' })} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-colors", newSector.orientation === 'horizontal' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500')}><GripHorizontal size={16} /> {t("admin.storeLayout.modal.horizontal")}</button>
+                                        <button onClick={() => setNewSector({ ...newSector, orientation: 'vertical' })} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-colors", newSector.orientation === 'vertical' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500')}><GripVertical size={16} /> {t("admin.storeLayout.modal.vertical")}</button>
                                     </div>
 
                                     <div className="flex gap-2 mt-2">
-                                        {["Showcase", "Wall", "Rack"].map(t => (
+                                        {["Showcase", "Wall", "Rack"].map(typeKey => (
                                             <button
-                                                key={t}
-                                                onClick={() => setNewSector({ ...newSector, type: t as any })}
+                                                key={typeKey}
+                                                onClick={() => setNewSector({ ...newSector, type: typeKey as any })}
                                                 className={cn(
                                                     "flex-1 py-2.5 rounded-xl border-2 font-bold text-xs transition-all",
-                                                    newSector.type === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'
+                                                    newSector.type === typeKey ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'
                                                 )}
                                             >
-                                                {t === "Showcase" ? "Expositor" : t === "Wall" ? "Parede" : "Rack"}
+                                                {typeKey === "Showcase" ? t("admin.storeLayout.modal.showcase") : typeKey === "Wall" ? t("admin.storeLayout.modal.wall") : t("admin.storeLayout.modal.rack")}
                                             </button>
                                         ))}
                                     </div>
 
                                     <div className="flex gap-2 mt-2 pt-2">
-                                        {editingSectorId && <button onClick={() => setEditingSectorId(null)} className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors">Cancelar</button>}
+                                        {editingSectorId && <button onClick={() => setEditingSectorId(null)} className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors">{t("admin.storeLayout.modal.cancel")}</button>}
                                         <button
                                             onClick={() => {
                                                 if (!newSector.name.trim()) return;
@@ -673,7 +675,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                                             spots.push({ id: `${id}-${r}-${c}`, code: `${id}-${r}-${c}`, row: r, col: c, status: "available", products: [], updatedAt: new Date().toISOString() });
                                                         }
                                                     }
-                                                    setSections([...sections, { id, label: `Setor ${id}`, rows: Number(newSector.rows), cols: Number(newSector.cols), orientation: newSector.orientation as any, type: newSector.type as any, spots }]);
+                                                    setSections([...sections, { id, label: t("admin.storeLayout.modal.sectorTitle", { id }), rows: Number(newSector.rows), cols: Number(newSector.cols), orientation: newSector.orientation as any, type: newSector.type as any, spots }]);
                                                     setActiveSectionId(id);
                                                 }
                                                 setNewSector({ name: '', rows: 4, cols: 6, orientation: 'horizontal', type: 'Showcase' });
@@ -682,14 +684,14 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                             className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md"
                                         >
                                             {editingSectorId ? <Save size={16} /> : <Plus size={16} />}
-                                            {editingSectorId ? 'Salvar' : 'Adicionar'}
+                                            {editingSectorId ? t("admin.storeLayout.modal.save") : t("admin.storeLayout.modal.add")}
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Active Sectors List */}
                                 <div className="space-y-3">
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Setores Ativos ({sections.length})</h4>
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">{t("admin.storeLayout.modal.activeSectors", { count: sections.length })}</h4>
                                 <div className="space-y-2">
                                     {sections.map(sec => (
                                         <div key={sec.id} className={cn(
@@ -697,7 +699,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                             editingSectorId === sec.id ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md' : 'border-slate-200'
                                         )}>
                                             <div>
-                                                <span className="font-black text-slate-800 block text-lg">Setor {sec.id}</span>
+                                                <span className="font-black text-slate-800 block text-lg">{t("admin.storeLayout.modal.sectorTitle", { id: sec.id })}</span>
                                                 <span className="text-xs text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded uppercase mt-1 inline-block">{sec.rows}x{sec.cols} • {sec.orientation}</span>
                                             </div>
                                             <div className="flex gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100">
@@ -723,7 +725,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 {/* Export Buttons */}
                                 {onExport && (
                                     <div className="pt-4 border-t border-slate-100 space-y-2">
-                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Exportar Dados</h4>
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">{t("admin.storeLayout.modal.exportData")}</h4>
                                         <div className="flex gap-2">
                                             <button onClick={() => onExport('store_layout', 'json')} className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:border-blue-400 hover:text-blue-600 transition-all flex items-center justify-center gap-2">
                                                 <Box size={14} /> JSON
@@ -741,7 +743,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     onClick={() => { handleSave(); setIsAssistantOpen(false); }}
                                     className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md transition-all text-sm"
                                 >
-                                    <Save size={16} /> Salvar Layout
+                                    <Save size={16} /> {t("admin.storeLayout.modal.saveLayout")}
                                 </button>
                             </div>
                             </div>{/* end scrollable */}
@@ -760,8 +762,8 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                         >
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                                 <div>
-                                    <h3 className="font-black text-slate-800 text-xl">Vincular Produto</h3>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Slot Ativo: {selectedSpot?.code}</p>
+                                    <h3 className="font-black text-slate-800 text-xl">{t("admin.storeLayout.linkModal.title")}</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t("admin.storeLayout.linkModal.activeSlot", { code: selectedSpot?.code || "" })}</p>
                                 </div>
                                 <button onClick={() => setIsListOpen(false)} className="p-2 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-all"><X size={18} /></button>
                             </div>
@@ -772,7 +774,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
                                     <input
                                         type="text"
-                                        placeholder="Buscar no catálogo..."
+                                        placeholder={t("admin.storeLayout.linkModal.searchPlaceholder")}
                                         className="w-full bg-slate-50 border border-slate-200 py-3.5 pl-12 pr-4 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
@@ -799,7 +801,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                             setSections(updated);
                                             setSelectedSpot(updated.flatMap(s => s.spots).find(sp => sp.id === selectedSpot.id) || null);
                                             setIsListOpen(false);
-                                            push({ title: "Produto Vinculado", description: `${product.name} agora está no slot ${selectedSpot.code}.`, variant: "success" });
+                                            push({ title: t("admin.storeLayout.toast.productLinked"), description: t("admin.storeLayout.toast.productLinkedDesc", { name: product.name, spot: selectedSpot.code }), variant: "success" });
                                         }}
                                         className="w-full flex items-center gap-4 p-4 hover:bg-blue-50 rounded-2xl border border-transparent hover:border-blue-200 transition-all group text-left"
                                     >
@@ -827,25 +829,25 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                             className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden p-8"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-black text-slate-800 text-xl">Adicionar Produto</h3>
+                                <h3 className="font-black text-slate-800 text-xl">{t("admin.storeLayout.addProductModal.title")}</h3>
                                 <button onClick={() => setShowAddSku(false)} className="text-slate-400 bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-all"><X size={18} /></button>
                             </div>
                             
                             <div className="space-y-4">
-                                <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} placeholder="Nome do Produto" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} placeholder={t("admin.storeLayout.addProductModal.namePlaceholder")} className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
                                 <div className="flex gap-3">
-                                    <input type="text" value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} placeholder="SKU (Opcional)" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
-                                    <input type="text" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} placeholder="Preço (Opc.)" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                    <input type="text" value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} placeholder={t("admin.storeLayout.addProductModal.skuPlaceholder")} className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                    <input type="text" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} placeholder={t("admin.storeLayout.addProductModal.pricePlaceholder")} className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
                                 </div>
-                                <input type="text" value={newProduct.condition} onChange={e => setNewProduct({...newProduct, condition: e.target.value})} placeholder="Condição (Ex: A Vista, Usado...)" className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
-                                <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} placeholder="Detalhes adicionais..." className="w-full border border-slate-200 p-3.5 rounded-xl h-24 bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none font-medium transition-all"></textarea>
+                                <input type="text" value={newProduct.condition} onChange={e => setNewProduct({...newProduct, condition: e.target.value})} placeholder={t("admin.storeLayout.addProductModal.conditionPlaceholder")} className="w-full border border-slate-200 p-3.5 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold transition-all" />
+                                <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} placeholder={t("admin.storeLayout.addProductModal.detailsPlaceholder")} className="w-full border border-slate-200 p-3.5 rounded-xl h-24 bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none font-medium transition-all"></textarea>
 
                                 <button
                                     onClick={() => {
                                         if (!newProduct.name.trim()) return;
                                         const targetSpot = selectedSpot || sections.flatMap(s => s.spots).find(sp => sp.id === newProduct.targetCell);
                                         if (!targetSpot) {
-                                            push({ title: "Erro", description: "Selecione um slot para o produto.", variant: "destructive" });
+                                            push({ title: t("admin.storeLayout.toast.error"), description: t("admin.storeLayout.toast.selectSlotError"), variant: "destructive" });
                                             return;
                                         }
 
@@ -873,11 +875,11 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                         if (selectedSpot) setSelectedSpot(updated.flatMap(s => s.spots).find(sp => sp.id === selectedSpot.id) || null);
                                         setShowAddSku(false);
                                         setNewProduct({ name: '', sku: '', price: '', condition: '', description: '', targetCell: '' });
-                                        push({ title: "Produto Criado", description: `${newProduct.name} foi adicionado ao slot ${targetSpot.code}.`, variant: "success" });
+                                        push({ title: t("admin.storeLayout.toast.productCreated"), description: t("admin.storeLayout.toast.productCreatedDesc", { name: newProduct.name, spot: targetSpot.code }), variant: "success" });
                                     }}
                                     className="w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2"
                                 >
-                                    <Plus size={18} /> Adicionar ao Armazém
+                                    <Plus size={18} /> {t("admin.storeLayout.addProductModal.submitButton")}
                                 </button>
                             </div>
                         </motion.div>
@@ -895,9 +897,9 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 {assistantMode === 'voice' ? <Mic size={48} className="text-white" /> : <Camera size={48} className="text-white" />}
                             </div>
                             <div className="text-center w-full max-w-lg">
-                                <h3 className="text-2xl font-black text-slate-800">Assistente AI Nexus</h3>
+                                <h3 className="text-2xl font-black text-slate-800">{t("admin.storeLayout.assistant.title")}</h3>
                                 <p className="text-slate-500 mt-2 font-medium">
-                                    {assistantMode === 'voice' ? "Ouvindo seu comando..." : "Aponte a câmera para o produto"}
+                                    {assistantMode === 'voice' ? t("admin.storeLayout.assistant.listening") : t("admin.storeLayout.assistant.pointingCamera")}
                                 </p>
 
                                 {assistantMode === 'voice' && (
@@ -905,7 +907,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                         <textarea
                                             value={assistantInput}
                                             onChange={(e) => setAssistantInput(e.target.value)}
-                                            placeholder="Ex: Crie um novo setor A1 com 4 colunas..."
+                                            placeholder={t("admin.storeLayout.assistant.inputPlaceholder")}
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 text-sm font-medium focus:border-blue-600 focus:ring-0 transition-all resize-none h-32"
                                         />
                                         <button
@@ -918,7 +920,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                             disabled={isProcessingAI}
                                             className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 transition-all"
                                         >
-                                            Enviar Comando
+                                            {t("admin.storeLayout.assistant.sendCommand")}
                                         </button>
                                     </div>
                                 )}
@@ -936,13 +938,13 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                             {isProcessingAI && (
                                 <div className="flex items-center gap-3 bg-slate-100 px-6 py-3 rounded-2xl">
                                     <Loader2 className="animate-spin text-blue-600" size={18} />
-                                    <span className="text-sm font-black text-slate-600 uppercase tracking-widest">Processando...</span>
+                                    <span className="text-sm font-black text-slate-600 uppercase tracking-widest">{t("admin.storeLayout.assistant.processing")}</span>
                                 </div>
                             )}
 
                             {detectedItems.length > 0 && (
                                 <div className="w-full space-y-3 mt-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Itens Detectados</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{t("admin.storeLayout.assistant.detectedItems")}</label>
                                     {detectedItems.map(item => (
                                         <div key={item.id} className="bg-slate-50 border-2 border-blue-100 p-4 rounded-3xl flex justify-between items-center">
                                             <div className="flex items-center gap-4">
@@ -967,7 +969,7 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                 onClick={() => { setIsAssistantOpen(false); setAssistantMode(null); }}
                                 className="w-full mt-4 bg-slate-100 text-slate-500 py-4 rounded-2xl font-black text-xs uppercase tracking-widest"
                             >
-                                Fechar Assistente
+                                {t("admin.storeLayout.assistant.close")}
                             </button>
                         </motion.div>
                     </div>

@@ -5,12 +5,14 @@ import { useParams } from "next/navigation";
 import { FurniturePublicStore } from "@/components/admin/ade/FurniturePublicStore";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export default function PublicStorePage() {
     const { id } = useParams();
     const [workspace, setWorkspace] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!id) return;
@@ -41,7 +43,7 @@ export default function PublicStorePage() {
         <div className="h-screen w-full flex items-center justify-center bg-white">
             <div className="text-center">
                 <LoadingSpinner className="h-12 w-12 text-sky-600 mx-auto mb-4" />
-                <p className="text-xs font-black uppercase tracking-widest text-gray-400">Loading Virtual Store...</p>
+                <p className="text-xs font-black uppercase tracking-widest text-gray-400">{t("public.v.loadingStore")}</p>
             </div>
         </div>
     );
@@ -49,9 +51,9 @@ export default function PublicStorePage() {
     if (error || !workspace) return (
         <div className="h-screen w-full flex items-center justify-center bg-gray-50 p-6 text-center">
             <div className="max-w-md">
-                <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter">Oops! 🪑</h1>
-                <p className="text-gray-500 font-medium mb-8">{error || "Store not found."}</p>
-                <a href="/" className="bg-gray-900 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest">Back to Home</a>
+                <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter">{t("public.v.oops")}</h1>
+                <p className="text-gray-500 font-medium mb-8">{error ? t("public.v.storeNotFound") : t("public.v.storeNotFound")}</p>
+                <a href="/" className="bg-gray-900 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest">{t("common.backToHome")}</a>
             </div>
         </div>
     );
@@ -73,7 +75,7 @@ export default function PublicStorePage() {
             {/* Footer Branding */}
             <footer className="py-20 bg-gray-950 text-center">
                 <div className="text-gray-600 text-[10px] font-black uppercase tracking-[0.2em]">
-                    Tecnologia por <span className="text-white">Furniture Logistics Engine</span>
+                    {t("public.v.poweredBy")} <span className="text-white">Furniture Logistics Engine</span>
                 </div>
             </footer>
         </main>
