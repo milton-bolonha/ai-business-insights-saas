@@ -41,6 +41,20 @@ export interface ClassicHeroFormSubmission {
   market_competition?: string;
   taxaAltern?: string;
 
+  // I/O Mentoring Fields
+  mentor_name?: string;
+  student_name?: string;
+  mentoring_goal?: string;
+
+  // I/O Smart Survey Fields
+  survey_company?: string;
+
+  // AI Blog Fields
+  blog_name?: string;
+  blog_description?: string;
+  blog_topics?: string;
+  blog_author?: string;
+
   // Extra flexibility for future tools
   [key: string]: any;
 }

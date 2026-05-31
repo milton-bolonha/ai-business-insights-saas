@@ -1,0 +1,20 @@
+{
+  "mainMenu": [
+    {
+      "label": "About Us",
+      "href": "about-us"
+    },
+    {
+      "label": "Advertising Disclosure",
+      "href": "advertising-disclosure"
+    },
+    {
+      "label": "Terms and Conditions",
+      "href": "terms-and-conditions"
+    },
+    {
+      "label": "Privacy Policy",
+      "href": "privacy-policy"
+    }
+  ]
+}

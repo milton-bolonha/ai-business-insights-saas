@@ -36,6 +36,9 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
   // Interactive badge tooltip description state
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
+  // Active track enrollment (for level badge)
+  const [activeTrackLevel, setActiveTrackLevel] = useState<{ emoji: string; name: string } | null>(null);
+
   useEffect(() => {
     const fetchPublicProfile = async () => {
       try {
@@ -59,6 +62,25 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
     if (targetUserId) {
       fetchPublicProfile();
     }
+
+    // Fetch active track enrollment to show track level
+    const fetchTrackLevel = async () => {
+      try {
+        // public-profile API may return workspaceId; we try with the known workspaceId if available
+        const res = await fetch(`/api/mentoring/enrollments?menteeUserId=${targetUserId}&status=active`);
+        if (res.ok) {
+          const data = await res.json();
+          const active = (data.enrollments || []).find((e: any) => e.status === "active");
+          if (active && active.trackLevels && active.trackLevels.length > 0) {
+            const levels: any[] = active.trackLevels;
+            const sorted = [...levels].sort((a, b) => b.minXP - a.minXP);
+            const current = sorted.find((l) => (active.earnedXP || 0) >= l.minXP);
+            if (current) setActiveTrackLevel({ emoji: current.emoji, name: current.name });
+          }
+        }
+      } catch {}
+    };
+    fetchTrackLevel();
   }, [targetUserId]);
 
   if (isLoading) {
@@ -234,6 +256,16 @@ export default function MentoradoProfilePage({ params }: PublicProfilePageProps)
                   />
                 </div>
               </div>
+
+              {/* Track Level Badge — shown if mentee is enrolled in a track */}
+              {activeTrackLevel && (
+                <div className="w-full flex items-center justify-center mt-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[9px] font-black uppercase tracking-wider text-slate-700 shadow-sm">
+                    <span>{activeTrackLevel.emoji}</span>
+                    <span>{activeTrackLevel.name}</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

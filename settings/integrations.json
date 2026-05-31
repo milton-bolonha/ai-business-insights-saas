@@ -1,0 +1,12 @@
+{
+  "cloudinaryIntegration": {
+    "cloudApiKey": "232148336835128",
+    "cloudName": "dj0et6kq4"
+  },
+  "googleIntegration": {
+    "adsClientID": "",
+    "adsSlot": "",
+    "gaID": "",
+    "adsAccount": ""
+  }
+}

@@ -35,25 +35,22 @@ const setCookie = (name: string, value: string, days = 365) => {
 // Detect initial language - must be consistent between server and client during module initialization
 const getInitialLocale = (): Locale => {
   if (typeof document !== "undefined") {
-    const cookie = getCookie("NEXT_LOCALE");
-    if (cookie === "pt" || cookie === "en") return cookie;
-    
+    // 1. Always prioritize the HTML lang attribute set by the server to prevent hydration mismatch
     const lang = document.documentElement.getAttribute("lang");
     if (lang) {
       if (lang.startsWith("pt")) return "pt";
       if (lang.startsWith("en")) return "en";
     }
+    
+    // 2. Fallback to cookie
+    const cookie = getCookie("NEXT_LOCALE");
+    if (cookie === "pt" || cookie === "en") return cookie;
   }
-  return "pt";
+  return "pt"; // Default fallback
 };
 
 export const useLanguageStore = create<LanguageState>((set) => {
   const initialLocale = getInitialLocale();
-  
-  // Sync cookie initially in browser
-  if (typeof window !== "undefined") {
-    setCookie("NEXT_LOCALE", initialLocale);
-  }
 
   return {
     locale: initialLocale,

@@ -1,6 +1,6 @@
 import React from "react";
 
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog";
 
 export interface AppTag {
   id: AppTagId;
@@ -74,6 +74,12 @@ export const APP_TAGS: AppTag[] = [
     label: "I/O - Smart Survey",
     labelKey: "appTags.smart_survey.label",
     color: "#10b981", // Emerald-500
+  },
+  {
+    id: "ai_blog",
+    label: "I/O - Automatic Blog",
+    labelKey: "appTags.ai_blog.label",
+    color: "#8b5cf6", // Violet-500
   },
 ];
 
@@ -348,5 +354,39 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
     appTagId: "smart_survey",
     placeholder: "Qual a Organização pesquisada?",
     placeholderKey: "attributes.survey_company.placeholder",
+  },
+
+  // AI Blog Attributes
+  {
+    id: "blog_name",
+    label: "Nome do Blog",
+    labelKey: "attributes.blog_name.label",
+    appTagId: "ai_blog",
+    placeholder: "Como você quer chamar o seu blog?",
+    placeholderKey: "attributes.blog_name.placeholder",
+  },
+  {
+    id: "blog_description",
+    label: "Descrição",
+    labelKey: "attributes.blog_description.label",
+    appTagId: "ai_blog",
+    placeholder: "Sobre o que é o seu blog?",
+    placeholderKey: "attributes.blog_description.placeholder",
+  },
+  {
+    id: "blog_topics",
+    label: "Temas / Assuntos",
+    labelKey: "attributes.blog_topics.label",
+    appTagId: "ai_blog",
+    placeholder: "Quais os principais temas abordados?",
+    placeholderKey: "attributes.blog_topics.placeholder",
+  },
+  {
+    id: "blog_author",
+    label: "Autor",
+    labelKey: "attributes.blog_author.label",
+    appTagId: "ai_blog",
+    placeholder: "Qual o nome do autor principal?",
+    placeholderKey: "attributes.blog_author.placeholder",
   },
 ];

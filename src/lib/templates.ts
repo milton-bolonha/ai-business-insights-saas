@@ -383,6 +383,31 @@ export const DASHBOARD_TEMPLATES: Record<string, DashboardTemplate> = {
         preferredLength: "long",
       }
     ]
+  },
+  template_ai_blog: {
+    id: "template_ai_blog",
+    name: "I/O - Automatic Blog",
+    description: "AI-driven blog generator and CMS pipeline.",
+    tiles: [
+      {
+        id: "blog_strategy",
+        title: "Estratégia de Conteúdo",
+        prompt: "Desenvolva uma estratégia editorial para um blog chamado '{blog_name}' voltado para o nicho de '{blog_topics}'. O blog tem a seguinte descrição: '{blog_description}'.",
+        category: "strategy",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      },
+      {
+        id: "blog_ideas",
+        title: "Ideias de Artigos",
+        prompt: "Crie uma lista de 5 ideias de artigos otimizados para SEO para o blog '{blog_name}'. Autor principal: {blog_author}.",
+        category: "content",
+        orderIndex: 1,
+        agentId: "ade_sales_coach",
+        preferredLength: "long",
+      }
+    ]
   }
 };
 

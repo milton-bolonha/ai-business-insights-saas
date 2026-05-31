@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
 
   const parseResult = requestSchema.safeParse(payload);
   if (!parseResult.success) {
+    console.error("[api/generate] Invalid payload:", parseResult.error.flatten());
     return NextResponse.json(
       { error: "Invalid payload", details: parseResult.error.flatten() },
       { status: 400 }

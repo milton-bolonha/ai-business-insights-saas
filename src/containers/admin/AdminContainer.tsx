@@ -47,6 +47,7 @@ import { MentoringScheduleBoard } from "@/components/admin/ade/MentoringSchedule
 import { MentoringInsightsBoard } from "@/components/admin/ade/MentoringInsightsBoard";
 import { MentoringProfileBoard } from "@/components/admin/ade/MentoringProfileBoard";
 import { SmartSurveyBoard } from "@/components/admin/ade/SmartSurveyBoard";
+import { AiBlogBoard } from "@/modules/ai-blog/components/AiBlogBoard";
 import { useTranslation } from "@/lib/hooks/useTranslation";
 
 // Zustand stores
@@ -192,6 +193,8 @@ export function AdminContainer() {
         setActiveTab("store");
       } else if (templateId === "template_smart_survey") {
         setActiveTab("survey");
+      } else if (templateId === "template_ai_blog") {
+        setActiveTab("blog" as any);
       } else {
         setActiveTab("arcs");
       }
@@ -320,6 +323,7 @@ export function AdminContainer() {
           if (tid === "template_love_writers") return "library";
           if (tid === "template_io_mentoring") return "mentoring_profile" as any;
           if (tid === "template_smart_survey") return "survey";
+          if (tid === "template_ai_blog") return "blog" as any;
           return "arcs";
       };
 
@@ -337,6 +341,7 @@ export function AdminContainer() {
       if (templateId === "template_furniture_store" && activeTab === "arcs") setActiveTab("store" as any);
       if (templateId === "template_io_mentoring" && activeTab === "arcs") setActiveTab("mentoring_profile" as any);
       if (templateId === "template_smart_survey" && activeTab === "arcs") setActiveTab("survey");
+      if (templateId === "template_ai_blog" && activeTab === "arcs") setActiveTab("blog" as any);
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -1225,12 +1230,18 @@ export function AdminContainer() {
               )}
 
               {(activeTab as any) === "survey" && currentWorkspace && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
                   <SmartSurveyBoard 
                     workspaceId={currentWorkspace.id}
                     dashboardId={currentDashboard?.id}
                     tiles={allTiles}
                   />
+                </div>
+              )}
+
+              {(activeTab as any) === "blog" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
+                  <AiBlogBoard />
                 </div>
               )}
 

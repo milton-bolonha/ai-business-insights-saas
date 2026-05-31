@@ -43,3 +43,20 @@ export async function getAuth(): Promise<{ userId: string | null }> {
 
   return { userId: null };
 }
+
+import { NextRequest } from "next/server";
+
+export async function getAuthWorkspace(req: NextRequest): Promise<{ workspaceId?: string; error?: string; status?: number }> {
+  const { userId } = await getAuth();
+  if (!userId) return { error: "Unauthorized", status: 401 };
+
+  const cookieStore = await cookies();
+  const workspaceId = req.nextUrl.searchParams.get("workspaceId") || cookieStore.get("insightsWorkspaceSession")?.value;
+
+  if (!workspaceId) {
+    return { error: "No workspace session found", status: 400 };
+  }
+
+  return { workspaceId, status: 200 };
+}
+

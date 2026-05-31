@@ -239,7 +239,7 @@ export function HomeContainer() {
               handleBookSubmit(updatedValues);
             } else if (activeAppTag === 'trade_ranking') {
               handleTradeSubmit(updatedValues);
-            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store' || activeAppTag === 'io_mentoring' || activeAppTag === 'smart_survey') {
+            } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store' || activeAppTag === 'io_mentoring' || activeAppTag === 'smart_survey' || activeAppTag === 'ai_blog') {
               handleFurnitureSubmit(activeAppTag, updatedValues);
             } else {
               handleSubmit(updatedValues as ClassicHeroFormSubmission);

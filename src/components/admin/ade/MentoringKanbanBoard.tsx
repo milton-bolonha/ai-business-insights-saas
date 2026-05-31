@@ -23,6 +23,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/lib/state/toast-context";
 import { useTranslation } from "@/lib/hooks/useTranslation";
+import { CATEGORY_CONFIG } from "@/lib/types/mentoring-tracks";
+import type { TaskCategory } from "@/lib/types/mentoring-tracks";
 
 interface Task {
   _id: string;
@@ -33,6 +35,13 @@ interface Task {
   importance?: number;
   assigneeId?: string;
   assigneeName?: string;
+  // Track fields
+  trackId?: string;
+  trackTag?: string;        // "Sessão 1"
+  trackSessionId?: number;
+  category?: TaskCategory;
+  xpFixed?: number;         // XP fixo da trilha
+  bonus?: boolean;
 }
 
 interface MentoringKanbanBoardProps {
@@ -418,14 +427,45 @@ export function MentoringKanbanBoard({ workspaceId, isOwner = false, currentUser
                                   </div>
                                 )}
 
-                                {task.importance !== undefined && task.importance > 0 ? (
+                                {task.importance !== undefined && task.importance > 0 && !task.xpFixed ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 text-[9px] font-black uppercase tracking-wider">
                                     <Sparkles className="w-2.5 h-2.5 text-amber-500 animate-pulse" />
                                     {t("admin.mentoringKanban.xpReward", { xp: task.importance * 10 })}
                                   </span>
+                                ) : task.xpFixed !== undefined && task.xpFixed > 0 ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 text-[9px] font-black uppercase tracking-wider">
+                                    <Sparkles className="w-2.5 h-2.5 text-indigo-500 animate-pulse" />
+                                    +{task.xpFixed} XP
+                                  </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200/50 text-slate-500 text-[9px] font-bold">
                                     {t("admin.mentoringKanban.sideQuestXp")}
+                                  </span>
+                                )}
+
+                                {/* Track tag badge */}
+                                {task.trackTag && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 text-[9px] font-black uppercase tracking-wider">
+                                    <Target className="w-2.5 h-2.5" />
+                                    {task.trackTag}
+                                  </span>
+                                )}
+
+                                {/* Category badge */}
+                                {task.category && CATEGORY_CONFIG[task.category] && (
+                                  <span className={cn(
+                                    "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg border text-[9px] font-bold",
+                                    CATEGORY_CONFIG[task.category].bgColor,
+                                    CATEGORY_CONFIG[task.category].color
+                                  )}>
+                                    {CATEGORY_CONFIG[task.category].emoji}
+                                  </span>
+                                )}
+
+                                {/* Bonus badge */}
+                                {task.bonus && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-600 text-[9px] font-black">
+                                    ⭐ Bônus
                                   </span>
                                 )}
 

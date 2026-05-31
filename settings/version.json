@@ -1,0 +1,12 @@
+{
+  "gitRepo": "bt-template",
+  "nextVersion": "1.1.0",
+  "message": "No updates.",
+  "update": false,
+  "gitEmail": "bschindelheim@gmail.com",
+  "beta": false,
+  "version": "1.0.0",
+  "gitUser": "schindyguy",
+  "automaticUpdates": false,
+  "customNextSource": ""
+}

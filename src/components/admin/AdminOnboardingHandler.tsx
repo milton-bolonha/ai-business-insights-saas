@@ -30,7 +30,7 @@ export function AdminOnboardingHandler() {
 
                 // Duplicate guard: if we already have a workspace with this name, skip
                 const existingWorkspaces = useWorkspaceStore.getState().workspaces;
-                const workspaceName = data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
+                const workspaceName = data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
                 if (workspaceName && existingWorkspaces.some(w => w.name === workspaceName)) {
                     console.log(`[Onboarding] Workspace "${workspaceName}" already exists, skipping duplicate creation.`);
                     setIsProcessing(false);
@@ -55,6 +55,8 @@ export function AdminOnboardingHandler() {
                     await handleMentoringCreation(data);
                 } else if (type === "smart_survey") {
                     await handleSurveyCreation(data);
+                } else if (type === "ai_blog") {
+                    await handleBlogCreation(data);
                 }
 
                 push({
@@ -63,11 +65,11 @@ export function AdminOnboardingHandler() {
                     variant: "success"
                 });
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error("[Onboarding] Failed to process:", error);
                 push({
                     title: "Setup Failed",
-                    description: "Could not create workspace from your inputs. Please try creating one manually.",
+                    description: error?.message || "Could not create workspace from your inputs. Please try creating one manually.",
                     variant: "destructive"
                 });
             } finally {
@@ -376,6 +378,59 @@ export function AdminOnboardingHandler() {
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.error || "Failed to generate smart survey workspace");
+        }
+
+        const resData = await response.json();
+        if (resData.workspace) {
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
+    };
+
+    const handleBlogCreation = async (data: any) => {
+        const targetUrl = "/api/generate";
+        
+        // Ensure values are at least 2 chars to pass Zod validation
+        const safeString = (val: string | undefined, fallback: string) => {
+            const v = (val || "").trim();
+            return v.length >= 2 ? v : fallback;
+        };
+
+        const workspaceName = safeString(data.blog_name, "Meu Blog AI");
+        const authorName = safeString(data.blog_author, "Redator AI");
+        const description = safeString(data.blog_description, "Um blog gerado por inteligência artificial.");
+        const topics = safeString(data.blog_topics, "Tecnologia, Negócios");
+        
+        const payload = {
+            salesRepCompany: authorName,
+            salesRepWebsite: "https://io.blog",
+            solution: "AI Content Publishing",
+            targetCompany: workspaceName,
+            targetWebsite: "https://io.blog",
+            templateId: "template_ai_blog",
+            model: "gpt-4o-mini",
+            promptAgent: "ade_research_analyst",
+            responseLength: "long",
+            promptVariables: [
+                `blog_name:${workspaceName}`,
+                `blog_description:${description}`,
+                `blog_topics:${topics}`,
+                `blog_author:${authorName}`
+            ],
+            bulkPrompts: [],
+        };
+
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const details = err.details ? JSON.stringify(err.details) : "";
+            throw new Error(err.error ? `${err.error} ${details}` : "Failed to generate blog workspace");
         }
 
         const resData = await response.json();

@@ -119,6 +119,47 @@ const INDEX_DEFINITIONS = {
       options: { name: "idx_audit_timestamp" },
     },
   ] as Array<{ keys: Record<string, 1 | -1>; options: { name: string } }>,
+
+  mentoring_tracks: [
+    {
+      keys: { workspaceId: 1 },
+      options: { name: "idx_mentoring_tracks_workspace" },
+    },
+    {
+      keys: { isGlobalTemplate: 1 },
+      options: { name: "idx_mentoring_tracks_global" },
+    },
+    {
+      keys: { workspaceId: 1, isGlobalTemplate: 1 },
+      options: { name: "idx_mentoring_tracks_workspace_global" },
+    },
+  ] as Array<{ keys: Record<string, 1 | -1>; options: { name: string } }>,
+
+  mentoring_track_enrollments: [
+    {
+      keys: { workspaceId: 1, menteeUserId: 1 },
+      options: { name: "idx_enrollments_workspace_mentee" },
+    },
+    {
+      keys: { trackId: 1, menteeUserId: 1 },
+      options: { name: "idx_enrollments_track_mentee" },
+    },
+    {
+      keys: { menteeUserId: 1, status: 1 },
+      options: { name: "idx_enrollments_mentee_status" },
+    },
+  ] as Array<{ keys: Record<string, 1 | -1>; options: { name: string } }>,
+
+  mentoring_tasks: [
+    {
+      keys: { workspaceId: 1, trackId: 1 },
+      options: { name: "idx_mentoring_tasks_workspace_track" },
+    },
+    {
+      keys: { workspaceId: 1, assigneeId: 1 },
+      options: { name: "idx_mentoring_tasks_workspace_assignee" },
+    },
+  ] as Array<{ keys: Record<string, 1 | -1>; options: { name: string } }>,
 } as const;
 
 /**
@@ -220,8 +261,27 @@ export async function createIndexes(): Promise<void> {
       auditLogsCollection
     );
 
+    const mentoringTracksCollection = await getCollection("mentoring_tracks");
+    const mentoringTracksCreated = await createCollectionIndexes(
+      "mentoring_tracks" as any,
+      mentoringTracksCollection
+    );
+
+    const mentoringEnrollmentsCollection = await getCollection("mentoring_track_enrollments");
+    const mentoringEnrollmentsCreated = await createCollectionIndexes(
+      "mentoring_track_enrollments" as any,
+      mentoringEnrollmentsCollection
+    );
+
+    const mentoringTasksCollection = await getCollection("mentoring_tasks");
+    const mentoringTasksCreated = await createCollectionIndexes(
+      "mentoring_tasks" as any,
+      mentoringTasksCollection
+    );
+
     const totalCreated =
-      contactsCreated + notesCreated + tilesCreated + workspacesCreated + dashboardsCreated + auditLogsCreated;
+      contactsCreated + notesCreated + tilesCreated + workspacesCreated + dashboardsCreated + auditLogsCreated +
+      mentoringTracksCreated + mentoringEnrollmentsCreated + mentoringTasksCreated;
 
     console.log("[MongoDB] 🎉 Index creation completed!");
     console.log(

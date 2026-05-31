@@ -48,6 +48,8 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import { useUser } from "@clerk/nextjs";
 import { MentoringKanbanBoard } from "./MentoringKanbanBoard";
 import { MentoringScheduleBoard } from "./MentoringScheduleBoard";
+import { TrackBuilderBoard } from "./TrackBuilderBoard";
+import { TrackProgressView } from "./TrackProgressView";
 import { useTranslation } from "@/lib/hooks/useTranslation";
 
 const INVENTORY_ITEMS = [
@@ -97,7 +99,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
   const { user: clerkUser } = useUser();
   const authUser = useAuthStore((state) => state.user);
   const [activeSubTab, setActiveSubTab] = useState<"portfolio" | "edit">("portfolio");
-  const [mentoringSubTab, setMentoringSubTab] = useState<"dashboard" | "inventory" | "diary" | "tasks" | "schedule" | "projects" | "admin_controls">("dashboard");
+  const [mentoringSubTab, setMentoringSubTab] = useState<"dashboard" | "inventory" | "diary" | "tasks" | "schedule" | "projects" | "admin_controls" | "tracks">("dashboard");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<"owner" | "public" | "tracking">("owner");
@@ -1112,6 +1114,7 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
               { id: "diary", label: termDiary, icon: BookOpen },
               { id: "tasks", label: t("admin.mentoringProfile.tabs.tasks"), icon: ClipboardList },
               { id: "schedule", label: t("admin.mentoringProfile.tabs.schedule"), icon: CalendarDays },
+              { id: "tracks", label: locale === "pt" ? "Trilhas" : "Tracks", icon: Target },
               ...(role === "mentor" && viewMode === "owner" ? [{ id: "admin_controls", label: t("admin.mentoringProfile.tabs.mentorPanel"), icon: Shield }] : [])
             ].map(tab => {
               const Icon = tab.icon;
@@ -2023,6 +2026,21 @@ export function MentoringProfileBoard({ userId, isOwner = true, workspaceId }: M
                 </div>
               )}
 
+            </div>
+          )}
+
+          {/* 7. TRILHAS DE MENTORIA */}
+          {mentoringSubTab === "tracks" && workspaceId && (
+            <div className="animate-in fade-in duration-200">
+              {role === "mentor" && viewMode === "owner" ? (
+                <TrackBuilderBoard workspaceId={workspaceId} locale={locale} />
+              ) : (
+                <TrackProgressView
+                  userId={userId || authUser?.id || ""}
+                  workspaceId={workspaceId}
+                  locale={locale}
+                />
+              )}
             </div>
           )}
 

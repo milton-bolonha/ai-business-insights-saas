@@ -1,0 +1,704 @@
+import { useState, useRef } from "react";
+
+// ─── Paleta & estilos globais ────────────────────────────────────────────────
+const C = {
+  blue50: "#E6F1FB", blue100: "#B5D4F4", blue400: "#378ADD",
+  blue600: "#185FA5", blue800: "#0C447C", blue900: "#042C53",
+  green50: "#EAF3DE", green600: "#3B6D11", green800: "#27500A",
+  amber50: "#FAEEDA", amber600: "#854F0B", amber800: "#633806",
+  red50: "#FCEBEB", red600: "#A32D2D",
+  gray50: "#F1EFE8", gray100: "#D3D1C7", gray400: "#888780", gray600: "#5F5E5A",
+  teal50: "#E1F5EE", teal600: "#0F6E56", teal800: "#085041",
+};
+
+const styles = {
+  app: {
+    display: "flex", height: "100vh", fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+    background: "#F7F6F3", overflow: "hidden", fontSize: 14,
+  },
+  sidebar: {
+    width: 220, minWidth: 220, background: "#fff",
+    borderRight: "0.5px solid rgba(0,0,0,0.1)",
+    display: "flex", flexDirection: "column",
+  },
+  sidebarLogo: {
+    padding: "18px 16px 14px", borderBottom: "0.5px solid rgba(0,0,0,0.08)",
+  },
+  logoTitle: { fontSize: 15, fontWeight: 600, color: "#0C447C", margin: 0, letterSpacing: "-0.3px" },
+  logoSub: { fontSize: 11, color: C.gray400, margin: "2px 0 0" },
+  navLabel: { fontSize: 10, color: C.gray400, padding: "12px 16px 4px", textTransform: "uppercase", letterSpacing: "0.8px" },
+  navItem: (active) => ({
+    display: "flex", alignItems: "center", gap: 8, padding: "8px 16px",
+    fontSize: 13, cursor: "pointer", borderLeft: `2px solid ${active ? C.blue600 : "transparent"}`,
+    background: active ? C.blue50 : "transparent",
+    color: active ? C.blue800 : C.gray600,
+    fontWeight: active ? 500 : 400, transition: "all 0.15s",
+  }),
+  main: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
+  topbar: {
+    background: "#fff", borderBottom: "0.5px solid rgba(0,0,0,0.08)",
+    padding: "0 20px", height: 52, display: "flex", alignItems: "center",
+    justifyContent: "space-between",
+  },
+  topbarTitle: { fontSize: 15, fontWeight: 500, color: "#111" },
+  topbarActions: { display: "flex", gap: 8 },
+  btn: {
+    padding: "6px 14px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+    fontWeight: 500, border: "0.5px solid rgba(0,0,0,0.2)",
+    background: "#fff", color: "#111", display: "flex", alignItems: "center", gap: 5,
+  },
+  btnPrimary: {
+    padding: "6px 14px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+    fontWeight: 500, border: "none", background: C.blue600, color: "#fff",
+    display: "flex", alignItems: "center", gap: 5,
+  },
+  content: { flex: 1, overflowY: "auto", padding: 20 },
+  card: {
+    background: "#fff", border: "0.5px solid rgba(0,0,0,0.1)",
+    borderRadius: 12, padding: 16, marginBottom: 16,
+  },
+  cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  cardTitle: { fontSize: 13, fontWeight: 500, color: "#111", display: "flex", alignItems: "center", gap: 6 },
+  badge: (color) => ({
+    fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 500,
+    background: color === "red" ? C.red50 : color === "amber" ? C.amber50 : color === "blue" ? C.blue50 : C.green50,
+    color: color === "red" ? C.red600 : color === "amber" ? C.amber800 : color === "blue" ? C.blue800 : C.green800,
+  }),
+  tag: (color) => ({
+    display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11,
+    padding: "3px 9px", borderRadius: 20, fontWeight: 500, cursor: "pointer",
+    background: color === "blue" ? C.blue50 : color === "amber" ? C.amber50 : C.green50,
+    color: color === "blue" ? C.blue800 : color === "amber" ? C.amber800 : C.green800,
+  }),
+  statCard: {
+    background: "#F7F6F3", borderRadius: 8, padding: "10px 14px", flex: 1,
+  },
+  statValue: { fontSize: 24, fontWeight: 500, color: "#111" },
+  statLabel: { fontSize: 10, color: C.gray400, marginTop: 2 },
+  progressWrap: { background: "#EEE", borderRadius: 20, height: 5, overflow: "hidden", marginTop: 6 },
+  progressBar: (pct, color = C.blue600) => ({
+    height: "100%", borderRadius: 20, background: color, width: `${pct}%`, transition: "width 0.4s",
+  }),
+  aiBadge: {
+    display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11,
+    padding: "3px 9px", borderRadius: 20, background: C.blue50, color: C.blue800, fontWeight: 500,
+  },
+  aiMsgBot: {
+    fontSize: 12, lineHeight: 1.6, padding: "9px 12px", borderRadius: 10,
+    background: C.blue50, color: C.blue900, maxWidth: "90%",
+  },
+  aiMsgUser: {
+    fontSize: 12, lineHeight: 1.6, padding: "9px 12px", borderRadius: 10,
+    background: "#F1EFE8", color: "#111", maxWidth: "90%", alignSelf: "flex-end",
+  },
+};
+
+// ─── Dados mock ──────────────────────────────────────────────────────────────
+const EDITAIS = [
+  {
+    id: 1, nome: "FUNARTE — Artes Visuais 2025", tipo: "Exposição Individual",
+    prazo: "15/02/2025", progresso: 65, orgao: "FUNARTE", cor: "blue",
+    secoes: [
+      {
+        id: "s1", titulo: "Portifólio PDF — formato obrigatório", prioridade: "obrigatorio",
+        itens: ["Máximo 20 páginas, 10MB", "Fotos 300dpi, fundo neutro branco ou cinza", "Uma obra por página", 'Legenda: "Título". ANO. Técnica (suporte, materiais). Dimensão individual/total'],
+        contexto: "O portifólio é o primeiro item de eliminação. Erros de formato descartam automaticamente a inscrição.",
+      },
+      {
+        id: "s2", titulo: "Currículo artístico — máx. 2 páginas", prioridade: "obrigatorio",
+        itens: ["Formação acadêmica e artística", "Histórico de exposições individuais e coletivas", "Residências artísticas e intercâmbios", "Prêmios e reconhecimentos", "Contato e redes"],
+        contexto: "Deve estar em PDF separado do portifólio. Não há limite de anos, mas priorizem os últimos 10.",
+      },
+      {
+        id: "s3", titulo: "Dossiê do projeto — descrição completa", prioridade: "importante",
+        itens: ["Descrição do projeto em até 500 palavras", "Relevância social e histórica da obra", "Fotos com referência de escala", "Ficha técnica de cada obra", "Nome do edital, artista e ano na capa"],
+        contexto: "A banca avalia relevância social e coerência entre descrição e obras. Seja específico sobre o impacto.",
+      },
+      {
+        id: "s4", titulo: "Critérios de seleção e eliminação", prioridade: "atencao",
+        itens: ["Eliminatório: documentação incompleta ou fora do formato", "Eliminatório: portifólio com mais de 20 páginas", "Classificatório: clareza do projeto (0–40 pts)", "Classificatório: relevância social (0–30 pts)", "Classificatório: trajetória do artista (0–30 pts)"],
+        contexto: "Critérios básicos eliminam antes da avaliação de mérito. Verifique formato antes de enviar.",
+      },
+      {
+        id: "s5", titulo: "Premiação e contrapartidas", prioridade: "info",
+        itens: ["Prêmio único: R$ 25.000", "Exposição individual no espaço FUNARTE SP", "Produção de catálogo impresso", "Divulgação nos canais FUNARTE", "Sem obrigação de cessão de direitos"],
+        contexto: "O prêmio não é bolsa — é um valor único para custeio da exposição, incluindo montagem e desmontagem.",
+      },
+    ],
+    pic: { portifolio: true, inscricao: true, curriculo: false, dossie: false },
+    timeline: [
+      { texto: "Edital lido pela IA", data: "Hoje", status: "ok" },
+      { texto: "Portifólio enviado", data: "Ontem", status: "ok" },
+      { texto: "Dossiê em revisão", data: "Pendente", status: "warn" },
+      { texto: "Exportar PIC", data: "15/02/2025", status: "neutral" },
+    ],
+  },
+  {
+    id: 2, nome: "MAC-SP — Residência Artística", tipo: "Residência",
+    prazo: "28/02/2025", progresso: 100, orgao: "MAC-SP", cor: "green",
+    secoes: [], pic: { portifolio: true, inscricao: true, curriculo: true, dossie: true },
+    timeline: [
+      { texto: "Edital lido", data: "05/01", status: "ok" },
+      { texto: "PIC completo", data: "10/01", status: "ok" },
+      { texto: "Enviado", data: "12/01", status: "ok" },
+    ],
+  },
+];
+
+const CHAT_INICIAL = [
+  { role: "bot", text: "Olá! Analisei o edital da FUNARTE 2025. Encontrei 5 seções importantes, 2 critérios eliminatórios e o prazo é 15/02/2025. O que quer saber?" },
+];
+
+// ─── Componentes ─────────────────────────────────────────────────────────────
+function Badge({ tipo }) {
+  const map = {
+    obrigatorio: { label: "Obrigatório", color: "red" },
+    importante: { label: "Importante", color: "amber" },
+    atencao: { label: "Atenção", color: "amber" },
+    info: { label: "Informativo", color: "blue" },
+  };
+  const { label, color } = map[tipo] || { label: tipo, color: "blue" };
+  return <span style={styles.badge(color)}>{label}</span>;
+}
+
+function ProgressBar({ pct, color }) {
+  return (
+    <div style={styles.progressWrap}>
+      <div style={styles.progressBar(pct, color)} />
+    </div>
+  );
+}
+
+function SecaoItem({ secao }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ border: "0.5px solid rgba(0,0,0,0.1)", borderRadius: 8, overflow: "hidden", marginBottom: 6 }}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: open ? "#F7F6F3" : "#fff" }}
+      >
+        <Badge tipo={secao.prioridade} />
+        <span style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{secao.titulo}</span>
+        <span style={{ fontSize: 13, color: C.gray400, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+      </div>
+      {open && (
+        <div style={{ padding: "10px 14px", borderTop: "0.5px solid rgba(0,0,0,0.08)", background: "#FAFAF8" }}>
+          <div style={{ fontSize: 11, color: C.blue800, background: C.blue50, padding: "7px 10px", borderRadius: 6, marginBottom: 10, lineHeight: 1.5 }}>
+            💡 <strong>Contexto da IA:</strong> {secao.contexto}
+          </div>
+          <ul style={{ paddingLeft: 16, margin: 0 }}>
+            {secao.itens.map((item, i) => (
+              <li key={i} style={{ fontSize: 12, color: "#333", marginBottom: 4, lineHeight: 1.5 }}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PicItem({ label, sub, done, onToggle }) {
+  return (
+    <div
+      onClick={onToggle}
+      style={{
+        border: `0.5px solid ${done ? C.green600 : "rgba(0,0,0,0.1)"}`,
+        borderRadius: 8, padding: "10px 12px", cursor: "pointer",
+        background: done ? C.green50 : "#fff", transition: "all 0.15s",
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 500, color: done ? C.green800 : "#111", display: "flex", justifyContent: "space-between" }}>
+        {label}
+        <span style={{ color: done ? C.green600 : C.gray400, fontSize: 13 }}>{done ? "✓" : "○"}</span>
+      </div>
+      <div style={{ fontSize: 10, color: C.gray400, marginTop: 2 }}>{sub}</div>
+    </div>
+  );
+}
+
+function TimelineDot({ status }) {
+  const colors = { ok: C.green600, warn: "#BA7517", neutral: C.gray400 };
+  return <div style={{ width: 8, height: 8, borderRadius: "50%", background: colors[status], marginTop: 5, flexShrink: 0 }} />;
+}
+
+// ─── Tela: Painel ─────────────────────────────────────────────────────────────
+function PainelTab({ editais, setActiveTab, setEditalAtivo }) {
+  return (
+    <div style={{ display: "flex", gap: 16 }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+          {[
+            { v: editais.length, l: "Editais ativos", c: "#111" },
+            { v: editais.filter(e => e.progresso === 100).length, l: "PIC pronto", c: C.green600 },
+            { v: editais.filter(e => e.progresso < 100).length, l: "Em andamento", c: "#BA7517" },
+            { v: 12, l: "Dias até prazo", c: C.red600 },
+          ].map((s, i) => (
+            <div key={i} style={styles.statCard}>
+              <div style={{ ...styles.statValue, color: s.c }}>{s.v}</div>
+              <div style={styles.statLabel}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <div style={styles.cardTitle}>📁 Editais em andamento</div>
+          </div>
+          {editais.map(e => (
+            <div
+              key={e.id}
+              onClick={() => { setEditalAtivo(e.id); setActiveTab("edital"); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: 10, border: "0.5px solid rgba(0,0,0,0.1)", borderRadius: 8, marginBottom: 8, cursor: "pointer" }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: e.cor === "green" ? C.green50 : C.blue50, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                {e.cor === "green" ? "🏛" : "🏢"}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{e.nome}</div>
+                <div style={{ fontSize: 11, color: C.gray400 }}>{e.tipo} · Prazo: {e.prazo}</div>
+              </div>
+              <div style={{ textAlign: "right", minWidth: 70 }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: e.progresso === 100 ? C.green600 : "#BA7517" }}>{e.progresso}%</div>
+                <ProgressBar pct={e.progresso} color={e.progresso === 100 ? C.green600 : "#BA7517"} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <div style={styles.cardTitle}>✨ Análise IA — FUNARTE 2025</div>
+            <span style={styles.aiBadge}>IA ativa</span>
+          </div>
+          {EDITAIS[0].secoes.slice(0, 3).map(s => <SecaoItem key={s.id} secao={s} />)}
+        </div>
+      </div>
+
+      <div style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={styles.card}>
+          <div style={{ ...styles.cardTitle, marginBottom: 12 }}>📅 Cronograma</div>
+          {EDITAIS[0].timeline.map((t, i) => (
+            <div key={i} style={{ display: "flex", gap: 10, paddingBottom: 10, borderBottom: i < EDITAIS[0].timeline.length - 1 ? "0.5px solid rgba(0,0,0,0.07)" : "none", marginBottom: 8 }}>
+              <TimelineDot status={t.status} />
+              <div>
+                <div style={{ fontSize: 12 }}>{t.texto}</div>
+                <div style={{ fontSize: 10, color: C.gray400 }}>{t.data}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.card}>
+          <div style={{ ...styles.cardTitle, marginBottom: 10 }}>📂 PIC — progresso</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {Object.entries(EDITAIS[0].pic).map(([k, v]) => {
+              const labels = { portifolio: ["Portifólio", "PDF"], inscricao: ["Inscrição", "Formulário"], curriculo: ["Currículo", "Em andamento"], dossie: ["Dossiê", "Pendente"] };
+              return <PicItem key={k} label={labels[k][0]} sub={labels[k][1]} done={v} onToggle={() => {}} />;
+            })}
+          </div>
+          <ProgressBar pct={50} />
+          <div style={{ fontSize: 10, color: C.gray400, marginTop: 4 }}>2 de 4 itens concluídos</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tela: Leitura do Edital ──────────────────────────────────────────────────
+function EditalTab({ edital }) {
+  const [uploaded, setUploaded] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzed, setAnalyzed] = useState(edital?.id === 1);
+  const [filter, setFilter] = useState("todos");
+  const fileRef = useRef();
+
+  const handleUpload = () => {
+    setAnalyzing(true);
+    setTimeout(() => { setAnalyzing(false); setAnalyzed(true); setUploaded(true); }, 2200);
+  };
+
+  const secoes = edital?.secoes || [];
+  const filtradas = filter === "todos" ? secoes : secoes.filter(s => s.prioridade === filter);
+
+  return (
+    <div style={{ display: "flex", gap: 16 }}>
+      <div style={{ flex: 1 }}>
+        {!analyzed ? (
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <div style={styles.cardTitle}>📄 Carregar edital</div>
+            </div>
+            {!analyzing ? (
+              <div
+                onClick={() => fileRef.current.click()}
+                style={{ border: "0.5px dashed rgba(0,0,0,0.25)", borderRadius: 8, padding: 32, textAlign: "center", cursor: "pointer", background: "#F7F6F3" }}
+              >
+                <div style={{ fontSize: 36, marginBottom: 10 }}>📑</div>
+                <div style={{ fontWeight: 500, marginBottom: 4 }}>Arraste o PDF do edital ou clique para selecionar</div>
+                <div style={{ fontSize: 12, color: C.gray400, marginBottom: 16 }}>Suporta PDF, DOC, DOCX</div>
+                <button style={styles.btnPrimary} onClick={handleUpload}>Selecionar arquivo</button>
+                <input ref={fileRef} type="file" style={{ display: "none" }} onChange={handleUpload} />
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: 40 }}>
+                <div style={{ fontSize: 32, marginBottom: 16, animation: "spin 1s linear infinite" }}>⚙️</div>
+                <div style={{ fontWeight: 500, marginBottom: 6 }}>Analisando edital com IA...</div>
+                <div style={{ fontSize: 12, color: C.gray400, marginBottom: 20 }}>Extraindo seções, requisitos e prazos</div>
+                <div style={{ ...styles.progressWrap, maxWidth: 300, margin: "0 auto" }}>
+                  <div style={{ height: "100%", borderRadius: 20, background: C.blue600, width: "70%", transition: "width 0.4s" }} />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div style={{ ...styles.card, background: C.blue50, border: `0.5px solid ${C.blue100}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ fontSize: 28 }}>✅</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 500, color: C.blue900 }}>{edital?.nome}</div>
+                  <div style={{ fontSize: 12, color: C.blue600 }}>{edital?.tipo} · Prazo: {edital?.prazo} · {secoes.length} seções extraídas</div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <span style={styles.badge("red")}>2 eliminatórios</span>
+                  <span style={styles.badge("amber")}>3 importantes</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.card}>
+              <div style={styles.cardHeader}>
+                <div style={styles.cardTitle}>✨ Seções extraídas pela IA</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {["todos", "obrigatorio", "importante", "info"].map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      style={{ ...styles.btn, fontSize: 11, background: filter === f ? C.blue600 : "#fff", color: filter === f ? "#fff" : "#111", borderColor: filter === f ? C.blue600 : "rgba(0,0,0,0.2)" }}
+                    >
+                      {f === "todos" ? "Todos" : f === "obrigatorio" ? "Obrigatórios" : f === "importante" ? "Importantes" : "Informativos"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {filtradas.map(s => <SecaoItem key={s.id} secao={s} />)}
+              {filtradas.length === 0 && <div style={{ fontSize: 12, color: C.gray400, textAlign: "center", padding: 20 }}>Nenhuma seção nesta categoria.</div>}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ width: 280, flexShrink: 0 }}>
+        <div style={styles.card}>
+          <div style={{ ...styles.cardTitle, marginBottom: 10 }}>📊 Resumo do edital</div>
+          {[
+            { l: "Tipo de edital", v: edital?.tipo || "—" },
+            { l: "Órgão", v: edital?.orgao || "—" },
+            { l: "Prazo de inscrição", v: edital?.prazo || "—" },
+            { l: "Premiação", v: "R$ 25.000" },
+            { l: "Documentos exigidos", v: "4 itens" },
+            { l: "Critérios eliminatórios", v: "2" },
+          ].map((r, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: i < 5 ? "0.5px solid rgba(0,0,0,0.07)" : "none" }}>
+              <span style={{ fontSize: 12, color: C.gray400 }}>{r.l}</span>
+              <span style={{ fontSize: 12, fontWeight: 500 }}>{r.v}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.card}>
+          <div style={{ ...styles.cardTitle, marginBottom: 10 }}>⚠️ Pontos críticos</div>
+          {[
+            { txt: "Portifólio: exatamente 300dpi", tipo: "red" },
+            { txt: "Máximo 20 páginas no PDF", tipo: "red" },
+            { txt: "Dossiê: máx. 500 palavras", tipo: "amber" },
+            { txt: "Currículo separado do portifólio", tipo: "amber" },
+            { txt: "Incluir ficha técnica em cada obra", tipo: "amber" },
+          ].map((p, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 14 }}>{p.tipo === "red" ? "🔴" : "🟡"}</span>
+              <span style={{ fontSize: 12 }}>{p.txt}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tela: PIC ────────────────────────────────────────────────────────────────
+function PICTab({ edital }) {
+  const [pic, setPic] = useState({ portifolio: true, inscricao: true, curriculo: false, dossie: false });
+  const concluidos = Object.values(pic).filter(Boolean).length;
+  const total = Object.keys(pic).length;
+  const pct = Math.round((concluidos / total) * 100);
+
+  const toggle = (k) => setPic(p => ({ ...p, [k]: !p[k] }));
+
+  const items = [
+    {
+      key: "portifolio", label: "Portifólio", sub: "PDF com obras selecionadas",
+      itens: ["Capa com nome do artista e edital", "Fotos 300dpi, fundo neutro", "Uma obra por página", "Legenda técnica completa", "Máximo 20 páginas"],
+    },
+    {
+      key: "inscricao", label: "Ficha de inscrição", sub: "Formulário do edital",
+      itens: ["Capa com nome do edital e artista", "Nome do artista", "Ano de inscrição", "Descrição do projeto/obras", "Fotos com referência de escala", "Ficha técnica"],
+    },
+    {
+      key: "curriculo", label: "Currículo artístico", sub: "Trajetória profissional",
+      itens: ["Formação acadêmica e artística", "Exposições individuais", "Exposições coletivas", "Residências artísticas", "Intercâmbios", "Contato"],
+    },
+    {
+      key: "dossie", label: "Dossiê do projeto", sub: "Descrição e contexto da obra",
+      itens: ["Nome do edital na capa", "Descrição em até 500 palavras", "Relevância social e histórica", "Fotos das obras com escala", "Ficha técnica detalhada"],
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ ...styles.card, background: "#F7F6F3" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontWeight: 500, marginBottom: 4 }}>PIC — {edital?.nome || "Edital selecionado"}</div>
+            <div style={{ fontSize: 12, color: C.gray400 }}>{concluidos} de {total} documentos concluídos</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 28, fontWeight: 500, color: pct === 100 ? C.green600 : C.blue600 }}>{pct}%</div>
+          </div>
+        </div>
+        <ProgressBar pct={pct} color={pct === 100 ? C.green600 : C.blue600} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {items.map(item => (
+          <div key={item.key} style={{ ...styles.card, border: `0.5px solid ${pic[item.key] ? C.green600 : "rgba(0,0,0,0.1)"}`, background: pic[item.key] ? C.green50 : "#fff" }}>
+            <div style={styles.cardHeader}>
+              <div style={styles.cardTitle}>
+                <span style={{ fontSize: 16 }}>{pic[item.key] ? "✅" : "📋"}</span>
+                {item.label}
+              </div>
+              <button
+                onClick={() => toggle(item.key)}
+                style={{ ...styles.btn, fontSize: 11, background: pic[item.key] ? C.green600 : "#fff", color: pic[item.key] ? "#fff" : "#111" }}
+              >
+                {pic[item.key] ? "Concluído" : "Marcar pronto"}
+              </button>
+            </div>
+            <div style={{ fontSize: 11, color: C.gray400, marginBottom: 10 }}>{item.sub}</div>
+            <ul style={{ paddingLeft: 16, margin: 0 }}>
+              {item.itens.map((it, i) => (
+                <li key={i} style={{ fontSize: 12, marginBottom: 4, color: "#333" }}>{it}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tela: Exportar ───────────────────────────────────────────────────────────
+function ExportarTab() {
+  const [exported, setExported] = useState({});
+  const docs = [
+    { key: "portifolio", nome: "Portifólio completo", desc: "PDF com todas as obras selecionadas, capas e fichas técnicas", tamanho: "~8MB", paginas: 20, cor: "blue" },
+    { key: "curriculo", nome: "Currículo artístico", desc: "Trajetória formatada conforme padrão do edital", tamanho: "~0.5MB", paginas: 2, cor: "teal" },
+    { key: "dossie", nome: "Dossiê do projeto", desc: "Descrição, contexto e imagens da obra", tamanho: "~3MB", paginas: 6, cor: "amber" },
+    { key: "pic_completo", nome: "PIC completo (todos)", desc: "Portifólio + Inscrição + Currículo em único arquivo", tamanho: "~12MB", paginas: 28, cor: "blue" },
+  ];
+
+  return (
+    <div>
+      <div style={{ ...styles.card, background: C.blue50, border: `0.5px solid ${C.blue100}`, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 24 }}>📤</span>
+          <div>
+            <div style={{ fontWeight: 500, color: C.blue900 }}>Exportar PIC — FUNARTE 2025</div>
+            <div style={{ fontSize: 12, color: C.blue600 }}>Gere os PDFs formatados conforme exigências do edital. Prazo: 15/02/2025</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {docs.map(doc => (
+          <div key={doc.key} style={{ ...styles.card, border: `0.5px solid ${exported[doc.key] ? C.green600 : "rgba(0,0,0,0.1)"}` }}>
+            <div style={styles.cardHeader}>
+              <div style={styles.cardTitle}>
+                <span style={{ fontSize: 20 }}>{exported[doc.key] ? "✅" : "📄"}</span>
+                {doc.nome}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: C.gray400, marginBottom: 10, lineHeight: 1.5 }}>{doc.desc}</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <span style={styles.tag("blue")}>{doc.paginas} págs</span>
+              <span style={styles.tag("blue")}>{doc.tamanho}</span>
+            </div>
+            <button
+              onClick={() => setExported(e => ({ ...e, [doc.key]: true }))}
+              style={{ ...styles.btnPrimary, width: "100%", justifyContent: "center", background: exported[doc.key] ? C.green600 : C.blue600 }}
+            >
+              {exported[doc.key] ? "✓ Exportado" : "⬇ Gerar PDF"}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ ...styles.card, marginTop: 16 }}>
+        <div style={{ ...styles.cardTitle, marginBottom: 12 }}>📋 Checklist final de envio</div>
+        {[
+          { txt: "Portifólio: 300dpi, fundo neutro, máx. 20 págs", ok: true },
+          { txt: "Currículo separado, máx. 2 págs", ok: true },
+          { txt: "Dossiê: descrição em até 500 palavras", ok: false },
+          { txt: "Fichas técnicas em todas as obras", ok: true },
+          { txt: "Capa com nome do edital em cada documento", ok: false },
+          { txt: "Tamanho total abaixo de 10MB por arquivo", ok: true },
+        ].map((c, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < 5 ? "0.5px solid rgba(0,0,0,0.07)" : "none" }}>
+            <span style={{ fontSize: 14 }}>{c.ok ? "✅" : "⬜"}</span>
+            <span style={{ fontSize: 12, color: c.ok ? "#111" : C.gray400 }}>{c.txt}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tela: Chat IA ────────────────────────────────────────────────────────────
+function ChatIA({ editalNome }) {
+  const [msgs, setMsgs] = useState(CHAT_INICIAL);
+  const [input, setInput] = useState("");
+
+  const respostas = {
+    "falta": "No PIC do FUNARTE 2025, faltam 2 itens: Currículo artístico e Dossiê do projeto. O currículo deve ter no máximo 2 páginas e o dossiê deve descrever o projeto em até 500 palavras com ênfase na relevância social.",
+    "prazo": "O prazo de inscrição para FUNARTE — Artes Visuais 2025 é 15/02/2025 às 18h (horário de Brasília). Envie com antecedência pois o sistema pode travar próximo ao prazo.",
+    "formato": "O portifólio deve ser em PDF, máximo 20 páginas e 10MB. Fotos em 300dpi, fundo neutro (branco ou cinza claro), uma obra por página. Legenda: 'Título'. ANO. Técnica (suporte, materiais). Dimensão individual/total.",
+    "eliminatorio": "Há 2 critérios eliminatórios: 1) Documentação incompleta ou fora do formato (portifólio com mais de 20 páginas, por ex.) e 2) Ausência de qualquer documento obrigatório. Estes eliminam antes da avaliação de mérito.",
+    "premio": "O prêmio é R$ 25.000 (valor único, não é bolsa). Inclui exposição individual no espaço FUNARTE SP, produção de catálogo impresso e divulgação nos canais. Não há cessão de direitos autorais.",
+  };
+
+  const responder = (q) => {
+    const lower = q.toLowerCase();
+    const chave = Object.keys(respostas).find(k => lower.includes(k));
+    return chave ? respostas[chave] : `Sobre "${q}" no contexto de ${editalNome}: recomendo verificar diretamente a seção correspondente no edital. Posso ajudar com prazo, formato do portifólio, critérios eliminatórios ou premiação.`;
+  };
+
+  const enviar = () => {
+    if (!input.trim()) return;
+    const pergunta = input.trim();
+    setMsgs(m => [...m, { role: "user", text: pergunta }]);
+    setInput("");
+    setTimeout(() => setMsgs(m => [...m, { role: "bot", text: responder(pergunta) }]), 700);
+  };
+
+  return (
+    <div style={styles.card}>
+      <div style={{ ...styles.cardTitle, marginBottom: 12 }}>💬 Perguntar à IA sobre o edital</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12, maxHeight: 240, overflowY: "auto" }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+            <div style={m.role === "bot" ? styles.aiMsgBot : styles.aiMsgUser}>{m.text}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        <input
+          value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && enviar()}
+          placeholder="O que falta no meu PIC?"
+          style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "0.5px solid rgba(0,0,0,0.2)", fontSize: 12, outline: "none" }}
+        />
+        <button onClick={enviar} style={{ ...styles.btnPrimary, padding: "8px 14px" }}>→</button>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+        {["O que falta no PIC?", "Qual o prazo?", "Formato do portifólio", "Critérios eliminatórios", "Qual o prêmio?"].map(q => (
+          <span key={q} style={styles.tag("blue")} onClick={() => { setInput(q); }}>{q}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── App principal ────────────────────────────────────────────────────────────
+export default function ArtEdital() {
+  const [activeTab, setActiveTab] = useState("painel");
+  const [editalAtivo, setEditalAtivo] = useState(1);
+
+  const edital = EDITAIS.find(e => e.id === editalAtivo) || EDITAIS[0];
+
+  const tabs = [
+    { key: "painel", label: "Painel", icon: "🏠" },
+    { key: "edital", label: "Edital", icon: "📄" },
+    { key: "pic", label: "PIC", icon: "📂" },
+    { key: "exportar", label: "Exportar", icon: "⬇" },
+  ];
+
+  const topTitles = {
+    painel: "Painel do artista",
+    edital: "Leitura do edital por IA",
+    pic: "Montagem do PIC",
+    exportar: "Exportar materiais",
+  };
+
+  return (
+    <div style={styles.app}>
+      <div style={styles.sidebar}>
+        <div style={styles.sidebarLogo}>
+          <div style={styles.logoTitle}>🎨 ArtEdital</div>
+          <div style={styles.logoSub}>Gestão de editais para artistas</div>
+        </div>
+
+        <div style={{ padding: "4px 0" }}>
+          <div style={styles.navLabel}>Principal</div>
+          {tabs.map(t => (
+            <div key={t.key} style={styles.navItem(activeTab === t.key)} onClick={() => setActiveTab(t.key)}>
+              <span>{t.icon}</span> {t.label}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: "4px 0" }}>
+          <div style={styles.navLabel}>Editais</div>
+          {EDITAIS.map(e => (
+            <div
+              key={e.id}
+              style={{ ...styles.navItem(editalAtivo === e.id && activeTab === "edital"), fontSize: 12 }}
+              onClick={() => { setEditalAtivo(e.id); setActiveTab("edital"); }}
+            >
+              <span>{e.progresso === 100 ? "✅" : "📋"}</span>
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.orgao}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ padding: "12px 16px", borderTop: "0.5px solid rgba(0,0,0,0.08)" }}>
+          <span style={styles.aiBadge}>✨ IA ativa</span>
+          <div style={{ fontSize: 11, color: C.gray400, marginTop: 4 }}>Ana Lima · Artista Visual</div>
+        </div>
+      </div>
+
+      <div style={styles.main}>
+        <div style={styles.topbar}>
+          <div style={styles.topbarTitle}>{topTitles[activeTab]}</div>
+          <div style={styles.topbarActions}>
+            <button style={styles.btn} onClick={() => setActiveTab("edital")}>+ Novo edital</button>
+            <button style={styles.btnPrimary} onClick={() => setActiveTab("exportar")}>⬇ Exportar PIC</button>
+          </div>
+        </div>
+
+        <div style={styles.content}>
+          {activeTab === "painel" && <PainelTab editais={EDITAIS} setActiveTab={setActiveTab} setEditalAtivo={setEditalAtivo} />}
+          {activeTab === "edital" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              <EditalTab edital={edital} />
+              <ChatIA editalNome={edital?.nome} />
+            </div>
+          )}
+          {activeTab === "pic" && <PICTab edital={edital} />}
+          {activeTab === "exportar" && <ExportarTab />}
+        </div>
+      </div>
+    </div>
+  );
+}

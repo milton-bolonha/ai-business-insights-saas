@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { useTranslation } from "@/lib/hooks/useTranslation";
 
-export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey";
+export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey" | "blog";
 
 interface AdminNavigationProps {
     activeTab: NavTab;
@@ -85,19 +85,20 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
     const isLogistics = templateId === "template_furniture_logistics";
     const isLayout = templateId === "template_furniture_layout";
     const isSurvey = templateId === "template_smart_survey";
+    const isBlog = templateId === "template_ai_blog";
 
     // Theme Colors
     const theme = {
-        primary: isTrade || isSurvey ? "emerald" : isWriters ? "pink" : isFurniture ? "sky" : "blue",
-        colorCode: isTrade || isSurvey ? "#10b981" : isWriters ? "#e11d48" : isFurniture ? "#0ea5e9" : "#2563eb",
-        bgLight: isTrade || isSurvey ? "bg-emerald-50" : isWriters ? "bg-pink-50" : isFurniture ? "bg-sky-50" : "bg-blue-50",
-        textPrimary: isTrade || isSurvey ? "text-emerald-600" : isWriters ? "text-pink-600" : isFurniture ? "text-sky-600" : "text-blue-600",
-        textHover: isTrade || isSurvey ? "hover:text-emerald-400" : isWriters ? "hover:text-pink-400" : isFurniture ? "hover:text-sky-400" : "hover:text-blue-400",
-        borderActive: isTrade || isSurvey ? "bg-emerald-600" : isWriters ? "bg-pink-600" : isFurniture ? "bg-sky-600" : "bg-blue-600",
-        shadow: isTrade || isSurvey ? "shadow-emerald-200" : isWriters ? "shadow-pink-200" : isFurniture ? "shadow-sky-200" : "shadow-blue-200",
+        primary: isTrade || isSurvey ? "emerald" : isWriters ? "pink" : isFurniture ? "sky" : isBlog ? "violet" : "blue",
+        colorCode: isTrade || isSurvey ? "#10b981" : isWriters ? "#e11d48" : isFurniture ? "#0ea5e9" : isBlog ? "#8b5cf6" : "#2563eb",
+        bgLight: isTrade || isSurvey ? "bg-emerald-50" : isWriters ? "bg-pink-50" : isFurniture ? "bg-sky-50" : isBlog ? "bg-violet-50" : "bg-blue-50",
+        textPrimary: isTrade || isSurvey ? "text-emerald-600" : isWriters ? "text-pink-600" : isFurniture ? "text-sky-600" : isBlog ? "text-violet-600" : "text-blue-600",
+        textHover: isTrade || isSurvey ? "hover:text-emerald-400" : isWriters ? "hover:text-pink-400" : isFurniture ? "hover:text-sky-400" : isBlog ? "hover:text-violet-400" : "hover:text-blue-400",
+        borderActive: isTrade || isSurvey ? "bg-emerald-600" : isWriters ? "bg-pink-600" : isFurniture ? "bg-sky-600" : isBlog ? "bg-violet-600" : "bg-blue-600",
+        shadow: isTrade || isSurvey ? "shadow-emerald-200" : isWriters ? "shadow-pink-200" : isFurniture ? "shadow-sky-200" : isBlog ? "shadow-violet-200" : "shadow-blue-200",
     };
 
-    const LogoIcon = isTrade ? FaGavel : isWriters ? BookOpen : isFurniture ? ShoppingBag : PieChart;
+    const LogoIcon = isTrade ? FaGavel : isWriters ? BookOpen : isFurniture ? ShoppingBag : isBlog ? Sparkles : PieChart;
 
     const isMentoring = templateId === "template_io_mentoring";
     const isMentee = isMentoring && currentUserRole === "mentee";
@@ -106,6 +107,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
         ...(isWriters ? [{ id: "library", label: t("admin.navigation.tabs.library"), icon: Library }] : []),
         ...(isTrade ? [{ id: "ranking", label: t("admin.navigation.tabs.ranking"), icon: FaGavel }] : []),
         ...(isSurvey ? [{ id: "survey", label: t("admin.navigation.tabs.survey"), icon: ClipboardList }] : []),
+        ...(isBlog ? [{ id: "blog", label: "Blog Engine", icon: Sparkles }] : []),
 
         ...(isFurniture ? [
             { id: "store", label: t("admin.navigation.tabs.store"), icon: ShoppingBag },

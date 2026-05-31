@@ -1,0 +1,13 @@
+{
+  "successMessage": "Thank you for your message. We will reach you soon.",
+  "feedbackSubject": "Message Request",
+  "siteUrl": "https://boilerplate-times.netlify.app",
+  "footerText": "Disclaimer: The content provided on this site is intended for general information purposes only and should not be considered a replacement for professional financial and/or medical advice. All materials, including text, graphics, images, and information, are subject to change without prior notice. The information, materials, terms, conditions, and descriptions presented on these pages are subject to change without prior notice.",
+  "postsToShow": 9,
+  "scope": "",
+  "darkModeSwitcher": false,
+  "feedbackEmail": "general@boilerplate-times.netlify.app",
+  "publishedDate": "2024-01-01 23:44:00",
+  "i18n": "en-us",
+  "errorMessage": "Hmm... something is wrong, try again later or e-mail us: general@boilerplate-times.netlify.app"
+}
