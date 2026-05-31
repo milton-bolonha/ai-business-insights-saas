@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useLanguageStore, MESSAGES_MAP, Locale } from "../stores/languageStore";
+import { useLanguageStore, type Locale } from "../stores/languageStore";
 
 type TranslationParams = Record<string, string | number>;
 

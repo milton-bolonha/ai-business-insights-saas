@@ -6,10 +6,27 @@ import React from "react";
 import type { useSmartSurveyBoard } from "@/containers/admin/smart-survey/useSmartSurveyBoard";
 import { SmartSurveyHeader } from "./components/SmartSurveyHeader";
 import { CompanyDirectoryView } from "./components/CompanyDirectoryView";
-import { CompanyDetailView } from "./components/CompanyDetailView";
-import { SurveyFormOverlay } from "./components/SurveyFormOverlay";
-import { CreateCompanyModal } from "./components/CreateCompanyModal";
-import { MethodologyModal } from "./components/MethodologyModal";
+import dynamic from "next/dynamic";
+
+const CompanyDetailView = dynamic(
+  () => import("./components/CompanyDetailView").then((m) => m.CompanyDetailView),
+  { ssr: false }
+);
+
+const SurveyFormOverlay = dynamic(
+  () => import("./components/SurveyFormOverlay").then((m) => m.SurveyFormOverlay),
+  { ssr: false }
+);
+
+const CreateCompanyModal = dynamic(
+  () => import("./components/CreateCompanyModal").then((m) => m.CreateCompanyModal),
+  { ssr: false }
+);
+
+const MethodologyModal = dynamic(
+  () => import("./components/MethodologyModal").then((m) => m.MethodologyModal),
+  { ssr: false }
+);
 
 export type SmartSurveyBoardViewProps = ReturnType<typeof useSmartSurveyBoard>;
 

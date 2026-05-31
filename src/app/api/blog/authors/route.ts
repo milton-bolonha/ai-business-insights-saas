@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     });
 
-    const newAuthor = await db.findOne("blog_authors", { _id: newAuthorId });
+    const { ObjectId } = await import("mongodb");
+    const newAuthor = await db.findOne("blog_authors", { _id: new ObjectId(newAuthorId) as any });
     return NextResponse.json({ author: newAuthor });
   } catch (error: any) {
     console.error("[BlogAuthors_POST]", error);

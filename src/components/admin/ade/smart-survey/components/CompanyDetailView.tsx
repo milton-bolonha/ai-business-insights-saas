@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldAlert, Activity, Building2, Users, User2, PlayCircle, CheckCircle2, AlertTriangle, TrendingUp, Plus, Trash2, HelpCircle, Briefcase, Calculator, SplitSquareHorizontal, BrainCircuit, RefreshCw, ShieldCheck, Check, Settings, UserCheck, ClipboardList, Send, Calendar, DollarSign, LineChart, X } from "lucide-react";
+import { ShieldAlert, Activity, Building2, Users, User2, PlayCircle, CheckCircle2, AlertTriangle, TrendingUp, Plus, Trash2, HelpCircle, Briefcase, Calculator, SplitSquareHorizontal, BrainCircuit, RefreshCw, ShieldCheck, Check, Settings, UserCheck, ClipboardList, Send, Calendar, DollarSign, LineChart, BarChart2, List, X } from "lucide-react";
 import type { SmartSurveyBoardViewProps } from "../SmartSurveyBoardView";
 import { CollaboratorDetailPanel } from "./CollaboratorDetailPanel";
 import { IntervieweePortal } from "./IntervieweePortal";
@@ -602,7 +602,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                             type="number"
                             min="0"
                             value={logApresentacoes}
-                            onChange={e => setLogApresentacoes(parseInt(e.target.value) || 0)}
+                            onChange={e => setLogApresentacoes(e.target.value)}
                             className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                           />
                         </div>
@@ -614,7 +614,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                             type="number"
                             min="0"
                             value={logQtdVendas}
-                            onChange={e => setLogQtdVendas(parseInt(e.target.value) || 0)}
+                            onChange={e => setLogQtdVendas(e.target.value)}
                             className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                           />
                         </div>
@@ -629,7 +629,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                           step="0.01"
                           min="0"
                           value={logFaturamento}
-                          onChange={e => setLogFaturamento(parseFloat(e.target.value) || 0)}
+                          onChange={e => setLogFaturamento(e.target.value)}
                           className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500"
                         />
                       </div>
@@ -655,14 +655,14 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                       </div>
                       <div className="flex bg-neutral-100 rounded-xl p-1">
                         <button
-                          onClick={() => setContinuousViewTab("timeline")}
-                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer ${continuousViewTab === 'timeline' ? 'bg-white shadow-sm text-neutral-800' : 'text-neutral-500 hover:text-neutral-700'}`}
+                          onClick={() => setContinuousViewTab("consolidated")}
+                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer ${continuousViewTab === 'consolidated' ? 'bg-white shadow-sm text-neutral-800' : 'text-neutral-500 hover:text-neutral-700'}`}
                         >
                           {t("admin.smartSurvey.detailView.timeline")}
                         </button>
                         <button
-                          onClick={() => setContinuousViewTab("entries")}
-                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer ${continuousViewTab === 'entries' ? 'bg-white shadow-sm text-neutral-800' : 'text-neutral-500 hover:text-neutral-700'}`}
+                          onClick={() => setContinuousViewTab("history")}
+                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors cursor-pointer ${continuousViewTab === 'history' ? 'bg-white shadow-sm text-neutral-800' : 'text-neutral-500 hover:text-neutral-700'}`}
                         >
                           {t("admin.smartSurvey.detailView.entries")}
                         </button>
@@ -670,7 +670,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                     </div>
 
                     {/* Scope toggle (Daily, Weekly, Monthly) displayed only in Consolidated Mode */}
-                    {continuousViewTab === "timeline" && (
+                    {continuousViewTab === "consolidated" && (
                       <div className="flex items-center justify-between bg-neutral-50 p-3 rounded-2xl border border-neutral-100">
                         <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-2">
                           {t("admin.smartSurvey.detailView.groupByPeriod")}
@@ -689,7 +689,7 @@ export function CompanyDetailView(props: SmartSurveyBoardViewProps) {
                       </div>
                     )}
 
-                    {continuousViewTab === "timeline" ? (
+                    {continuousViewTab === "consolidated" ? (
                       aggregatedLogs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-neutral-400 space-y-2 border border-dashed border-neutral-200 rounded-2xl bg-neutral-50/50">
                           <BarChart2 size={24} className="text-neutral-300" />

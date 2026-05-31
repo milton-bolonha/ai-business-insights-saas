@@ -76,6 +76,7 @@ export interface ContinuousLog {
   qtdVendas: number;
   apresentacoes: number;
   faturamento: number;
+  deletedAt?: string;
 }
 
 export type SurveyTemplateType = "nr1_compliance" | "continuous_reporting" | "todo_algorithm";

@@ -48,6 +48,7 @@ export function BookWriterView({
   } | null>(null);
   const previewUrlRef = useRef<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debug: Log content for troubleshooting
   useEffect(() => {
@@ -114,10 +115,20 @@ export function BookWriterView({
       }
     };
 
-    createPreview();
+    // Debounce the preview compilation by 800ms to allow layout/state stabilization
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    setPreviewLoading(true);
+    debounceTimerRef.current = setTimeout(() => {
+      createPreview();
+    }, 800);
 
     return () => {
       cancelled = true;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       if (previewUrlRef.current) {
         URL.revokeObjectURL(previewUrlRef.current);
         previewUrlRef.current = null;

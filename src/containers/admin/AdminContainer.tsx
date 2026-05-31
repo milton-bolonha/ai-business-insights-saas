@@ -3,6 +3,7 @@
 import { useCallback, useRef, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
+import dynamic from "next/dynamic";
 
 import { useToast } from "@/lib/state/toast-context";
 import { AdminShellAde } from "@/components/admin/ade/AdminShellAde";
@@ -23,32 +24,96 @@ import { PaymentEmailModal } from "@/components/ui/PaymentEmailModal";
 import { TileDetailModal } from "@/components/ui/prompt-tiles/TileDetailModal";
 import { ContactDetailModal } from "@/components/admin/ade/ContactDetailModal";
 import { WorkspaceDetailModal } from "@/components/admin/ade/WorkspaceDetailModal";
-import { BookReaderModal } from "@/components/admin/ade/BookReaderModal";
-import { BookWriterView } from "@/components/love-writers/BookWriterView";
-import { BookLibrarySection } from "@/components/love-writers/BookLibrarySection";
 import { AdminNavigation, type NavTab } from "@/components/admin/ade/AdminNavigation";
-import { LogisticsBoard } from "@/components/admin/ade/LogisticsBoard";
-import { StoreLayoutGrid } from "@/components/admin/ade/StoreLayoutGrid";
 import { AddOrderModal } from "@/components/admin/ade/AddOrderModal";
-import { FurnitureStoreBoard } from "@/components/admin/ade/FurnitureStoreBoard";
-import { FurniturePublicStore } from "@/components/admin/ade/FurniturePublicStore";
 import { AddProductModal } from "@/components/admin/ade/AddProductModal";
-import { ClientsBoard } from "@/components/admin/ade/ClientsBoard";
-import { StaffBoard } from "@/components/admin/ade/StaffBoard";
-import { FurnitureAnalyticsBoard } from "@/components/admin/ade/FurnitureAnalyticsBoard";
 import { AdminChatView } from "@/components/admin/chat/AdminChatView";
 import { ChatBoard } from "@/components/admin/ade/ChatBoard";
 import { VoiceAssistantOverlay } from "@/components/admin/chat/VoiceAssistantOverlay";
 import { SaaSLimitsModal } from "@/components/admin/ade/SaaSLimitsModal";
-import { GlobalUsersBoard } from "@/components/admin/ade/GlobalUsersBoard";
-import { MembersBoard } from "@/components/admin/ade/MembersBoard";
-import { MentoringKanbanBoard } from "@/components/admin/ade/MentoringKanbanBoard";
-import { MentoringScheduleBoard } from "@/components/admin/ade/MentoringScheduleBoard";
-import { MentoringInsightsBoard } from "@/components/admin/ade/MentoringInsightsBoard";
-import { MentoringProfileBoard } from "@/components/admin/ade/MentoringProfileBoard";
-import { SmartSurveyBoard } from "@/components/admin/ade/SmartSurveyBoard";
-import { AiBlogBoard } from "@/modules/ai-blog/components/AiBlogBoard";
 import { useTranslation } from "@/lib/hooks/useTranslation";
+
+// ---------------------------------------------------------------------------
+// Heavy tab-specific boards — loaded lazily so they don't inflate the initial
+// bundle. Each is only ever rendered when its tab is active.
+// ---------------------------------------------------------------------------
+const BoardSkeleton = () => (
+  <div className="w-full h-64 animate-pulse rounded-xl bg-white/5" />
+);
+
+const BookReaderModal = dynamic(
+  () => import("@/components/admin/ade/BookReaderModal").then(m => ({ default: m.BookReaderModal })),
+  { ssr: false }
+);
+const BookWriterView = dynamic(
+  () => import("@/components/love-writers/BookWriterView").then(m => ({ default: m.BookWriterView })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const BookLibrarySection = dynamic(
+  () => import("@/components/love-writers/BookLibrarySection").then(m => ({ default: m.BookLibrarySection })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const LogisticsBoard = dynamic(
+  () => import("@/components/admin/ade/LogisticsBoard").then(m => ({ default: m.LogisticsBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const StoreLayoutGrid = dynamic(
+  () => import("@/components/admin/ade/StoreLayoutGrid").then(m => ({ default: m.StoreLayoutGrid })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const FurnitureStoreBoard = dynamic(
+  () => import("@/components/admin/ade/FurnitureStoreBoard").then(m => ({ default: m.FurnitureStoreBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const FurniturePublicStore = dynamic(
+  () => import("@/components/admin/ade/FurniturePublicStore").then(m => ({ default: m.FurniturePublicStore })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const ClientsBoard = dynamic(
+  () => import("@/components/admin/ade/ClientsBoard").then(m => ({ default: m.ClientsBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const StaffBoard = dynamic(
+  () => import("@/components/admin/ade/StaffBoard").then(m => ({ default: m.StaffBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const FurnitureAnalyticsBoard = dynamic(
+  () => import("@/components/admin/ade/FurnitureAnalyticsBoard").then(m => ({ default: m.FurnitureAnalyticsBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const GlobalUsersBoard = dynamic(
+  () => import("@/components/admin/ade/GlobalUsersBoard").then(m => ({ default: m.GlobalUsersBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const MembersBoard = dynamic(
+  () => import("@/components/admin/ade/MembersBoard").then(m => ({ default: m.MembersBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const MentoringKanbanBoard = dynamic(
+  () => import("@/components/admin/ade/MentoringKanbanBoard").then(m => ({ default: m.MentoringKanbanBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const MentoringScheduleBoard = dynamic(
+  () => import("@/components/admin/ade/MentoringScheduleBoard").then(m => ({ default: m.MentoringScheduleBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const MentoringInsightsBoard = dynamic(
+  () => import("@/components/admin/ade/MentoringInsightsBoard").then(m => ({ default: m.MentoringInsightsBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const MentoringProfileBoard = dynamic(
+  () => import("@/components/admin/ade/MentoringProfileBoard").then(m => ({ default: m.MentoringProfileBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const SmartSurveyBoard = dynamic(
+  () => import("@/components/admin/ade/SmartSurveyBoard").then(m => ({ default: m.SmartSurveyBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+const AiBlogBoard = dynamic(
+  () => import("@/modules/ai-blog/components/AiBlogBoard").then(m => ({ default: m.AiBlogBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+
 
 // Zustand stores
 import {
@@ -646,20 +711,7 @@ export function AdminContainer() {
     }
   }, []);
 
-  // Debug current state
-  console.log("[DEBUG] AdminContainer state:", {
-    hydrated,
-    auth: { isGuest: auth.isGuest, user: auth.user },
-    currentWorkspace: currentWorkspace?.id,
-    currentDashboard: currentDashboard?.id,
-    currentDashboardName: currentDashboard?.name,
-    currentDashboardBgColor: currentDashboard?.bgColor,
-    workspacesCount: workspaces.length,
-    hasContent: !!content,
-    contentTiles: content?.tiles?.length || 0,
-    contentContacts: content?.contacts?.length || 0,
-    contentNotes: content?.notes?.length || 0,
-  });
+  // (Debug logs removed — were firing on every render)
 
   // Convert workspaces to sidebar format
   const workspacesForSidebar = workspaces.map((ws) => ({
@@ -692,14 +744,6 @@ export function AdminContainer() {
 
   // Event handlers
   const handleContactsChanged = useCallback(async () => {
-    // Refresh contacts by calling workspace API to get fresh data
-    console.log("[AdminContainer] 🔄 Refreshing contacts after change");
-    console.log("[AdminContainer] Current dashboard state:", {
-      hasCurrentWorkspace: !!currentWorkspace,
-      hasCurrentDashboard: !!currentDashboard,
-      workspaceId: currentWorkspace?.id,
-      dashboardId: currentDashboard?.id,
-    });
 
     try {
       // Load fresh dashboard data directly from localStorage
@@ -737,14 +781,6 @@ export function AdminContainer() {
   }, [currentWorkspace, currentDashboard, workspaceActions.updateDashboard]);
 
   const handleNotesChanged = useCallback(async () => {
-    // Refresh notes by calling workspace API to get fresh data
-    console.log("[AdminContainer] 🔄 Refreshing notes after change");
-    console.log("[AdminContainer] Current dashboard state:", {
-      hasCurrentWorkspace: !!currentWorkspace,
-      hasCurrentDashboard: !!currentDashboard,
-      workspaceId: currentWorkspace?.id,
-      dashboardId: currentDashboard?.id,
-    });
 
     try {
       // Load fresh dashboard data directly from localStorage

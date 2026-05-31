@@ -2,6 +2,14 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ChatMessage } from "@/lib/types/chat";
 
+/** Maximum number of messages retained in memory and localStorage. */
+const MAX_MESSAGES = 150;
+
+/** Keep only the most recent MAX_MESSAGES entries. */
+function trimMessages(msgs: ChatMessage[]): ChatMessage[] {
+  return msgs.length > MAX_MESSAGES ? msgs.slice(msgs.length - MAX_MESSAGES) : msgs;
+}
+
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -32,7 +40,8 @@ export const useChatStore = create<ChatState>()(
           if (!res.ok) throw new Error("Failed to fetch chat messages");
 
           const data = await res.json();
-          set({ messages: data.messages, isLoading: false });
+          // Trim to cap immediately on load — prevents re-hydrating a bloated array
+          set({ messages: trimMessages(data.messages ?? []), isLoading: false });
         } catch (err: any) {
           console.error("fetchMessages error:", err);
           set({ error: err.message, isLoading: false });
@@ -48,7 +57,7 @@ export const useChatStore = create<ChatState>()(
           createdAt: new Date().toISOString(),
         };
 
-        set((state) => ({ messages: [...state.messages, tempMsg] }));
+        set((state) => ({ messages: trimMessages([...state.messages, tempMsg]) }));
 
         try {
           const res = await fetch("/api/workspace/chat", {
@@ -61,7 +70,7 @@ export const useChatStore = create<ChatState>()(
 
           const data = await res.json();
           if (data.success && data.message) {
-            // Replace temp message with real message
+            // Replace temp message with the confirmed server message
             set((state) => ({
               messages: state.messages.map((m) => (m.id === tempId ? data.message : m)),
             }));
@@ -80,7 +89,7 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: "ade-chat-storage",
-      partialize: (state) => ({ messages: state.messages }), // Persist messages for instant load
+      partialize: (state) => ({ messages: state.messages }),
     }
   )
 );

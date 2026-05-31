@@ -36,10 +36,15 @@ export default async function RootLayout({
     locale = acceptLanguage.toLowerCase().startsWith("en") ? "en" : "pt";
   }
 
+  // Load translations server-side dynamically for code splitting
+  const initialMessages = locale === "en"
+    ? (await import("../../messages/en.json")).default
+    : (await import("../../messages/pt.json")).default;
+
   return (
     <html lang={locale === "pt" ? "pt-BR" : "en"} suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <LanguageInitializer initialLocale={locale} />
+        <LanguageInitializer initialLocale={locale} initialMessages={initialMessages} />
         <Providers>{children}</Providers>
       </body>
     </html>

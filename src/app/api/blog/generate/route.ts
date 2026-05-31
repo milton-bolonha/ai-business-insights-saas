@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
               size: "1024x1024"
             });
             
-            const imageUrl = response.data[0].url;
+            const imageUrl = response?.data?.[0]?.url;
             if (imageUrl) {
               return NextResponse.json({ result: imageUrl });
             }
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
                 n: 1,
                 size: "1024x1024"
               });
-              const imageUrl = response.data[0].url;
+              const imageUrl = response?.data?.[0]?.url;
               if (imageUrl) {
                 return NextResponse.json({ result: imageUrl });
               }

@@ -89,7 +89,6 @@ export function useContent() {
     // Tiles
     tiles,
     async createTile(dashboardId: string, data: CreateTileInput) {
-      console.log('[DEBUG] useContent.createTile called:', { dashboardId, data });
       if (!currentWorkspace?.id) {
         throw new Error('No workspace selected');
       }
@@ -103,17 +102,14 @@ export function useContent() {
         useMaxPrompt: data.useMaxPrompt,
         requestSize: data.requestSize
       });
-      console.log('[DEBUG] useContent.createTile result:', result);
       return result.tile;
     },
     async createSinglePrompt(dashboardId: string, data: CreateTileInput) {
       // createSinglePrompt é alias para createTile
-      console.log('[DEBUG] useContent.createSinglePrompt called:', { dashboardId, data });
       if (!currentWorkspace?.id) {
         throw new Error("No workspace selected");
       }
 
-      // Mapear campos corretamente para a API
       const apiData = {
         dashboardId,
         workspaceId: currentWorkspace.id,
@@ -125,17 +121,13 @@ export function useContent() {
         requestSize: data.requestSize || "medium",
       };
 
-      console.log('[DEBUG] useContent.createSinglePrompt mapped data:', apiData);
       const result = await createTileMutation.mutateAsync(apiData);
-      console.log('[DEBUG] useContent.createSinglePrompt result:', result);
       return result.tile;
     },
     async updateTile(tileId: string, updates: Partial<Tile>) {
       if (!currentWorkspace?.id || !currentDashboard?.id) {
         throw new Error("No dashboard selected");
       }
-
-      console.log('[DEBUG] useContent.updateTile called:', { tileId, updates });
 
       // Update local store immediately (optimistic update)
       const { useWorkspaceStore } = await import('./workspaceStore');
@@ -147,21 +139,14 @@ export function useContent() {
       );
 
       // Save to backend DB
-      try {
-        await updateTileMutation.mutateAsync({
-          tileId,
-          dashboardId: currentDashboard.id,
-          workspaceId: currentWorkspace.id,
-          updates
-        });
-        console.log('[DEBUG] useContent.updateTile successfully saved to DB');
-      } catch (error) {
-        console.error('[DEBUG] useContent.updateTile API failed:', error);
-        throw error;
-      }
+      await updateTileMutation.mutateAsync({
+        tileId,
+        dashboardId: currentDashboard.id,
+        workspaceId: currentWorkspace.id,
+        updates
+      });
     },
     async deleteTile(tileId: string) {
-      console.log('[DEBUG] useContent.deleteTile called:', { tileId, dashboardId: currentDashboard?.id, workspaceId: currentWorkspace?.id });
       if (!currentDashboard?.id) {
         throw new Error('No dashboard selected');
       }
@@ -197,7 +182,6 @@ export function useContent() {
       return result.tile;
     },
     async reorderTiles(dashboardId: string, order: string[]) {
-      console.log('[DEBUG] useContent.reorderTiles called:', { dashboardId, workspaceId: currentWorkspace?.id, orderLength: order.length });
       await reorderTilesMutation.mutateAsync({
         dashboardId,
         workspaceId: currentWorkspace?.id,
@@ -208,7 +192,6 @@ export function useContent() {
     // Notes
     notes,
     async createNote(dashboardId: string, data: NoteInput) {
-      console.log('[DEBUG] useContent.createNote called:', { dashboardId, workspaceId: currentWorkspace?.id, data });
       const result = await createNoteMutation.mutateAsync({
         dashboardId,
         workspaceId: currentWorkspace?.id,
@@ -216,7 +199,6 @@ export function useContent() {
         content: resolveNoteContent(data),
         category: resolveNoteCategory(data)
       });
-      console.log('[DEBUG] useContent.createNote result:', result);
       return result.note;
     },
     async updateNote(noteId: string, updates: NoteInput) {
@@ -228,10 +210,6 @@ export function useContent() {
       return result.note;
     },
     async deleteNote(noteId: string, workspaceId?: string, dashboardId?: string) {
-      if (!currentWorkspace?.id || !currentDashboard?.id) {
-        // If context is missing, we can't reliably delete from store for guests.
-        // But maybe caller provided IDs.
-      }
       await deleteNoteMutation.mutateAsync({
         noteId,
         workspaceId: workspaceId || currentWorkspace?.id,
@@ -242,32 +220,24 @@ export function useContent() {
     // Contacts
     contacts,
     async createContact(dashboardId: string, data: ContactInput) {
-      console.log('[DEBUG] useContent.createContact called:', { dashboardId, workspaceId: currentWorkspace?.id, data });
-      try {
-        // Garantir que name seja sempre uma string (obrigatório)
-        if (!data.name) {
-          throw new Error("Contact name is required");
-        }
-
-        const result = await createContactMutation.mutateAsync({
-          dashboardId,
-          workspaceId: currentWorkspace?.id,
-          contactData: {
-            name: data.name,
-            jobTitle: data.jobTitle,
-            email: data.email,
-            phone: data.phone,
-            company: data.company,
-            linkedinUrl: data.linkedinUrl,
-            notes: data.notes,
-          }
-        });
-        console.log('[DEBUG] useContent.createContact result:', result);
-        return result.contact;
-      } catch (error) {
-        console.error('[DEBUG] useContent.createContact error:', error);
-        throw error;
+      if (!data.name) {
+        throw new Error("Contact name is required");
       }
+
+      const result = await createContactMutation.mutateAsync({
+        dashboardId,
+        workspaceId: currentWorkspace?.id,
+        contactData: {
+          name: data.name,
+          jobTitle: data.jobTitle,
+          email: data.email,
+          phone: data.phone,
+          company: data.company,
+          linkedinUrl: data.linkedinUrl,
+          notes: data.notes,
+        }
+      });
+      return result.contact;
     },
     async updateContact(contactId: string, updates: ContactInput) {
       const result = await updateContactMutation.mutateAsync({ contactId, updates });
@@ -278,7 +248,6 @@ export function useContent() {
     },
     async regenerateContact(contactId: string): Promise<Contact | null> {
       // TODO: implementar regenerate contact (similar ao regenerate tile)
-      console.warn('regenerateContact not implemented yet');
       return null;
     },
     async chatWithContact(contactId: string, message: string) {

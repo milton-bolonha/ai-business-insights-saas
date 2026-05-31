@@ -51,6 +51,17 @@ export function VoiceAssistantOverlay({ workspace, dashboard, onTabChange }: {
     return () => window.removeEventListener("start-voice-chat", handleStart);
   }, [onTabChange]);
 
+  // Release the native SpeechRecognition object on unmount to free native heap memory
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (_) {}
+        recognitionRef.current = null;
+      }
+    };
+  }, []);
+
+
   const initRecognition = () => {
     // Always recreate to avoid "already started" or stuck state errors
     if (recognitionRef.current) {

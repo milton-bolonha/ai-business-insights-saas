@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { marked } from "marked";
 import { X, Copy, MessageCircle, Clock } from "lucide-react";
 import type { Tile } from "@/lib/types";
@@ -37,11 +37,19 @@ export function TileDetailModal({
       return parts ? parts[0].trim() : tile?.content || "";
   })();
   
-  const contentHtml = marked.parse(contentRaw, { breaks: true }) as string;
-  const promptHtml = tile?.prompt ? (marked.parse(tile.prompt, { breaks: true }) as string) : "";
-  const renderMessage = (value: string) => {
+  const contentHtml = React.useMemo(() => {
+    return marked.parse(contentRaw, { breaks: true }) as string;
+  }, [contentRaw]);
+
+  const promptHtml = React.useMemo(() => {
+    return tile?.prompt ? (marked.parse(tile.prompt, { breaks: true }) as string) : "";
+  }, [tile?.prompt]);
+
+  const renderMessage = React.useCallback((value: string) => {
     return marked.parse(value || "", { breaks: true }) as string;
-  };
+  }, []);
+
+
 
   console.log("[DEBUG] TileDetailModal rendering for:", tile?.id);
 

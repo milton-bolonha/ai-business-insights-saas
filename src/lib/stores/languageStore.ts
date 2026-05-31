@@ -1,18 +1,13 @@
 import { create } from "zustand";
-import ptMessages from "../../../messages/pt.json";
-import enMessages from "../../../messages/en.json";
 
 export type Locale = "pt" | "en";
-
-export const MESSAGES_MAP: Record<Locale, Record<string, any>> = {
-  pt: ptMessages,
-  en: enMessages,
-};
 
 interface LanguageState {
   locale: Locale;
   messages: Record<string, any>;
-  setLocale: (locale: Locale) => void;
+  isLoading: boolean;
+  setLocale: (locale: Locale) => Promise<void>;
+  loadMessages: (locale: Locale) => Promise<void>;
 }
 
 // Helper to get cookies safely
@@ -32,32 +27,47 @@ const setCookie = (name: string, value: string, days = 365) => {
   document.cookie = `${name}=${value};path=/;expires=${date.toUTCString()};SameSite=Lax`;
 };
 
-// Detect initial language - must be consistent between server and client during module initialization
+// Detect initial language
 const getInitialLocale = (): Locale => {
   if (typeof document !== "undefined") {
-    // 1. Always prioritize the HTML lang attribute set by the server to prevent hydration mismatch
     const lang = document.documentElement.getAttribute("lang");
     if (lang) {
       if (lang.startsWith("pt")) return "pt";
       if (lang.startsWith("en")) return "en";
     }
     
-    // 2. Fallback to cookie
     const cookie = getCookie("NEXT_LOCALE");
     if (cookie === "pt" || cookie === "en") return cookie;
   }
   return "pt"; // Default fallback
 };
 
-export const useLanguageStore = create<LanguageState>((set) => {
+export const useLanguageStore = create<LanguageState>((set, get) => {
   const initialLocale = getInitialLocale();
 
   return {
     locale: initialLocale,
-    messages: MESSAGES_MAP[initialLocale],
-    setLocale: (locale: Locale) => {
+    messages: {}, // Start empty, populated dynamically by LanguageInitializer or async load
+    isLoading: false,
+    loadMessages: async (locale: Locale) => {
+      set({ isLoading: true });
+      try {
+        let loadedMessages;
+        if (locale === "en") {
+          loadedMessages = await import("../../../messages/en.json").then(m => m.default);
+        } else {
+          loadedMessages = await import("../../../messages/pt.json").then(m => m.default);
+        }
+        set({ messages: loadedMessages, isLoading: false });
+      } catch (err) {
+        console.error("Failed to load translation bundle asynchronously", err);
+        set({ isLoading: false });
+      }
+    },
+    setLocale: async (locale: Locale) => {
       setCookie("NEXT_LOCALE", locale);
-      set({ locale, messages: MESSAGES_MAP[locale] });
+      set({ locale });
+      await get().loadMessages(locale);
     },
   };
 });

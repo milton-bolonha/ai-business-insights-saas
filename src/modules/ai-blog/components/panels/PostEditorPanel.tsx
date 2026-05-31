@@ -171,6 +171,8 @@ export function PostEditorPanel({ post, settings, allPosts, onBack }: { post?: a
         }
       };
 
+      if (!currentWorkspace?.id) return alert("Nenhum workspace ativo selecionado!");
+
       const res = await fetch(`/api/blog/posts?workspaceId=${currentWorkspace.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
