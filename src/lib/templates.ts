@@ -408,6 +408,31 @@ export const DASHBOARD_TEMPLATES: Record<string, DashboardTemplate> = {
         preferredLength: "long",
       }
     ]
+  },
+  template_os_system: {
+    id: "template_os_system",
+    name: "I/O - OS System",
+    description: "Sistema de triagem, orçamento e produção de ordens de serviço.",
+    tiles: [
+      {
+        id: "os_protocol",
+        title: "Protocolo de Atendimento",
+        prompt: "Crie um protocolo padrão de atendimento para a empresa '{os_company_name}', que atua no nicho de '{os_company_niche}'.",
+        category: "strategy",
+        orderIndex: 0,
+        agentId: "ade_research_analyst",
+        preferredLength: "medium",
+      },
+      {
+        id: "os_faq",
+        title: "FAQ para Clientes",
+        prompt: "Desenvolva uma lista de perguntas frequentes (FAQ) sobre orçamentos e garantias para a empresa '{os_company_name}'.",
+        category: "content",
+        orderIndex: 1,
+        agentId: "ade_sales_coach",
+        preferredLength: "long",
+      }
+    ]
   }
 };
 

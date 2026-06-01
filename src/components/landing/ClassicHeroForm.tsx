@@ -49,6 +49,10 @@ export interface ClassicHeroFormSubmission {
   // I/O Smart Survey Fields
   survey_company?: string;
 
+  // OS System Fields
+  os_company_name?: string;
+  os_company_niche?: string;
+
   // AI Blog Fields
   blog_name?: string;
   blog_description?: string;

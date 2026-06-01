@@ -113,6 +113,10 @@ const AiBlogBoard = dynamic(
   () => import("@/modules/ai-blog/components/AiBlogBoard").then(m => ({ default: m.AiBlogBoard })),
   { ssr: false, loading: () => <BoardSkeleton /> }
 );
+const OSSystemBoard = dynamic(
+  () => import("@/modules/os-system/components/OSSystemBoard").then(m => ({ default: m.OSSystemBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
 
 
 // Zustand stores
@@ -260,6 +264,8 @@ export function AdminContainer() {
         setActiveTab("survey");
       } else if (templateId === "template_ai_blog") {
         setActiveTab("blog" as any);
+      } else if (templateId === "template_os_system") {
+        setActiveTab("os_system" as any);
       } else {
         setActiveTab("arcs");
       }
@@ -283,7 +289,7 @@ export function AdminContainer() {
         setActiveTab("chat_history" as NavTab);
       } else if (dest === 'menu') {
         setViewMode('menu');
-      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking', 'mentoring_tasks', 'mentoring_schedule', 'mentoring_insights', 'mentoring_notes', 'survey'].includes(dest)) {
+      } else if (['arcs', 'store', 'layout', 'logistics', 'clients', 'staff', 'notes', 'files', 'characters', 'library', 'ranking', 'mentoring_tasks', 'mentoring_schedule', 'mentoring_insights', 'mentoring_notes', 'survey', 'os_system'].includes(dest)) {
         setActiveTab(dest as NavTab);
         setViewMode('menu');
       } else if (dest === 'credits') {
@@ -389,6 +395,7 @@ export function AdminContainer() {
           if (tid === "template_io_mentoring") return "mentoring_profile" as any;
           if (tid === "template_smart_survey") return "survey";
           if (tid === "template_ai_blog") return "blog" as any;
+          if (tid === "template_os_system") return "os_system" as any;
           return "arcs";
       };
 
@@ -407,6 +414,7 @@ export function AdminContainer() {
       if (templateId === "template_io_mentoring" && activeTab === "arcs") setActiveTab("mentoring_profile" as any);
       if (templateId === "template_smart_survey" && activeTab === "arcs") setActiveTab("survey");
       if (templateId === "template_ai_blog" && activeTab === "arcs") setActiveTab("blog" as any);
+      if (templateId === "template_os_system" && activeTab === "arcs") setActiveTab("os_system" as any);
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -1278,6 +1286,12 @@ export function AdminContainer() {
               {(activeTab as any) === "blog" && currentWorkspace && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
                   <AiBlogBoard />
+                </div>
+              )}
+
+              {(activeTab as any) === "os_system" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
+                  <OSSystemBoard workspaceId={currentWorkspace.id} />
                 </div>
               )}
 

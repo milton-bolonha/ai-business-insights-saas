@@ -163,7 +163,7 @@ export function ChatInterface({
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-full left-0 mb-2 w-56 overflow-hidden rounded-xl bg-[#333] p-1 shadow-xl ring-1 ring-white/10"
+                                    className="absolute bottom-full left-0 mb-2 w-72 overflow-hidden rounded-xl bg-[#333] p-1 shadow-xl ring-1 ring-white/10"
                                >
                                     {APP_TAGS.map((tag) => (
                                         <button

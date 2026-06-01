@@ -1,6 +1,6 @@
 import React from "react";
 
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system";
 
 export interface AppTag {
   id: AppTagId;
@@ -80,6 +80,12 @@ export const APP_TAGS: AppTag[] = [
     label: "I/O - Automatic Blog",
     labelKey: "appTags.ai_blog.label",
     color: "#8b5cf6", // Violet-500
+  },
+  {
+    id: "os_system",
+    label: "I/O - OS System",
+    labelKey: "appTags.os_system.label",
+    color: "#f97316", // Orange-500
   },
 ];
 
@@ -388,5 +394,23 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
     appTagId: "ai_blog",
     placeholder: "Qual o nome do autor principal?",
     placeholderKey: "attributes.blog_author.placeholder",
+  },
+
+  // OS System Attributes
+  {
+    id: "os_company_name",
+    label: "Nome da Empresa",
+    labelKey: "attributes.os_company_name.label",
+    appTagId: "os_system",
+    placeholder: "Qual o nome do seu negócio?",
+    placeholderKey: "attributes.os_company_name.placeholder",
+  },
+  {
+    id: "os_company_niche",
+    label: "Nicho de Atuação",
+    labelKey: "attributes.os_company_niche.label",
+    appTagId: "os_system",
+    placeholder: "Ex: Gráfica, Assistência Técnica...",
+    placeholderKey: "attributes.os_company_niche.placeholder",
   },
 ];

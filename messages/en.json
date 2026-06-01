@@ -70,6 +70,14 @@
     "smart_survey": {
       "label": "I/O - Smart Survey",
       "subtitle": "Brazilian NR-1/NR-17 psychosocial and ergonomic risk compliance platform."
+    },
+    "ai_blog": {
+      "label": "I/O - AI Blog",
+      "subtitle": "Article creation, SEO optimization and automated publishing."
+    },
+    "os_system": {
+      "label": "I/O - OS System",
+      "subtitle": "Intake, quoting, and production of service orders."
     }
   },
   "attributes": {
@@ -196,6 +204,30 @@
     "survey_company": {
       "label": "Organização",
       "placeholder": "Qual a Organização pesquisada?"
+    },
+    "os_company_name": {
+      "placeholder": "What is your business name?",
+      "label": "Company Name"
+    },
+    "os_company_niche": {
+      "placeholder": "E.g. Repair Shop, Printing, Woodwork...",
+      "label": "Business Niche"
+    },
+    "blog_name": {
+      "label": "Blog Name",
+      "placeholder": "What will be the name of the blog?"
+    },
+    "blog_description": {
+      "label": "Blog Description",
+      "placeholder": "What is the blog about?"
+    },
+    "blog_topics": {
+      "label": "Main Topics",
+      "placeholder": "E.g., Technology, Business..."
+    },
+    "blog_author": {
+      "label": "Main Author",
+      "placeholder": "What is the main author's name?"
     }
   },
   "admin": {

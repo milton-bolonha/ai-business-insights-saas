@@ -70,6 +70,14 @@
     "smart_survey": {
       "label": "I/O - Pesquisa NR-1 / NR-17",
       "subtitle": "Plataforma de compliance ergonômico e psicossocial brasileiro."
+    },
+    "ai_blog": {
+      "label": "I/O - Blog Automático",
+      "subtitle": "Criação de artigos, otimização de SEO e publicação automatizada."
+    },
+    "os_system": {
+      "label": "I/O - OS System",
+      "subtitle": "Sistema de triagem, orçamento e produção de ordens de serviço."
     }
   },
   "attributes": {
@@ -196,6 +204,30 @@
     "survey_company": {
       "label": "Organização",
       "placeholder": "Qual a Organização pesquisada?"
+    },
+    "os_company_name": {
+      "label": "Nome da Empresa",
+      "placeholder": "Qual o nome do seu negócio?"
+    },
+    "os_company_niche": {
+      "label": "Nicho de Atuação",
+      "placeholder": "Ex: Gráfica, Assistência Técnica..."
+    },
+    "blog_name": {
+      "label": "Nome do Blog",
+      "placeholder": "Qual será o nome do blog?"
+    },
+    "blog_description": {
+      "label": "Descrição do Blog",
+      "placeholder": "Sobre o que é o blog?"
+    },
+    "blog_topics": {
+      "label": "Tópicos Principais",
+      "placeholder": "Ex: Tecnologia, Negócios..."
+    },
+    "blog_author": {
+      "label": "Autor Principal",
+      "placeholder": "Qual o nome do autor principal?"
     }
   },
   "admin": {

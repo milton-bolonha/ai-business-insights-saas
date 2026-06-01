@@ -241,6 +241,8 @@ export function HomeContainer() {
               handleTradeSubmit(updatedValues);
             } else if (activeAppTag === 'furniture_logistics' || activeAppTag === 'furniture_layout' || activeAppTag === 'furniture_store' || activeAppTag === 'io_mentoring' || activeAppTag === 'smart_survey' || activeAppTag === 'ai_blog') {
               handleFurnitureSubmit(activeAppTag, updatedValues);
+            } else if (activeAppTag === 'os_system') {
+              handleOsSystemSubmit(updatedValues);
             } else {
               handleSubmit(updatedValues as ClassicHeroFormSubmission);
             }
@@ -380,6 +382,33 @@ export function HomeContainer() {
 
     } catch (error) {
       console.error("Failed to capture furniture data:", error);
+      push({ title: t("common.error"), description: t("home.toasts.errorOccurred"), variant: "destructive" });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOsSystemSubmit = async (values?: Partial<ClassicHeroFormSubmission>) => {
+    const currentValues = values || formValues;
+
+    setIsSubmitting(true);
+    try {
+      sessionStorage.setItem("onboarding_data", JSON.stringify({
+        type: "os_system",
+        data: currentValues
+      }));
+
+      push({
+        title: "Iniciando seu I/O OS...",
+        description: t("home.toasts.createAccount"),
+        variant: "default",
+      });
+
+      setTimeout(() => {
+        router.push(isSignedIn ? "/admin" : "/sign-up?redirect_url=/admin");
+      }, 1000);
+
+    } catch (error) {
+      console.error("Failed to capture OS System data:", error);
       push({ title: t("common.error"), description: t("home.toasts.errorOccurred"), variant: "destructive" });
       setIsSubmitting(false);
     }

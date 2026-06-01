@@ -30,7 +30,7 @@ export function AdminOnboardingHandler() {
 
                 // Duplicate guard: if we already have a workspace with this name, skip
                 const existingWorkspaces = useWorkspaceStore.getState().workspaces;
-                const workspaceName = data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
+                const workspaceName = data.os_company_name || data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
                 if (workspaceName && existingWorkspaces.some(w => w.name === workspaceName)) {
                     console.log(`[Onboarding] Workspace "${workspaceName}" already exists, skipping duplicate creation.`);
                     setIsProcessing(false);
@@ -57,6 +57,8 @@ export function AdminOnboardingHandler() {
                     await handleSurveyCreation(data);
                 } else if (type === "ai_blog") {
                     await handleBlogCreation(data);
+                } else if (type === "os_system") {
+                    await handleOsSystemCreation(data);
                 }
 
                 push({
@@ -431,6 +433,53 @@ export function AdminOnboardingHandler() {
             const err = await response.json().catch(() => ({}));
             const details = err.details ? JSON.stringify(err.details) : "";
             throw new Error(err.error ? `${err.error} ${details}` : "Failed to generate blog workspace");
+        }
+
+        const resData = await response.json();
+        if (resData.workspace) {
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
+    };
+
+    const handleOsSystemCreation = async (data: any) => {
+        const targetUrl = "/api/generate";
+        
+        const safeString = (val: string | undefined, fallback: string) => {
+            const v = (val || "").trim();
+            return v.length >= 2 ? v : fallback;
+        };
+
+        const workspaceName = safeString(data.os_company_name, "Minha Empresa");
+        const companyNiche = safeString(data.os_company_niche, "Serviços Gerais");
+        
+        const payload = {
+            salesRepCompany: workspaceName,
+            salesRepWebsite: "https://io.ossystem",
+            solution: "Gestão de Ordens de Serviço",
+            targetCompany: workspaceName,
+            targetWebsite: "https://io.ossystem",
+            templateId: "template_os_system",
+            model: "gpt-4o-mini",
+            promptAgent: "ade_research_analyst",
+            responseLength: "long",
+            promptVariables: [
+                `os_company_name:${workspaceName}`,
+                `os_company_niche:${companyNiche}`
+            ],
+            bulkPrompts: [],
+        };
+
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to generate OS System workspace");
         }
 
         const resData = await response.json();
