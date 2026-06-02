@@ -239,7 +239,16 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => { setIsAssistantOpen(true); setAssistantMode(null); }}
+                        onClick={() => {
+                            if (activeSection) {
+                                setEditingSectorId(activeSection.id);
+                                setNewSector({ name: activeSection.id, rows: activeSection.rows, cols: activeSection.cols, orientation: activeSection.orientation, type: activeSection.type });
+                            } else {
+                                setEditingSectorId(null);
+                            }
+                            setIsAssistantOpen(true);
+                            setAssistantMode(null);
+                        }}
                         className="p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all"
                         title={t("admin.storeLayout.header.configureLayout")}
                     >
@@ -646,7 +655,22 @@ export function StoreLayoutGrid({ tiles, onSaveLayout, appearance, onExport }: S
                                     </div>
 
                                     <div className="flex gap-2 mt-2 pt-2">
-                                        {editingSectorId && <button onClick={() => setEditingSectorId(null)} className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors">{t("admin.storeLayout.modal.cancel")}</button>}
+                                        {editingSectorId && (
+                                            <>
+                                                <button onClick={() => {
+                                                    const nextSections = sections.filter(s => s.id !== editingSectorId);
+                                                    setSections(nextSections);
+                                                    if (activeSectionId === editingSectorId) {
+                                                        setActiveSectionId(nextSections.length > 0 ? nextSections[0].id : null);
+                                                    }
+                                                    setEditingSectorId(null);
+                                                    setIsAssistantOpen(false);
+                                                }} className="flex-1 bg-white border border-rose-300 text-rose-600 py-3 rounded-xl font-bold hover:bg-rose-50 transition-colors flex items-center justify-center gap-2">
+                                                    <Trash2 size={16} /> {t("admin.storeLayout.productDrawer.removeFromSlot") /* Using existing delete string */}
+                                                </button>
+                                                <button onClick={() => setEditingSectorId(null)} className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors">{t("admin.storeLayout.modal.cancel")}</button>
+                                            </>
+                                        )}
                                         <button
                                             onClick={() => {
                                                 if (!newSector.name.trim()) return;

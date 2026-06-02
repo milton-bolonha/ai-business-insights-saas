@@ -3,15 +3,19 @@ import { SupplierEntity } from './SupplierEntity';
 import { ServiceCatalogEntity } from './ServiceCatalogEntity';
 
 export type OSStatus = 
-  | 'intake' // Triagem/Entrada (Aguardando orçamento)
-  | 'quote_pending' // Orçamento sendo construído
-  | 'quote_approved' // Orçamento aprovado pelo cliente
-  | 'production_pending' // Aguardando início de produção
-  | 'in_production' // Em produção / Execução do projeto
-  | 'production_completed' // Produção finalizada, aguardando aprovação final
-  | 'ready_for_pickup' // Pronto para retirada/entrega
-  | 'delivered' // Entregue ao cliente
-  | 'archived'; // Soft archive
+  | 'orcamento'
+  | 'aguardando_aprovacao'
+  | 'aprovado'
+  | 'entrada_recebida'
+  | 'em_arte'
+  | 'arte_aprovada'
+  | 'em_impressao'
+  | 'em_producao'
+  | 'em_conferencia'
+  | 'empacotado'
+  | 'pronto_para_entrega'
+  | 'entregue'
+  | 'cancelado';
 
 export interface OSTask {
   id: string;
@@ -21,6 +25,7 @@ export interface OSTask {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assigneeId?: string;
   assigneeName?: string;
+  equipmentId?: string; // NOVO: Para vincular tarefas a um equipamento (Impressora, Prensa, etc)
   createdAt: string;
 }
 
@@ -32,9 +37,66 @@ export interface OSActivityLog {
   userId?: string;
 }
 
+export interface OSEquipment {
+  id: string;
+  name: string;
+  type: string;
+  sector: 'design' | 'producao';
+}
+
+export interface OSProductDetails {
+  modelo?: string;
+  malha?: string;
+  cor?: string;
+  personalizacao?: string;
+  quantidadeTotal?: number;
+  grade?: Record<string, number>; // ex: { P: 10, M: 20 }
+}
+
+export interface OSArtDetails {
+  arquivosUrl?: string[]; // Arrays de Cloudinary URLs
+  designerName?: string;
+  dataCriacao?: string;
+  aprovacaoCliente?: boolean;
+  dataAprovacao?: string;
+}
+
+export interface OSPrintDetails {
+  equipamentoId?: string;
+  equipamentoNome?: string;
+  tipoImpressao?: 'dtf' | 'sublimacao' | 'plotter' | 'silk' | string;
+  operadorName?: string;
+  inicio?: string;
+  fim?: string;
+}
+
+export interface OSProductionDetails {
+  corte?: boolean;
+  costura?: boolean;
+  silk?: boolean;
+  dtf?: boolean;
+  prensagem?: boolean;
+  acabamento?: boolean;
+}
+
+export interface OSConferenceDetails {
+  quantidadePrevista?: number;
+  quantidadeConferida?: number;
+  divergencias?: string[];
+  responsavel?: string;
+  aprovado?: boolean;
+}
+
+export interface OSPackagingDetails {
+  quantidadeVolumes?: number;
+  tipoEmbalagem?: string;
+  responsavel?: string;
+  data?: string;
+}
+
 export interface OSEntity {
   id: string;
-  osNumber: string; // Número amigável da OS (ex: OS-2024-001)
+  osNumber: string; // Ex: OS-2024-001
   title: string; // Título do Projeto/Orçamento
   
   // Relações
@@ -46,23 +108,28 @@ export interface OSEntity {
   // Status e Ciclo de Vida
   status: OSStatus;
   
-  // Serviço
+  // Produto e Produção
+  productDetails?: OSProductDetails;
+  artDetails?: OSArtDetails;
+  printDetails?: OSPrintDetails;
+  productionDetails?: OSProductionDetails;
+  conferenceDetails?: OSConferenceDetails;
+  packagingDetails?: OSPackagingDetails;
+
+  // Serviço genérico antigo
   serviceId?: string;
   service?: ServiceCatalogEntity;
-  description: string; // Ex: Notebook Dell Inspiron / 50 Camisetas brancas
-  reportedDetails?: string; // Ex: Relato do defeito ou detalhes do pedido
-  technicalDiagnosis?: string;
+  description: string;
+  reportedDetails?: string;
 
   // Datas / SLA
-  intakeDate: string; // Data de entrada
-  estimatedCompletionDate?: string; // Previsão de entrega
-  completionDate?: string; // Data de conclusão real
-  archivedAt?: string; // Data do soft archive
+  intakeDate: string;
+  estimatedCompletionDate?: string;
+  completionDate?: string;
+  archivedAt?: string;
   
   // Produção e Kanban de Tarefas
-  technicianId?: string;
-  technicianName?: string;
-  tasks?: OSTask[]; // Sub-tarefas no estilo Jira
+  tasks?: OSTask[];
   checklist?: { id: string; label: string; isCompleted: boolean }[];
   
   // Arquivos e Anexos (Cloudinary)
@@ -71,23 +138,23 @@ export interface OSEntity {
   // Histórico e Logs
   activityLog?: OSActivityLog[];
 
-  // Financeiro e Fiscal
+  // Financeiro e Comercial
   totalCost?: number;
   totalRevenue?: number;
+  valorEntrada?: number;
+  valorRestante?: number;
+  desconto?: number;
+  validadeDias?: number;
   profitMargin?: number;
   isPaid: boolean;
   paymentMethod?: string;
-  invoiceIssued: boolean; // Nota fiscal emitida
-  invoiceUrl?: string; // Link para DANFE (Cloudinary)
+  invoiceIssued: boolean;
+  invoiceUrl?: string; // Cloudinary
   
-  // Triagem/Checklist
-  additionalItems?: string[]; // Ex: Acessórios, cabos, pen drive, artes
-  itemCondition?: string; // Estado do item / produto
-
   // Entrega
   scheduledDeliveryDate?: string;
-  signatureUrl?: string; // Assinatura digital do cliente (Cloudinary)
-  deliveryProofUrl?: string; // Comprovante de entrega (Cloudinary)
+  signatureUrl?: string; // Cloudinary
+  deliveryProofUrl?: string; // Cloudinary
 
   // Metadados do sistema
   createdAt: string;

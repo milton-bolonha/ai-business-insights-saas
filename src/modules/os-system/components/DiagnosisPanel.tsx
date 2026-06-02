@@ -7,7 +7,7 @@ interface DiagnosisPanelProps {
 }
 
 export const DiagnosisPanel: React.FC<DiagnosisPanelProps> = ({ os, onSaveDiagnosis }) => {
-  const [diagnosis, setDiagnosis] = useState(os.technicalDiagnosis || '');
+  const [diagnosis, setDiagnosis] = useState(os.reportedDetails || '');
 
   const handleSave = () => {
     onSaveDiagnosis(diagnosis);

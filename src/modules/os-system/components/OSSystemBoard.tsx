@@ -2,16 +2,18 @@
 import React, { useState } from "react";
 import { OSEntity } from "../types/OSEntity";
 import { OSIntakeForm } from "./OSIntakeForm";
-import { QuoteBuilder } from "./QuoteBuilder"; // This will become our Project Details / Jira-like panel
-import { ProductionQueueBoard } from "./ProductionQueueBoard";
-import { PickupQueue } from "./PickupQueue";
+import { OrderDossier } from "./OrderDossier";
+import { GenericSectorBoard, SectorColumnDef } from "./GenericSectorBoard";
 import { OSFileGallery } from "./OSFileGallery";
-import { ClipboardList, Settings, Package, FolderOpen, Plus, X, Search, Filter } from "lucide-react";
+import { IndustryLayoutManager } from "./IndustryLayoutManager";
+import { Briefcase, Paintbrush, Scissors, Truck, FolderOpen, Plus, X, Search, Settings } from "lucide-react";
 
 export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
-  const [activeTab, setActiveTab] = useState<"budgets" | "production" | "pickup" | "files">("budgets");
-  const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"comercial" | "design" | "producao" | "expedicao" | "files">("comercial");
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban"); // Salva preferncia do usurio (poderia vir de um contexto global)
   
+  const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
+  const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
   const [osList, setOsList] = useState<OSEntity[]>([]);
   const [selectedOsId, setSelectedOsId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,8 +23,8 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
   const handleCreateOS = (data: any) => {
     const newOs: OSEntity = {
       id: crypto.randomUUID(),
-      title: data.itemDescription || "Novo Projeto",
-      status: "quote_pending", // Automatically skips intake and goes to quoting
+      title: data.itemDescription || "Novo Orçamento Comercial",
+      status: "orcamento",
       customerId: "mock-customer-id",
       customer: {
         id: "mock-customer-id",
@@ -30,11 +32,16 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
         phone: data.customerPhone || "",
       } as any,
       description: data.itemDescription || "",
-      itemCondition: data.itemCondition || "",
-      reportedDetails: data.reportedDetails || "",
-      additionalItems: data.additionalItems || [],
       osNumber: "OS-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 10000),
       intakeDate: new Date().toISOString(),
+      productDetails: {
+        modelo: data.modelo || "",
+        malha: data.malha || "",
+        cor: data.cor || "",
+        personalizacao: data.personalizacao || "",
+        quantidadeTotal: data.quantidadeTotal || 0,
+      },
+      totalRevenue: data.totalRevenue || 0,
       isPaid: false,
       invoiceIssued: false,
       createdAt: new Date().toISOString(),
@@ -43,8 +50,8 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
       activityLog: [
         {
           id: crypto.randomUUID(),
-          action: "Orçamento Iniciado",
-          description: "Projeto registrado no sistema.",
+          action: "Orçamento Criado",
+          description: "Entrou no Setor Comercial.",
           timestamp: new Date().toISOString()
         }
       ]
@@ -52,7 +59,7 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
     
     setOsList([newOs, ...osList]);
     setIsIntakeModalOpen(false);
-    setActiveTab("budgets");
+    setActiveTab("comercial");
     setSelectedOsId(newOs.id);
   };
 
@@ -64,26 +71,76 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
     const query = searchQuery.toLowerCase();
     return os.title.toLowerCase().includes(query) || 
            os.osNumber.toLowerCase().includes(query) ||
-           os.customer?.name.toLowerCase().includes(query);
+           (os.customer?.name || '').toLowerCase().includes(query);
   });
+
+  // Definio das Colunas de cada Setor (Mapeando do JSON)
+  const columnsComercial: SectorColumnDef[] = [
+    { id: 'orcamentos', title: 'Orçamentos (Em criação)', statuses: ['orcamento'], color: 'gray' },
+    { id: 'aguardando', title: 'Aguardando Aprovação', statuses: ['aguardando_aprovacao'], color: 'yellow' },
+    { id: 'aprovados', title: 'Aprovados', statuses: ['aprovado', 'entrada_recebida'], color: 'emerald' },
+  ];
+
+  const columnsDesign: SectorColumnDef[] = [
+    { id: 'fila_arte', title: 'Fila de Arte', statuses: ['em_arte'], color: 'pink' },
+    { id: 'arte_aprovada', title: 'Arte Aprovada', statuses: ['arte_aprovada'], color: 'fuchsia' },
+    { id: 'fila_impressao', title: 'Em Impressão', statuses: ['em_impressao'], color: 'violet' },
+  ];
+
+  const columnsProducao: SectorColumnDef[] = [
+    { id: 'fila_producao', title: 'Fila de Produção (Confecção)', statuses: ['em_producao'], color: 'blue' },
+  ];
+
+  const columnsExpedicao: SectorColumnDef[] = [
+    { id: 'conferencia', title: 'Em Conferência', statuses: ['em_conferencia'], color: 'orange' },
+    { id: 'empacotado', title: 'Empacotado', statuses: ['empacotado'], color: 'amber' },
+    { id: 'pronto', title: 'Pronto p/ Entrega', statuses: ['pronto_para_entrega'], color: 'teal' },
+    { id: 'entregue', title: 'Entregue', statuses: ['entregue'], color: 'gray' },
+  ];
 
   return (
     <div className="flex flex-col h-full bg-white text-gray-900 overflow-y-auto rounded-xl shadow-sm border border-gray-100 relative">
       {/* Top Header & SubNavigation */}
-      <div className="border-b border-gray-200 px-8 pt-8 bg-gray-50/50 sticky top-0 z-10">
+      <div className="border-b border-gray-200 px-8 pt-8 bg-gray-50/50 sticky top-0 z-10 shrink-0">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">I/O - OS System</h1>
-            <p className="text-gray-500 mt-1">Projetos, Orçamentos e Produção de Serviços</p>
+            <h1 className="text-2xl font-bold tracking-tight">OS System - Vice Versa</h1>
+            <p className="text-gray-500 mt-1">Gestão de Produção e Confecção</p>
+          </div>
+          <div className="flex gap-4">
+            <div className="relative">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Buscar cliente ou OS..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:ring-2 focus:ring-violet-500 outline-none"
+              />
+            </div>
+            <button 
+              onClick={() => setIsEquipmentModalOpen(true)}
+              className="p-2 border border-gray-300 text-gray-500 hover:text-violet-600 hover:border-violet-300 rounded-lg transition-colors flex items-center justify-center bg-white shadow-sm"
+              title="Gerenciar Equipamentos"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setIsIntakeModalOpen(true)}
+              className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Novo Orçamento Comercial
+            </button>
           </div>
         </div>
 
         <div className="flex gap-6">
           {[
-            { id: "budgets", label: "Projetos & Orçamentos", icon: ClipboardList },
-            { id: "production", label: "Fila de Produção", icon: Settings },
-            { id: "pickup", label: "Retirada & Entrega", icon: Package },
-            { id: "files", label: "Galeria e Arquivos", icon: FolderOpen },
+            { id: "comercial", label: "Comercial", icon: Briefcase },
+            { id: "design", label: "Arte & Impressão", icon: Paintbrush },
+            { id: "producao", label: "Produção", icon: Scissors },
+            { id: "expedicao", label: "Expedição", icon: Truck },
+            { id: "files", label: "Galeria Geral", icon: FolderOpen },
           ].map(tab => (
             <button
               key={tab.id}
@@ -100,155 +157,102 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
       </div>
 
       {/* Main Content Area */}
-      <div className="p-8">
-        {activeTab === "budgets" && (
-          <div className="animate-in fade-in duration-300 grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* List of Budgets */}
-            <div className="lg:col-span-4 flex flex-col gap-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-gray-800">Histórico de Projetos</h3>
-                <button 
-                  onClick={() => setIsIntakeModalOpen(true)}
-                  className="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> Orçamento
-                </button>
-              </div>
-
-              {/* Filters */}
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Buscar por OS, cliente..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              </div>
-
-              <div className="space-y-2 overflow-y-auto max-h-[600px] pr-2">
-                {filteredOsList.map(os => (
-                  <div 
-                    key={os.id}
-                    onClick={() => setSelectedOsId(os.id)}
-                    className={`p-4 rounded-xl border cursor-pointer transition-colors ${selectedOsId === os.id ? 'border-violet-500 bg-violet-50 shadow-sm' : 'border-gray-200 hover:border-violet-300 hover:bg-gray-50 bg-white'}`}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-gray-900 text-sm">{os.osNumber}</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 uppercase">
-                        {os.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div className="font-medium text-sm text-gray-800">{os.title}</div>
-                    <div className="text-xs text-gray-500 mt-1">{os.customer?.name}</div>
-                  </div>
-                ))}
-                {filteredOsList.length === 0 && (
-                  <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200 border-dashed">
-                    <ClipboardList className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Nenhum projeto encontrado.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Project Details Panel (QuoteBuilder) */}
-            <div className="lg:col-span-8 flex flex-col gap-4">
-              {selectedOs ? (
-                <div className="animate-in slide-in-from-right-4 duration-300 h-full">
-                  <QuoteBuilder 
-                    os={selectedOs} 
-                    onUpdate={(updates) => handleUpdateOS(selectedOs.id, updates)} 
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-                  <Search className="w-8 h-8 text-gray-300 mb-3" />
-                  <p className="text-gray-400 font-medium">Selecione um projeto na lista para visualizar.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "production" && (
-          <div className="animate-in fade-in duration-300 h-full min-h-[600px]">
-            <ProductionQueueBoard 
-              queue={osList} 
-              onUpdateOS={(id, updates) => handleUpdateOS(id, updates)} 
+      <div className="flex-1 overflow-hidden relative bg-gray-50/30">
+        <div className="h-full overflow-y-auto">
+          {activeTab === 'comercial' && (
+            <GenericSectorBoard 
+              queue={filteredOsList} 
+              columns={columnsComercial} 
+              viewMode={viewMode} 
+              onViewModeChange={setViewMode} 
+              onSelectOS={(os) => setSelectedOsId(os.id)} 
             />
-          </div>
-        )}
-
-        {activeTab === "pickup" && (
-          <div className="animate-in fade-in duration-300">
-            <PickupQueue
-              queue={osList}
-              onSelectForDelivery={(os) => setSelectedOsId(os.id)}
-              onUpdateOS={(id, updates) => handleUpdateOS(id, updates)}
+          )}
+          {activeTab === 'design' && (
+            <GenericSectorBoard 
+              queue={filteredOsList} 
+              columns={columnsDesign} 
+              viewMode={viewMode} 
+              onViewModeChange={setViewMode} 
+              onSelectOS={(os) => setSelectedOsId(os.id)} 
             />
-          </div>
-        )}
-
-        {activeTab === "files" && (
-          <div className="animate-in fade-in duration-300">
-            {selectedOs ? (
-              <div className="flex flex-col gap-6">
-                <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Arquivos da OS {selectedOs.osNumber}</h3>
-                    <p className="text-sm text-gray-500">Cliente: {selectedOs.customer?.name || "Sem Nome"} | Projeto: {selectedOs.title}</p>
-                  </div>
-                  <button onClick={() => setSelectedOsId(null)} className="text-sm text-violet-600 font-medium hover:underline">
-                    Trocar OS
-                  </button>
-                </div>
-                <OSFileGallery 
-                  os={selectedOs} 
-                  workspaceId={workspaceId || ""} 
-                  onUpdateOS={handleUpdateOS} 
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {osList.map(os => (
-                  <div 
-                    key={os.id}
-                    onClick={() => setSelectedOsId(os.id)}
-                    className="p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-violet-400 hover:shadow-md transition-all bg-white"
-                  >
-                    <div className="font-bold text-gray-900 mb-1">{os.customer?.name || "Sem Nome"}</div>
-                    <div className="text-sm text-gray-600 truncate">{os.title}</div>
-                    <div className="text-xs text-gray-400 mt-2">{os.files?.length || 0} arquivos</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          )}
+          {activeTab === 'producao' && (
+            <GenericSectorBoard 
+              queue={filteredOsList} 
+              columns={columnsProducao} 
+              viewMode={viewMode} 
+              onViewModeChange={setViewMode} 
+              onSelectOS={(os) => setSelectedOsId(os.id)} 
+            />
+          )}
+          {activeTab === 'expedicao' && (
+            <GenericSectorBoard 
+              queue={filteredOsList} 
+              columns={columnsExpedicao} 
+              viewMode={viewMode} 
+              onViewModeChange={setViewMode} 
+              onSelectOS={(os) => setSelectedOsId(os.id)} 
+            />
+          )}
+          {activeTab === 'files' && (
+            <div className="p-8">
+               <OSFileGallery 
+                 os={null} 
+                 workspaceId={workspaceId || ""} 
+                 onUpdateOS={() => {}} 
+               />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Intake Modal Overlay */}
-      {isIntakeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative animate-in zoom-in-95 duration-200">
-            <button 
-              onClick={() => setIsIntakeModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">Novo Orçamento / Projeto</h2>
-              <p className="text-gray-500 text-sm">Preencha os detalhes iniciais para abrir um novo processo.</p>
+      {/* Slide-over Dossiê do Pedido */}
+      {selectedOs && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[45] animate-in fade-in duration-300"
+            onClick={() => setSelectedOsId(null)}
+          />
+          <div className="fixed inset-y-0 right-0 w-[950px] max-w-full bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="flex-1 overflow-hidden">
+              <OrderDossier 
+                os={selectedOs} 
+                onUpdate={(updates) => handleUpdateOS(selectedOs.id, updates)} 
+                onClose={() => setSelectedOsId(null)}
+              />
             </div>
-            <div className="p-6">
+          </div>
+        </>
+      )}
+
+      {/* Intake Fullscreen Modal */}
+      {isIntakeModalOpen && (
+        <div className="fixed inset-0 bg-gray-50 z-[70] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+          <div className="flex-1 max-w-4xl mx-auto w-full p-8 pt-12">
+            <div className="flex justify-between items-start mb-10">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Novo Orçamento Comercial</h2>
+                <p className="text-gray-500 mt-2 text-lg">Inicie um novo projeto de confecção ou estamparia.</p>
+              </div>
+              <button onClick={() => setIsIntakeModalOpen(false)} className="text-gray-400 hover:bg-gray-200 bg-gray-100 p-3 rounded-full transition-colors flex items-center gap-2">
+                <X className="w-5 h-5" />
+                <span className="text-sm font-medium pr-1">Cancelar</span>
+              </button>
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
               <OSIntakeForm onSubmit={handleCreateOS} onCancel={() => setIsIntakeModalOpen(false)} />
             </div>
           </div>
         </div>
       )}
+
+      {/* Industry Layout Manager (Replaces Equipment Manager) */}
+      <IndustryLayoutManager 
+        isOpen={isEquipmentModalOpen} 
+        onClose={() => setIsEquipmentModalOpen(false)} 
+      />
+
     </div>
   );
 }

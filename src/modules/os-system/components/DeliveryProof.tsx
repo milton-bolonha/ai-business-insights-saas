@@ -19,7 +19,7 @@ export const DeliveryProof: React.FC<DeliveryProofProps> = ({ os, onCompleteDeli
     const mockSignatureUrl = 'https://res.cloudinary.com/demo/image/upload/v1/mock_signature.png';
 
     onCompleteDelivery(os.id, {
-      status: 'delivered',
+      status: 'entregue',
       signatureUrl: signature ? mockSignatureUrl : undefined,
       isPaid,
       paymentMethod,
@@ -39,8 +39,7 @@ export const DeliveryProof: React.FC<DeliveryProofProps> = ({ os, onCompleteDeli
       <div className="p-6">
         <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 mb-6 text-sm text-gray-700">
           <p className="mb-2"><strong>Item / Serviço:</strong> {os.description}</p>
-          <p className="mb-2"><strong>Laudo Técnico / Observações:</strong> {os.technicalDiagnosis || 'N/A'}</p>
-          <p><strong>Itens Adicionais a devolver:</strong> {os.additionalItems?.length ? os.additionalItems.join(', ') : 'Nenhum'}</p>
+          <p className="mb-2"><strong>Laudo / Detalhes reportados:</strong> {os.reportedDetails || 'N/A'}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
