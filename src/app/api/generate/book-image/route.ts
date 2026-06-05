@@ -6,7 +6,7 @@ import OpenAI from "openai";
 import { uploadToCloudinary } from "@/lib/storage/cloudinary";
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY || "dummy-key-for-build",
 });
 
 export const maxDuration = 300; // 5 minutes timeout for high-latency image generation

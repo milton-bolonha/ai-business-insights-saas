@@ -132,6 +132,8 @@ export interface OSEntity {
   // Produção e Kanban de Tarefas
   tasks?: OSTask[];
   checklist?: { id: string; label: string; isCompleted: boolean }[];
+  technicianId?: string;
+  technicianName?: string;
   
   // Arquivos e Anexos (Cloudinary)
   files?: { id: string; url: string; phase: string; filename: string; uploadedAt: string }[];

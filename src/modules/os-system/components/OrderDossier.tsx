@@ -510,7 +510,13 @@ export const OrderDossier: React.FC<OrderDossierProps> = ({ os, onUpdate, onClos
           <div className="max-w-4xl mx-auto space-y-6">
             <DeliveryProof 
               os={os}
-              onSaveDelivery={(details) => advanceStatus('entregue', 'OS Entregue', `Entrega registrada por ${details.receivedBy}`)}
+              onCompleteDelivery={(id, updates) => {
+                onUpdate({
+                  ...updates,
+                  activityLog: addLog('OS Entregue', 'Entrega registrada e OS finalizada.')
+                });
+              }}
+              onCancel={() => setActiveTab('comercial')}
             />
           </div>
         )}
