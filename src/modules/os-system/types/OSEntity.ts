@@ -26,6 +26,7 @@ export interface OSTask {
   assigneeId?: string;
   assigneeName?: string;
   equipmentId?: string; // NOVO: Para vincular tarefas a um equipamento (Impressora, Prensa, etc)
+  comments?: any[];
   createdAt: string;
 }
 
