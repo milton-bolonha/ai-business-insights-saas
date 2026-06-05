@@ -40,43 +40,43 @@
   },
   "appTags": {
     "business_insights": {
-      "label": "I/O - Insights de Negócios",
+      "label": "Insights de Vendas",
       "subtitle": "Gere análises profundas a partir de dados da empresa."
     },
     "love_writers": {
-      "label": "I/O - Escritores de Romance",
+      "label": "Autores Apaixonados",
       "subtitle": "Crie seu romance arco por arco de forma interativa."
     },
     "trade_ranking": {
-      "label": "I/O - Ranking de Produtos",
+      "label": "Trader Ranking",
       "subtitle": "Sistema paramétrico profissional de avaliação de trocas."
     },
     "furniture_logistics": {
-      "label": "I/O - Logística de Móveis",
+      "label": "Loja e Entrega",
       "subtitle": "Painel KDS de montagem, controle de caixa e logística."
     },
     "furniture_layout": {
-      "label": "I/O - Layout de Loja",
+      "label": "Layout de Loja",
       "subtitle": "Mapeamento inteligente de gôndolas e monetização de espaço."
     },
     "furniture_store": {
-      "label": "I/O - Vitrine Virtual",
+      "label": "Loja e Entrega",
       "subtitle": "Exponha seus móveis em uma vitrine premium integrada ao painel."
     },
     "io_mentoring": {
-      "label": "I/O - Mentoria Inteligente",
+      "label": "Mentoria",
       "subtitle": "Evolua sua mentoria com quadros Kanban e resumos IA."
     },
     "smart_survey": {
-      "label": "I/O - Pesquisa NR-1 / NR-17",
+      "label": "Pesquisas",
       "subtitle": "Plataforma de compliance ergonômico e psicossocial brasileiro."
     },
     "ai_blog": {
-      "label": "I/O - Blog Automático",
+      "label": "AI Blog",
       "subtitle": "Criação de artigos, otimização de SEO e publicação automatizada."
     },
     "os_system": {
-      "label": "I/O - OS System",
+      "label": "OS System",
       "subtitle": "Sistema de triagem, orçamento e produção de ordens de serviço."
     }
   },

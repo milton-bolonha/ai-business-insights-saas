@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, ChevronUp, Zap } from "lucide-react";
+import { Send, Sparkles, ChevronUp, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { FaHome, FaChartPie, FaBook, FaGavel } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { APP_TAGS, APP_ATTRIBUTES, AppTagId, AppAttribute } from "@/lib/app-tags";
@@ -14,6 +14,7 @@ interface ChatInterfaceProps {
     onSubmit: (message: string, attributeId?: string) => void;
     onTestMode?: (scenario: string) => void;
     isSubmitting?: boolean;
+    className?: string;
 }
 
 export function ChatInterface({
@@ -22,13 +23,41 @@ export function ChatInterface({
     onSubmit,
     onTestMode,
     isSubmitting = false,
+    className,
 }: ChatInterfaceProps) {
     const [inputValue, setInputValue] = useState("");
     const [activeAttributeId, setActiveAttributeId] = useState<string | null>(null);
     const [isTagChooserOpen, setIsTagChooserOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const chooserRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeftPos, setScrollLeftPos] = useState(0);
     const { t } = useTranslation();
+
+    const onMouseDown = (e: React.MouseEvent) => {
+        if (!scrollRef.current) return;
+        setIsDragging(true);
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeftPos(scrollRef.current.scrollLeft);
+    };
+
+    const onMouseLeave = () => {
+        setIsDragging(false);
+    };
+
+    const onMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const onMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !scrollRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2; // Scroll speed
+        scrollRef.current.scrollLeft = scrollLeftPos - walk;
+    };
 
     const activeTag = APP_TAGS.find((t) => t.id === activeAppTag) || APP_TAGS[0];
     const currentAttributes = APP_ATTRIBUTES.filter(
@@ -111,13 +140,13 @@ export function ChatInterface({
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className={cn("fixed bottom-0 left-0 right-0 z-50 transition-all duration-300", className)}>
             {/* Background Gradient / Blur Wrapper */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#fcfcf9] via-[#fcfcf9]/95 to-transparent backdrop-blur-sm pointer-events-none" />
 
             {/* Test Mode Button */}
             {activeAppTag === "trade_ranking" && onTestMode && (
-                <div className="relative mx-auto max-w-4xl px-4 flex justify-end gap-2">
+                <div className="relative mx-auto max-w-3xl px-4 flex justify-end gap-2">
                     <button
                         onClick={() => onTestMode('iphone')}
                         className="mb-2 flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-200 transition-colors cursor-pointer"
@@ -139,79 +168,31 @@ export function ChatInterface({
                 </div>
             )}
 
-            <div className="relative mx-auto max-w-4xl px-4 py-6">
-
-                {/* Top Row: Chooser + Attributes */}
-                <div className="mb-3 flex items-center gap-3">
-                    {/* App Tag Chooser (Drop Up) */}
-                    <div className="relative" ref={chooserRef}>
-                        <button
-                            onClick={() => setIsTagChooserOpen(!isTagChooserOpen)}
-                            className={cn(
-                                "flex items-center gap-2 rounded-xl bg-[#333] px-4 py-2 text-white shadow-lg ring-1 ring-white/10 transition-all hover:bg-[#404040] cursor-pointer",
-                                isTagChooserOpen && "ring-2 ring-white/20"
-                            )}
-                        >
-                            <span style={{ color: activeTag.id === 'home' ? 'white' : activeTag.color }}>{getTagIcon(activeAppTag)}</span>
-                            <span className="font-medium text-sm">{t(activeTag.labelKey)}</span>
-                            <ChevronUp className="h-4 w-4 text-gray-400" />
-                        </button>
-
-                        <AnimatePresence>
-                            {isTagChooserOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-full left-0 mb-2 w-72 overflow-hidden rounded-xl bg-[#333] p-1 shadow-xl ring-1 ring-white/10"
-                               >
-                                    {APP_TAGS.map((tag) => (
-                                        <button
-                                            key={tag.id}
-                                            onClick={() => {
-                                                onAppTagChange(tag.id);
-                                                setIsTagChooserOpen(false);
-                                                setActiveAttributeId(null);
-                                            }}
-                                            className={cn(
-                                                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-white/10 cursor-pointer",
-                                                activeAppTag === tag.id ? "bg-white/20 text-white" : "text-gray-300"
-                                            )}
-                                        >
-                                            <span style={{ color: tag.id === 'home' ? 'white' : tag.color }}>{getTagIcon(tag.id)}</span>
-                                            <span className="flex-1 text-left">{t(tag.labelKey)}</span>
-                                        </button>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+            <div className="relative mx-auto max-w-3xl px-4 py-6">
+                {/* Attributes List */}
+                {currentAttributes.length > 0 && (
+                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 mask-linear-fade mb-3">
+                        {currentAttributes.map((attr) => (
+                            <button
+                                key={attr.id}
+                                onClick={() => setActiveAttributeId(attr.id)}
+                                className={cn(
+                                    "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-all cursor-pointer border",
+                                    activeAttributeId === attr.id
+                                        ? "bg-[#333] text-white border-[#333]"
+                                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                )}
+                            >
+                                {t(attr.labelKey)}
+                            </button>
+                        ))}
                     </div>
-
-                    {/* Attributes List (Horizontal Scroll) */}
-                    {currentAttributes.length > 0 && (
-                        <div className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide py-1 mask-linear-fade">
-                            {currentAttributes.map((attr) => (
-                                <button
-                                    key={attr.id}
-                                    onClick={() => setActiveAttributeId(attr.id)}
-                                    className={cn(
-                                        "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-all cursor-pointer border",
-                                        activeAttributeId === attr.id
-                                            ? "bg-[#333] text-white border-[#333]"
-                                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                                    )}
-                                >
-                                    {t(attr.labelKey)}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                )}
 
                 {/* Chat Input Area */}
-                <div className="relative rounded-2xl bg-white shadow-xl ring-1 ring-gray-900/5 focus-within:ring-2 focus-within:ring-blue-500/50">
-                    <div className="flex items-center px-4 py-3">
-                        <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                <div className="relative rounded-full bg-[#1e1e1e] shadow-xl ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-purple-500/50">
+                    <div className="flex items-center px-4 py-2.5">
+                        <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shrink-0">
                             <Sparkles className="h-4 w-4" />
                         </div>
                         <input
@@ -229,7 +210,7 @@ export function ChatInterface({
                                         : t("home.chat.placeholder")
                             }
                             className={cn(
-                                "flex-1 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none cursor-text",
+                                "flex-1 bg-transparent text-base text-white placeholder:text-gray-400 focus:outline-none cursor-text min-w-0",
                                 isSubmitting && "opacity-50 cursor-not-allowed"
                             )}
                         />
@@ -237,13 +218,70 @@ export function ChatInterface({
                             onClick={handleSend}
                             disabled={!inputValue.trim() || isSubmitting}
                             className={cn(
-                                "ml-3 flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                                "ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all",
                                 inputValue.trim() && !isSubmitting
-                                    ? "bg-blue-600 text-white shadow-md hover:bg-blue-500 cursor-pointer"
-                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    ? "bg-[#ccff00] text-black shadow-md hover:bg-[#b3e600] cursor-pointer"
+                                    : "bg-white/5 text-gray-500 cursor-not-allowed"
                             )}
                         >
                             <Send className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* App Tag Selector (Horizontal Scroll with Arrows and Drag) */}
+                <div className="flex items-center gap-2 mt-4 w-full overflow-hidden">
+                    <button 
+                        onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
+                        className="p-1 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 -ml-2 cursor-pointer"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div 
+                        ref={scrollRef}
+                        onMouseDown={onMouseDown}
+                        onMouseLeave={onMouseLeave}
+                        onMouseUp={onMouseUp}
+                        onMouseMove={onMouseMove}
+                        className="flex-1 flex items-center gap-3 overflow-x-auto pb-2 pt-2 px-1 [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+                    >
+                        {APP_TAGS.map((tag) => (
+                            <button
+                                key={tag.id}
+                                onClick={() => {
+                                    onAppTagChange(tag.id);
+                                    setActiveAttributeId(null);
+                                }}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed rounded-2xl",
+                                    activeAppTag === tag.id
+                                        ? "bg-white border-gray-400 shadow-sm"
+                                        : "bg-[#fcfcf9] border-[#d6d3d1] hover:border-gray-400 text-gray-500 hover:text-black"
+                                )}
+                            >
+                                <span style={{ color: tag.id === 'home' ? '#000' : tag.color }}>{getTagIcon(tag.id)}</span>
+                                <span className={cn(
+                                    "font-medium text-[13px] select-none",
+                                    activeAppTag === tag.id ? "text-black" : ""
+                                )}>{t(tag.labelKey)}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <button 
+                        onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+                        className="p-1 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 -mr-1 cursor-pointer"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    {/* Fixed Build New App Button */}
+                    <div className="shrink-0 pb-2 pt-2">
+                        <button className="flex items-center gap-2 px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed bg-[#fcfcf9] border-[#d6d3d1] text-gray-500 hover:border-purple-500 hover:text-purple-600 rounded-2xl">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black text-white font-medium text-lg leading-none pb-[2px] select-none">+</span>
+                            <span className="font-medium text-[13px] select-none">Build New App</span>
                         </button>
                     </div>
                 </div>

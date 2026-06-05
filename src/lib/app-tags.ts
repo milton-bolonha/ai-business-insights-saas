@@ -22,68 +22,50 @@ export interface AppAttribute {
 
 export const APP_TAGS: AppTag[] = [
   {
-    id: "home",
-    label: "Home",
-    labelKey: "common.logoText",
-    color: "#000000", // Default/Neutral
-  },
-  {
     id: "business_insights",
-    label: "I/O - Business Insights",
+    label: "Insights Sells",
     labelKey: "appTags.business_insights.label",
     color: "#2563eb", // Blue-600
   },
   {
     id: "love_writers",
-    label: "I/O - Love Writers",
+    label: "Love Writers",
     labelKey: "appTags.love_writers.label",
     color: "#e11d48", // Rose-600
   },
   {
     id: "trade_ranking",
-    label: "I/O - Ranking Product",
+    label: "Trader Ranking",
     labelKey: "appTags.trade_ranking.label",
     color: "#10b981", // Emerald-500
   },
   {
-    id: "furniture_logistics",
-    label: "I/O - Furniture Logistics",
-    labelKey: "appTags.furniture_logistics.label",
-    color: "#0ea5e9", // Sky-500
-  },
-  {
-    id: "furniture_layout",
-    label: "I/O - Store Layout",
-    labelKey: "appTags.furniture_layout.label",
-    color: "#6366f1", // Indigo-500
-  },
-  {
     id: "furniture_store",
-    label: "I/O - Store",
+    label: "Shop Delivery",
     labelKey: "appTags.furniture_store.label",
     color: "#f59e0b", // Amber-500
   },
   {
     id: "io_mentoring",
-    label: "I/O - Mentoring",
+    label: "Mentoring",
     labelKey: "appTags.io_mentoring.label",
     color: "#4f46e5", // Indigo-600
   },
   {
     id: "smart_survey",
-    label: "I/O - Smart Survey",
+    label: "Smart Survey",
     labelKey: "appTags.smart_survey.label",
     color: "#10b981", // Emerald-500
   },
   {
     id: "ai_blog",
-    label: "I/O - Automatic Blog",
+    label: "AI Blog",
     labelKey: "appTags.ai_blog.label",
     color: "#8b5cf6", // Violet-500
   },
   {
     id: "os_system",
-    label: "I/O - OS System",
+    label: "OS System",
     labelKey: "appTags.os_system.label",
     color: "#f97316", // Orange-500
   },

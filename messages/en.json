@@ -40,43 +40,43 @@
   },
   "appTags": {
     "business_insights": {
-      "label": "I/O - Business Insights",
+      "label": "Insights Sells",
       "subtitle": "Generate deep business insights from company data."
     },
     "love_writers": {
-      "label": "I/O - Love Writers",
+      "label": "Love Writers",
       "subtitle": "Craft your romance novel arc by arc."
     },
     "trade_ranking": {
-      "label": "I/O - Ranking Product",
+      "label": "Trader Ranking",
       "subtitle": "Professional parametric trade valuation system."
     },
     "furniture_logistics": {
-      "label": "I/O - Furniture Logistics",
+      "label": "Shop Delivery",
       "subtitle": "KDS assembly board, cash control and operational logistics."
     },
     "furniture_layout": {
-      "label": "I/O - Store Layout",
+      "label": "Store Layout",
       "subtitle": "Visualize and monetize every square meter with smart mapping."
     },
     "furniture_store": {
-      "label": "I/O - Store",
+      "label": "Shop Delivery",
       "subtitle": "Exhibit your furniture in a premium store and receive orders directly on your panel."
     },
     "io_mentoring": {
-      "label": "I/O - Mentoring",
+      "label": "Mentoring",
       "subtitle": "Elevate your coaching with smart Kanban boards and AI session summaries."
     },
     "smart_survey": {
-      "label": "I/O - Smart Survey",
+      "label": "Smart Survey",
       "subtitle": "Brazilian NR-1/NR-17 psychosocial and ergonomic risk compliance platform."
     },
     "ai_blog": {
-      "label": "I/O - AI Blog",
+      "label": "AI Blog",
       "subtitle": "Article creation, SEO optimization and automated publishing."
     },
     "os_system": {
-      "label": "I/O - OS System",
+      "label": "OS System",
       "subtitle": "Intake, quoting, and production of service orders."
     }
   },

@@ -16,9 +16,31 @@ import { usePaymentFlow } from "@/containers/admin/hooks/usePaymentFlow";
 import Image from "next/image";
 import Link from "next/link";
 import { ChatInterface } from "@/components/chat/ChatInterface";
-import { AppTagId, APP_ATTRIBUTES } from "@/lib/app-tags";
+import { AppTagId, APP_ATTRIBUTES, APP_TAGS } from "@/lib/app-tags";
 import { useTranslation } from "@/lib/hooks/useTranslation";
 import { cn } from "@/lib/utils";
+import { 
+  Menu, X, Home, TrendingUp, Heart, ShoppingCart, Truck, 
+  LayoutDashboard, Store, GraduationCap, ClipboardList, 
+  Rss, Monitor, Crown, Zap, Check, ArrowRight
+} from "lucide-react";
+
+const getAppIcon = (id: AppTagId) => {
+  switch (id) {
+    case "home": return Home;
+    case "business_insights": return TrendingUp;
+    case "love_writers": return Heart;
+    case "trade_ranking": return ShoppingCart;
+    case "furniture_logistics": return Truck;
+    case "furniture_layout": return LayoutDashboard;
+    case "furniture_store": return Store;
+    case "io_mentoring": return GraduationCap;
+    case "smart_survey": return ClipboardList;
+    case "ai_blog": return Rss;
+    case "os_system": return Monitor;
+    default: return Home;
+  }
+};
 
 export function HomeContainer() {
   const router = useRouter();
@@ -46,8 +68,7 @@ export function HomeContainer() {
   const [activeAppTag, setActiveAppTag] = useState<AppTagId>("home");
   const [formValues, setFormValues] = useState<Partial<ClassicHeroFormSubmission>>({});
   const payment = usePaymentFlow();
-
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Chat State
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system', content: string | ReactNode }>>([]);
@@ -474,145 +495,268 @@ export function HomeContainer() {
   };
 
   return (
-    <div className="home-page min-h-screen flex flex-col bg-[#fcfcf9]">
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#fcfcf9]/80 backdrop-blur-sm pointer-events-none">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8 py-4 pointer-events-auto">
-          <Link href="/" className="flex items-center space-x-2">
-            <Image
-              src="/images/logo-mark.svg"
-              alt="WebApp"
-              width={24}
-              height={24}
-              priority
-            />
-            <span className="text-xl font-semibold text-black">WebApp</span>
-          </Link>
-          <div className="flex items-center space-x-3">
-            {/* Language Selector */}
-            <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-xs font-semibold shadow-xs mr-2 pointer-events-auto">
-              <button
-                onClick={() => setLocale("pt")}
-                className={cn(
-                  "px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold text-[10px]",
-                  locale === "pt"
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                )}
-                title="Português"
+    <div className="home-page min-h-screen flex bg-[#fcfcf9]">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0a] text-white flex flex-col transition-transform duration-300 md:translate-x-0 overflow-y-auto border-r border-zinc-900 shadow-2xl",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="px-4 pb-4 pt-2 flex flex-col h-full">
+          <div className="flex items-center justify-center mb-2 relative shrink-0">
+            <Link href="/" className="flex items-center justify-center" onClick={() => setIsSidebarOpen(false)}>
+              <Image
+                src="/images/logo.png"
+                alt="Logo"
+                width={140}
+                height={40}
+                className="object-contain"
+                priority
+              />
+            </Link>
+            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute right-0 text-white/70 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div 
+            className="flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden pr-2 pb-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' } as React.CSSProperties}
+          >
+            {APP_TAGS.map(tag => {
+              const Icon = getAppIcon(tag.id);
+              const isActive = activeAppTag === tag.id;
+
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => {
+                    setActiveAppTag(tag.id);
+                    setIsSidebarOpen(false);
+                  }}
+                  style={{ "--tag-color": tag.color } as React.CSSProperties}
+                  className={cn(
+                    "group w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-300 cursor-pointer outline-none border",
+                    isActive 
+                      ? "bg-[#ccff00] border-[#ccff00]" 
+                      : "border-transparent hover:bg-[#ccff00] hover:border-[#ccff00] focus-visible:bg-[#ccff00] focus-visible:border-[#ccff00]"
+                  )}
+                >
+                  <Icon 
+                    className={cn(
+                      "w-5 h-5 transition-all duration-300 shrink-0", 
+                      isActive 
+                        ? "scale-110 text-black" 
+                        : "text-[var(--tag-color)] group-hover:!text-black group-focus-visible:!text-black"
+                    )} 
+                  />
+                  <span 
+                    className={cn(
+                      "font-medium text-sm transition-all duration-300 text-left",
+                      isActive 
+                        ? "text-black" 
+                        : "text-white group-hover:!text-black group-focus-visible:!text-black"
+                    )}
+                  >
+                    {t(tag.labelKey)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 shrink-0 rounded-2xl border border-white/20 p-4 bg-transparent relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center shrink-0">
+                  <Crown className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-bold text-white tracking-wide text-[13px]">I/O PRIME</span>
+              </div>
+              <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            </div>
+            
+            <p className="text-white/80 text-[13px] mb-3 font-medium">
+              Unlock the full power of I/O
+            </p>
+            
+            <ul className="space-y-2 mb-4">
+              {['Unlimited apps', 'Priority support', 'Advanced analytics'].map((item, idx) => (
+                <li key={idx} className="flex items-center space-x-2 text-white/90 text-xs">
+                  <div className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <Check className="w-2.5 h-2.5 text-white shrink-0" />
+                  </div>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            
+            <button className="w-full bg-[#ccff00] hover:bg-[#b3e600] text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors duration-300 outline-none">
+              <span className="text-[13px] tracking-wide">UPGRADE NOW</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 md:pl-72 flex flex-col min-h-screen relative w-full overflow-hidden">
+        <header className="fixed top-0 md:left-72 left-0 right-0 z-30 bg-[#fcfcf9]/80 backdrop-blur-sm pointer-events-none transition-all duration-300">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 pointer-events-auto">
+            <div className="flex items-center space-x-4">
+              <button 
+                className="md:hidden text-black hover:text-gray-600 p-1 cursor-pointer"
+                onClick={() => setIsSidebarOpen(true)}
               >
-                PT
+                <Menu className="w-6 h-6" />
               </button>
-              <button
-                onClick={() => setLocale("en")}
-                className={cn(
-                  "px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold text-[10px]",
-                  locale === "en"
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                )}
-                title="English"
-              >
-                EN
-              </button>
+              <span className="md:hidden text-lg font-semibold text-black">WebApp</span>
             </div>
 
-
-            {messages.length > 0 && (
-              <button
-                onClick={handleResetWorkspace}
-                className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors cursor-pointer pointer-events-auto"
-              >
-                {t("common.startOver")}
-              </button>
-            )}
-            {isSignedIn ? (
-              <Link href="/admin">
-                <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
-                  {t("common.dashboard")}
+            <div className="flex items-center space-x-3">
+              {/* Language Selector */}
+              <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-xs font-semibold shadow-xs mr-2 pointer-events-auto">
+                <button
+                  onClick={() => setLocale("pt")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold text-[10px]",
+                    locale === "pt"
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                  )}
+                  title="Português"
+                >
+                  PT
                 </button>
-              </Link>
-            ) : (
-              <>
-                <SignInButton mode="modal">
-                  <button className="text-sm font-medium text-gray-600 hover:text-black cursor-pointer">
-                    {t("common.login")}
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
-                    {t("common.signUp")}
-                  </button>
-                </SignUpButton>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 pt-24 pb-48 px-4 flex flex-col justify-end min-h-0">
-        <div className="mx-auto max-w-3xl w-full space-y-6">
-
-          {/* Static Hero Content (Always visible) */}
-          <div className="space-y-4 mb-8">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              {heroContent.title}
-            </h1>
-            <p className="text-xl text-gray-600">
-              {heroContent.subtitle}
-            </p>
-          </div>
-
-          {/* Chat History */}
-          <div className="space-y-4">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={
-                  msg.role === 'user'
-                    ? "bg-[#333] text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-[80%]"
-                    : "bg-white border border-gray-100 shadow-sm text-gray-900 rounded-2xl rounded-tl-sm px-5 py-3 max-w-[90%]"
-                }>
-                  {msg.content}
-                </div>
+                <button
+                  onClick={() => setLocale("en")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold text-[10px]",
+                    locale === "en"
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                  )}
+                  title="English"
+                >
+                  EN
+                </button>
               </div>
-            ))}
 
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-0" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300" />
+              {messages.length > 0 && (
+                <button
+                  onClick={handleResetWorkspace}
+                  className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors cursor-pointer pointer-events-auto"
+                >
+                  {t("common.startOver")}
+                </button>
+              )}
+              {isSignedIn ? (
+                <Link href="/admin">
+                  <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
+                    {t("common.dashboard")}
+                  </button>
+                </Link>
+              ) : (
+                <>
+                  <SignInButton mode="modal">
+                    <button className="text-sm font-medium text-gray-600 hover:text-black cursor-pointer">
+                      {t("common.login")}
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
+                      {t("common.signUp")}
+                    </button>
+                  </SignUpButton>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 pt-24 pb-48 px-4 flex flex-col justify-end min-h-0 w-full">
+          <div className="mx-auto max-w-4xl w-full space-y-6 relative">
+
+            {/* Static Hero Content (Always visible) */}
+            <div className="space-y-4 mb-8 relative z-10 max-w-3xl">
+              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl flex items-center flex-wrap gap-x-3 gap-y-2">
+                <span>{heroContent.title}</span>
+                <span className="inline-block w-[150px] sm:w-[200px] md:w-[280px] opacity-90 pointer-events-none -mb-4">
+                  <Image 
+                    src="/images/maskot.png" 
+                    alt="Mascot" 
+                    width={720} 
+                    height={680} 
+                    className="object-contain drop-shadow-2xl w-full h-auto"
+                    priority
+                  />
+                </span>
+              </h1>
+              <p className="text-xl text-gray-600">
+                {heroContent.subtitle}
+              </p>
+            </div>
+
+            {/* Chat History */}
+            <div className="space-y-4">
+              {messages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={
+                    msg.role === 'user'
+                      ? "bg-[#333] text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-[80%]"
+                      : "bg-white border border-gray-100 shadow-sm text-gray-900 rounded-2xl rounded-tl-sm px-5 py-3 max-w-[90%]"
+                  }>
+                    {msg.content}
                   </div>
                 </div>
-              </div>
-            )}
+              ))}
+
+              {/* Typing Indicator */}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-0" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Invisible spacer for scrolling */}
+            <div ref={messagesEndRef} />
           </div>
+        </main>
 
-          {/* Invisible spacer for scrolling */}
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
+        <ChatInterface
+          activeAppTag={activeAppTag}
+          onAppTagChange={setActiveAppTag}
+          onSubmit={handleChatSubmit}
+          onTestMode={handleTestMode}
+          isSubmitting={isSubmitting}
+          className="md:left-72"
+        />
 
-      <ChatInterface
-        activeAppTag={activeAppTag}
-        onAppTagChange={setActiveAppTag}
-        onSubmit={handleChatSubmit}
-        onTestMode={handleTestMode}
-        isSubmitting={isSubmitting}
-      />
-
-      <UpgradeModal
-        open={payment.isUpgradeModalOpen}
-        onClose={() => payment.setUpgradeModalOpen(false)}
-        onCheckout={payment.startCheckout}
-        onMarkMember={payment.confirmMembership}
-        usage={payment.usage}
-        limits={payment.limits}
-        lastAction="createWorkspace"
-        stripeCheckoutUrl={payment.stripeCheckoutUrl}
-      />
+        <UpgradeModal
+          open={payment.isUpgradeModalOpen}
+          onClose={() => payment.setUpgradeModalOpen(false)}
+          onCheckout={payment.startCheckout}
+          onMarkMember={payment.confirmMembership}
+          usage={payment.usage}
+          limits={payment.limits}
+          lastAction="createWorkspace"
+          stripeCheckoutUrl={payment.stripeCheckoutUrl}
+        />
+      </div>
     </div>
   );
 }
