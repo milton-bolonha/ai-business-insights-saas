@@ -230,10 +230,10 @@ export function ChatInterface({
                 </div>
 
                 {/* App Tag Selector (Horizontal Scroll with Arrows and Drag) */}
-                <div className="flex items-center gap-2 mt-4 w-full overflow-hidden">
+                <div className="flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-2 mt-4 w-full">
                     <button 
                         onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
-                        className="p-1 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 -ml-2 cursor-pointer"
+                        className="hidden md:block p-1 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 -ml-2 cursor-pointer"
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -244,7 +244,7 @@ export function ChatInterface({
                         onMouseLeave={onMouseLeave}
                         onMouseUp={onMouseUp}
                         onMouseMove={onMouseMove}
-                        className="flex-1 flex items-center gap-3 overflow-x-auto pb-2 pt-2 px-1 [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing"
+                        className="flex-1 flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-2 md:gap-3 md:overflow-x-auto pb-2 pt-2 px-1 [&::-webkit-scrollbar]:hidden md:cursor-grab md:active:cursor-grabbing w-full"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                     >
                         {APP_TAGS.map((tag) => (
@@ -272,16 +272,16 @@ export function ChatInterface({
 
                     <button 
                         onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-                        className="p-1 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 -mr-1 cursor-pointer"
+                        className="hidden md:block p-1 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 -mr-1 cursor-pointer"
                     >
                         <ChevronRight className="w-5 h-5" />
                     </button>
 
                     {/* Fixed Build New App Button */}
                     <div className="shrink-0 pb-2 pt-2">
-                        <button className="flex items-center gap-2 px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed bg-[#fcfcf9] border-[#d6d3d1] text-gray-500 hover:border-purple-500 hover:text-purple-600 rounded-2xl">
+                        <button className="flex items-center gap-2 px-3 md:px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed bg-[#fcfcf9] border-[#d6d3d1] text-gray-500 hover:border-purple-500 hover:text-purple-600 rounded-2xl">
                             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black text-white font-medium text-lg leading-none pb-[2px] select-none">+</span>
-                            <span className="font-medium text-[13px] select-none">Build New App</span>
+                            <span className="hidden md:inline font-medium text-[13px] select-none">Build New App</span>
                         </button>
                     </div>
                 </div>

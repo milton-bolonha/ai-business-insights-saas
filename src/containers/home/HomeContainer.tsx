@@ -644,7 +644,6 @@ export function HomeContainer() {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <span className="md:hidden text-lg font-semibold text-black">WebApp</span>
             </div>
 
             <div className="flex items-center space-x-3">
@@ -708,11 +707,12 @@ export function HomeContainer() {
           </div>
         </header>
 
-        <main className="flex-1 pt-24 pb-56 px-4 flex flex-col justify-end min-h-0 w-full">
-          <div className="mx-auto max-w-4xl w-full space-y-4 relative">
+        <main className="flex-1 pt-24 pb-48 px-4 flex flex-col overflow-y-auto min-h-0 w-full">
+          <div className="flex-1" />
+          <div className="mx-auto max-w-4xl w-full space-y-4 relative mb-8 shrink-0">
           
             {/* Mascot Image - Absolutely positioned */}
-            <div className="absolute right-[60px] top-[-60px] md:top-[-100px] pointer-events-none z-0 opacity-90 w-[150px] sm:w-[200px] md:w-[280px]">
+            <div className="absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[60px] top-[-50px] md:top-[-100px] pointer-events-none z-0 opacity-90 w-[120px] sm:w-[150px] md:w-[280px]">
               <Image 
                 src="/images/maskot.png" 
                 alt="Mascot" 
@@ -724,7 +724,7 @@ export function HomeContainer() {
             </div>
 
             {/* Static Hero Content (Always visible) */}
-            <div className="space-y-1 mb-4 relative z-10 max-w-3xl">
+            <div className="space-y-1 mb-4 relative z-10 max-w-3xl mt-24 md:mt-0 text-center md:text-left">
               <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
                 {heroContent.title}
               </h1>
