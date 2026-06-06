@@ -535,7 +535,7 @@ export function HomeContainer() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0a] text-white flex flex-col transition-transform duration-300 md:translate-x-0 overflow-y-auto border-r border-zinc-900 shadow-2xl",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-transparent bg-[url('/images/sidebar-bg.png')] bg-repeat-y bg-right bg-contain text-white flex flex-col transition-transform duration-300 md:translate-x-0 overflow-y-auto",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="px-4 pb-4 pt-2 flex flex-col h-full">
@@ -601,7 +601,7 @@ export function HomeContainer() {
             })}
           </div>
 
-          <div className="mt-4 shrink-0 rounded-2xl border border-white/20 p-4 bg-transparent relative overflow-hidden">
+          <div className="mt-4 w-[80%] shrink-0 rounded-2xl border border-white/20 p-4 bg-transparent relative overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center shrink-0">
