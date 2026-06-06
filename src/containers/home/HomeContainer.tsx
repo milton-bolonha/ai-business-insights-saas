@@ -467,7 +467,7 @@ export function HomeContainer() {
 
 
   return (
-    <div className="home-page min-h-screen flex bg-[#0a0a0a]">
+    <div className="home-page min-h-screen flex bg-[#0a0a0a] selection:bg-[#ccff00] selection:text-black">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
