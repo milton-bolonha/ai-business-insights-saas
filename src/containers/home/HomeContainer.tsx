@@ -464,64 +464,7 @@ export function HomeContainer() {
     }
   };
 
-  const handleResetWorkspace = async () => {
-    try {
-      const currentWorkspace = useWorkspaceStore.getState().currentWorkspace;
 
-      // Only attempt server-side delete if user is a member/signed-in
-      if (currentWorkspace && currentWorkspace.id && isMember) {
-        // Construct URL explicitly using current window origin to avoid protocol mismatch
-        const url = new URL("/api/workspace", window.location.origin);
-        url.searchParams.set("workspaceId", currentWorkspace.id);
-
-        console.log("[Home] Resetting verified member workspace via:", url.toString());
-
-        try {
-          const response = await fetch(url.toString(), {
-            method: "DELETE",
-          });
-
-          if (!response.ok) {
-            console.error("[Home] Reset failed:", response.status, response.statusText);
-          }
-        } catch (netError) {
-          console.warn("[Home] Network error during reset (ignoring):", netError);
-        }
-      } else {
-        console.log("[Home] Guest reset: Skipping server-side delete, clearing local state only.");
-      }
-
-      // Try to reset server-side rate limits (Dev only)
-      try {
-        await fetch("/api/debug/reset-guest", { method: "POST" });
-      } catch (e) {
-        console.warn("Failed to reset rate limits (might be expected in prod):", e);
-      }
-
-      // Limpar estado local do workspace
-      clearWorkspace();
-      setFormValues({});
-
-      // Resetar uso e estado de autenticação (voltar para Guest)
-      resetUsage();
-      useAuthStore.getState().setUser(null);
-
-      push({
-        title: t("home.toasts.workspaceCleared"),
-        description: t("home.toasts.workspaceClearedDesc"),
-        variant: "success",
-      });
-    } catch (error) {
-      push({
-        title: t("common.error"),
-        description:
-          error instanceof Error
-            ? error.message
-            : t("home.toasts.errorOccurred"),
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="home-page min-h-screen flex bg-[#0a0a0a]">
@@ -680,14 +623,7 @@ export function HomeContainer() {
                 </button>
               </div>
 
-              {messages.length > 0 && (
-                <button
-                  onClick={handleResetWorkspace}
-                  className="text-sm font-medium text-red-500 hover:text-red-700 mr-2 transition-colors cursor-pointer pointer-events-auto"
-                >
-                  {t("common.startOver")}
-                </button>
-              )}
+
               {isSignedIn ? (
                 <Link href="/admin">
                   <button className="bg-black hover:bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer">
