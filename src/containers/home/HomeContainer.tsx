@@ -471,14 +471,14 @@ export function HomeContainer() {
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          className="fixed inset-0 bg-black/50 z-[60] md:hidden" 
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-transparent bg-[url('/images/sidebar-bg.png')] bg-repeat-y bg-right bg-contain text-white flex flex-col transition-transform duration-300 md:translate-x-0 overflow-y-auto",
+        "fixed inset-y-0 left-0 z-[70] w-72 bg-transparent bg-[url('/images/sidebar-bg.png')] bg-repeat-y bg-right bg-contain text-white flex flex-col transition-transform duration-300 md:translate-x-0 overflow-y-auto shadow-2xl",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="px-4 pb-4 pt-2 flex flex-col h-full">

@@ -20,10 +20,10 @@
   },
   "home": {
     "chat": {
-      "initialGreeting": "Estou pronto para ajudar! Escolha um App Tag abaixo ou comece a digitar.",
-      "selectedTag": "Você escolheu {title}. Vamos começar. O que é o {label}?",
+      "initialGreeting": "Estou pronto para ajudar! Escolha um App abaixo ou comece a digitar.",
+      "selectedTag": "Você escolheu {title}. Vamos começar. Por favor, informe: {label}.",
       "testModeActive": "Modo de Teste ativo. Compilando Dossiê Comercial para {scenario}...",
-      "missingField": "Entendido. Agora, o que é o {label}?",
+      "missingField": "Entendido. Agora, por favor, informe: {label}.",
       "generating": "Perfeito! Tenho tudo o que preciso. Gerando seu workspace agora...",
       "placeholder": "Digite sua mensagem aqui..."
     },

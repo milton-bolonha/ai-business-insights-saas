@@ -20,10 +20,10 @@
   },
   "home": {
     "chat": {
-      "initialGreeting": "I'm ready to help! Pick an App Tag below or start typing.",
-      "selectedTag": "You chose {title}. Let's get started. What is the {label}?",
+      "initialGreeting": "I'm ready to help! Pick an App below or start typing.",
+      "selectedTag": "You chose {title}. Let's get started. Please provide: {label}.",
       "testModeActive": "Test Mode detected. Compiling Trade Dossiê for {scenario}...",
-      "missingField": "Got it. Now, what is the {label}?",
+      "missingField": "Got it. Now, please provide: {label}.",
       "generating": "Perfect! I have everything I need. Generating your workspace now...",
       "placeholder": "Type your message here..."
     },

@@ -245,7 +245,7 @@ export function ChatInterface({
                         onMouseLeave={onMouseLeave}
                         onMouseUp={onMouseUp}
                         onMouseMove={onMouseMove}
-                        className="flex-1 flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-2 md:gap-3 md:overflow-x-auto pb-2 pt-2 px-1 [&::-webkit-scrollbar]:hidden md:cursor-grab md:active:cursor-grabbing w-full"
+                        className="flex-1 flex flex-nowrap items-center justify-start gap-2 md:gap-3 overflow-x-auto pb-2 pt-2 px-1 [&::-webkit-scrollbar]:hidden md:cursor-grab md:active:cursor-grabbing w-full"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                     >
                         {APP_TAGS.map((tag) => (
