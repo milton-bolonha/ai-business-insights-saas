@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, ReactNode } from "react";
+import "@fontsource/cabin-sketch";
+import "@fontsource/reenie-beanie";
 import { useRouter } from "next/navigation";
 import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
 
@@ -101,14 +103,17 @@ export function HomeContainer() {
   const heroContent = {
     title: (
       <>
-        {locale === 'pt' ? 'Crie Incríveis ' : 'Build Cool '}
+        {locale === 'pt' ? 'Crie ' : 'Build Cool '}
         <span className="text-purple-600">{getAppTitleWord(activeAppTag, locale)}</span>
+        {locale === 'pt' && ' Incríveis'}
       </>
     ),
     subtitle: (
       <>
         {locale === 'pt' ? 'Transforme suas ideias em ' : 'Turn your ideas into '}
-        <span className="text-pink-500 font-semibold">AI products</span>
+        <span className="text-pink-500 font-semibold">
+          {locale === 'pt' ? 'Produtos IA' : 'AI products'}
+        </span>
       </>
     )
   };
@@ -136,6 +141,7 @@ export function HomeContainer() {
       }, 1000);
       return () => clearTimeout(timer);
     } else {
+      setMessages([]);
       setIsTyping(true);
       const timer = setTimeout(() => {
         setIsTyping(false);
@@ -518,7 +524,7 @@ export function HomeContainer() {
   };
 
   return (
-    <div className="home-page min-h-screen flex bg-[#fcfcf9]">
+    <div className="home-page min-h-screen flex bg-[#0a0a0a]">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
@@ -633,9 +639,8 @@ export function HomeContainer() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 md:pl-72 flex flex-col min-h-screen relative w-full overflow-hidden">
-        <header className="fixed top-0 md:left-72 left-0 right-0 z-30 bg-[#fcfcf9]/80 backdrop-blur-sm pointer-events-none transition-all duration-300">
+      <div className="flex-1 md:pl-72 flex flex-col min-h-screen relative w-full overflow-hidden bg-[#fff0d4] bg-[url('/images/bg-pattern.png')] bg-repeat bg-auto bg-top">
+        <header className="fixed top-0 md:left-72 left-0 right-0 z-30 pointer-events-none transition-all duration-300">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 pointer-events-auto">
             <div className="flex items-center space-x-4">
               <button 
@@ -725,10 +730,10 @@ export function HomeContainer() {
 
             {/* Static Hero Content (Always visible) */}
             <div className="space-y-1 mb-4 relative z-10 max-w-3xl mt-24 md:mt-0 text-center md:text-left">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+              <h1 className="text-4xl font-medium tracking-tight text-gray-900 sm:text-5xl" style={{ fontFamily: "'Cabin Sketch', cursive", fontWeight: 500 }}>
                 {heroContent.title}
               </h1>
-              <p className="text-xl text-gray-600">
+              <p className="text-xl text-gray-600" style={{ fontFamily: "'Reenie Beanie', cursive", fontSize: "2rem" }}>
                 {heroContent.subtitle}
               </p>
             </div>

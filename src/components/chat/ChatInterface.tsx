@@ -142,7 +142,7 @@ export function ChatInterface({
     return (
         <div className={cn("fixed bottom-0 left-0 right-0 z-50 transition-all duration-300", className)}>
             {/* Background Gradient / Blur Wrapper */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#fcfcf9] via-[#fcfcf9]/95 to-transparent backdrop-blur-sm pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#fff0d4] via-[#fff0d4]/95 to-transparent pointer-events-none" />
 
             {/* Test Mode Button */}
             {activeAppTag === "trade_ranking" && onTestMode && (
@@ -213,6 +213,7 @@ export function ChatInterface({
                                 "flex-1 bg-transparent text-base text-white placeholder:text-gray-400 focus:outline-none cursor-text min-w-0",
                                 isSubmitting && "opacity-50 cursor-not-allowed"
                             )}
+                            style={{ fontFamily: "'Reenie Beanie', cursive", fontSize: "1.5rem" }}
                         />
                         <button
                             onClick={handleSend}
@@ -257,11 +258,11 @@ export function ChatInterface({
                                 className={cn(
                                     "flex items-center gap-2 px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed rounded-2xl",
                                     activeAppTag === tag.id
-                                        ? "bg-white border-gray-400 shadow-sm"
-                                        : "bg-[#fcfcf9] border-[#d6d3d1] hover:border-gray-400 text-gray-500 hover:text-black"
+                                        ? "bg-[#ccff00] border-[#ccff00] shadow-sm text-black"
+                                        : "bg-[#fff0d4] border-[#d6d3d1] hover:border-gray-400 text-gray-500 hover:text-black"
                                 )}
                             >
-                                <span style={{ color: tag.id === 'home' ? '#000' : tag.color }}>{getTagIcon(tag.id)}</span>
+                                <span style={{ color: activeAppTag === tag.id ? '#000' : (tag.id === 'home' ? '#000' : tag.color) }}>{getTagIcon(tag.id)}</span>
                                 <span className={cn(
                                     "font-medium text-[13px] select-none",
                                     activeAppTag === tag.id ? "text-black" : ""
@@ -279,7 +280,7 @@ export function ChatInterface({
 
                     {/* Fixed Build New App Button */}
                     <div className="shrink-0 pb-2 pt-2">
-                        <button className="flex items-center gap-2 px-3 md:px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed bg-[#fcfcf9] border-[#d6d3d1] text-gray-500 hover:border-purple-500 hover:text-purple-600 rounded-2xl">
+                        <button className="flex items-center gap-2 px-3 md:px-4 py-2.5 shrink-0 transition-all cursor-pointer border-2 border-dashed bg-[#fff0d4] border-[#d6d3d1] text-gray-500 hover:border-purple-500 hover:text-purple-600 rounded-2xl">
                             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black text-white font-medium text-lg leading-none pb-[2px] select-none">+</span>
                             <span className="hidden md:inline font-medium text-[13px] select-none">Build New App</span>
                         </button>
