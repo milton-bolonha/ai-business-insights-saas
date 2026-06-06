@@ -475,25 +475,25 @@ export function HomeContainer() {
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
-
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-[70] w-72 bg-transparent bg-[url('/images/sidebar-bg.png')] bg-repeat-y bg-right bg-contain text-white flex flex-col transition-transform duration-300 md:translate-x-0 overflow-y-auto",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="px-4 pb-4 pt-2 flex flex-col h-full">
-          <div className="flex items-center justify-center mb-2 relative shrink-0">
+          {/* Logo Area */}
+          <div className="flex items-center justify-center mb-6 pt-2 relative shrink-0">
             <Link href="/" className="flex items-center justify-center" onClick={() => setIsSidebarOpen(false)}>
               <Image
-                src="/images/logo.png"
+                src="/images/logo.svg"
                 alt="Logo"
-                width={140}
-                height={40}
+                width={110}
+                height={89}
                 className="object-contain"
                 priority
               />
             </Link>
-            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute right-0 text-white/70 hover:text-white">
+            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute right-0 top-2 text-white/70 hover:text-white">
               <X className="w-6 h-6" />
             </button>
           </div>
