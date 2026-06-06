@@ -27,6 +27,18 @@
       "generating": "Perfeito! Tenho tudo o que preciso. Gerando seu workspace agora...",
       "placeholder": "Digite sua mensagem aqui..."
     },
+    "sidebar": {
+      "prime": {
+        "title": "I/O PRIME",
+        "subtitle": "Desbloqueie todo o poder da I/O",
+        "features": {
+          "unlimited": "Apps Ilimitados",
+          "support": "Suporte Prioritário",
+          "analytics": "Análises Avançadas"
+        },
+        "button": "ASSINAR AGORA"
+      }
+    },
     "toasts": {
       "almostThere": "Quase lá!",
       "createAccount": "Crie sua conta gratuita para visualizar seus insights.",

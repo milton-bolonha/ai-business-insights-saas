@@ -81,14 +81,36 @@ export function HomeContainer() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  const getAppTitleWord = (tagId: string, locale: string) => {
+    switch(tagId) {
+      case 'business_insights': return locale === 'pt' ? 'Análises' : 'Insights';
+      case 'love_writers': return locale === 'pt' ? 'Romances' : 'Stories';
+      case 'trade_ranking': return locale === 'pt' ? 'Lojas' : 'Stores';
+      case 'furniture_logistics': return locale === 'pt' ? 'Rotas' : 'Routes';
+      case 'furniture_layout': return locale === 'pt' ? 'Layouts' : 'Layouts';
+      case 'furniture_store': return locale === 'pt' ? 'Vitrines' : 'Stores';
+      case 'io_mentoring': return locale === 'pt' ? 'Academias' : 'Academy';
+      case 'smart_survey': return locale === 'pt' ? 'Pesquisas' : 'Surveys';
+      case 'ai_blog': return locale === 'pt' ? 'Blogs' : 'Blogs';
+      case 'os_system': return locale === 'pt' ? 'Sistemas' : 'Systems';
+      default: return locale === 'pt' ? 'Coisas' : 'Stuffs';
+    }
+  }
+
   // Derived Hero Content
   const heroContent = {
-    title: activeAppTag === "home"
-      ? t("appTags.business_insights.label")
-      : t(`appTags.${activeAppTag}.label`),
-    subtitle: activeAppTag === "home"
-      ? t("appTags.business_insights.subtitle")
-      : t(`appTags.${activeAppTag}.subtitle`)
+    title: (
+      <>
+        {locale === 'pt' ? 'Crie Incríveis ' : 'Build Cool '}
+        <span className="text-purple-600">{getAppTitleWord(activeAppTag, locale)}</span>
+      </>
+    ),
+    subtitle: (
+      <>
+        {locale === 'pt' ? 'Transforme suas ideias em ' : 'Turn your ideas into '}
+        <span className="text-pink-500 font-semibold">AI products</span>
+      </>
+    )
   };
 
 
@@ -117,7 +139,8 @@ export function HomeContainer() {
       setIsTyping(true);
       const timer = setTimeout(() => {
         setIsTyping(false);
-        setMessages(prev => [...prev, { role: 'assistant', content: initialMessage }]);
+        // Replace entire chat instead of accumulating history
+        setMessages([{ role: 'assistant', content: initialMessage }]);
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -578,17 +601,21 @@ export function HomeContainer() {
                 <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center shrink-0">
                   <Crown className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-bold text-white tracking-wide text-[13px]">I/O PRIME</span>
+                <span className="font-bold text-white tracking-wide text-[13px]">{t("home.sidebar.prime.title") || "I/O PRIME"}</span>
               </div>
               <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             </div>
             
             <p className="text-white/80 text-[13px] mb-3 font-medium">
-              Unlock the full power of I/O
+              {t("home.sidebar.prime.subtitle") || "Unlock the full power of I/O"}
             </p>
             
             <ul className="space-y-2 mb-4">
-              {['Unlimited apps', 'Priority support', 'Advanced analytics'].map((item, idx) => (
+              {[
+                t("home.sidebar.prime.features.unlimited") || "Unlimited apps",
+                t("home.sidebar.prime.features.support") || "Priority support",
+                t("home.sidebar.prime.features.analytics") || "Advanced analytics"
+              ].map((item, idx) => (
                 <li key={idx} className="flex items-center space-x-2 text-white/90 text-xs">
                   <div className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center shrink-0">
                     <Check className="w-2.5 h-2.5 text-white shrink-0" />
@@ -599,7 +626,7 @@ export function HomeContainer() {
             </ul>
             
             <button className="w-full bg-[#ccff00] hover:bg-[#b3e600] text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors duration-300 outline-none">
-              <span className="text-[13px] tracking-wide">UPGRADE NOW</span>
+              <span className="text-[13px] tracking-wide">{t("home.sidebar.prime.button") || "UPGRADE NOW"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -681,23 +708,25 @@ export function HomeContainer() {
           </div>
         </header>
 
-        <main className="flex-1 pt-24 pb-48 px-4 flex flex-col justify-end min-h-0 w-full">
-          <div className="mx-auto max-w-4xl w-full space-y-6 relative">
+        <main className="flex-1 pt-24 pb-56 px-4 flex flex-col justify-end min-h-0 w-full">
+          <div className="mx-auto max-w-4xl w-full space-y-4 relative">
+          
+            {/* Mascot Image - Absolutely positioned */}
+            <div className="absolute right-[60px] top-[-60px] md:top-[-100px] pointer-events-none z-0 opacity-90 w-[150px] sm:w-[200px] md:w-[280px]">
+              <Image 
+                src="/images/maskot.png" 
+                alt="Mascot" 
+                width={720} 
+                height={680} 
+                className="object-contain drop-shadow-2xl w-full h-auto"
+                priority
+              />
+            </div>
 
             {/* Static Hero Content (Always visible) */}
-            <div className="space-y-4 mb-8 relative z-10 max-w-3xl">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl flex items-center flex-wrap gap-x-3 gap-y-2">
-                <span>{heroContent.title}</span>
-                <span className="inline-block w-[150px] sm:w-[200px] md:w-[280px] opacity-90 pointer-events-none -mb-4">
-                  <Image 
-                    src="/images/maskot.png" 
-                    alt="Mascot" 
-                    width={720} 
-                    height={680} 
-                    className="object-contain drop-shadow-2xl w-full h-auto"
-                    priority
-                  />
-                </span>
+            <div className="space-y-1 mb-4 relative z-10 max-w-3xl">
+              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+                {heroContent.title}
               </h1>
               <p className="text-xl text-gray-600">
                 {heroContent.subtitle}
@@ -710,8 +739,8 @@ export function HomeContainer() {
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={
                     msg.role === 'user'
-                      ? "bg-[#333] text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-[80%]"
-                      : "bg-white border border-gray-100 shadow-sm text-gray-900 rounded-2xl rounded-tl-sm px-5 py-3 max-w-[90%]"
+                      ? "bg-[#333] text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-md"
+                      : "bg-white border border-gray-100 shadow-sm text-gray-900 rounded-2xl rounded-tl-sm px-5 py-3 max-w-md"
                   }>
                     {msg.content}
                   </div>

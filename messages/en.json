@@ -27,6 +27,18 @@
       "generating": "Perfect! I have everything I need. Generating your workspace now...",
       "placeholder": "Type your message here..."
     },
+    "sidebar": {
+      "prime": {
+        "title": "I/O PRIME",
+        "subtitle": "Unlock the full power of I/O",
+        "features": {
+          "unlimited": "Unlimited apps",
+          "support": "Priority support",
+          "analytics": "Advanced analytics"
+        },
+        "button": "UPGRADE NOW"
+      }
+    },
     "toasts": {
       "almostThere": "Almost there!",
       "createAccount": "Create your free account to view your insights.",
