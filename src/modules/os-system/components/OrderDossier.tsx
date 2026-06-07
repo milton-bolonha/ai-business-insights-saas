@@ -358,7 +358,7 @@ export const OrderDossier: React.FC<OrderDossierProps> = ({ os, onUpdate, onClos
                   {isUploading ? (
                     <>
                        <Loader2 className="w-8 h-8 text-violet-400 mb-2 animate-spin" />
-                       <p className="text-sm font-medium text-gray-700">Enviando para o Cloudinary...</p>
+                       <p className="text-sm font-medium text-gray-700">Enviando para a nuvem...</p>
                     </>
                   ) : (
                     <>
@@ -374,7 +374,7 @@ export const OrderDossier: React.FC<OrderDossierProps> = ({ os, onUpdate, onClos
                   <div className="grid grid-cols-3 gap-2">
                     {os.artDetails.arquivosUrl.map((url, idx) => (
                       <a key={idx} href={url} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-md border border-gray-200 aspect-square">
-                        {url.endsWith('.pdf') || url.endsWith('.zip') || url.endsWith('.ai') ? (
+                        {url && (url.endsWith('.pdf') || url.endsWith('.zip') || url.endsWith('.ai')) ? (
                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
                              <FileText className="w-8 h-8 text-gray-400" />
                            </div>

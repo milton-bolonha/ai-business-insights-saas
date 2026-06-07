@@ -1,0 +1,78 @@
+import { ClassicHeroFormSubmission } from "@/components/landing/ClassicHeroForm";
+
+export type TestScenario = "iphone" | "geladeira" | "armario";
+
+export const TEST_SCENARIOS: Record<
+  TestScenario,
+  { label: string; values: Partial<ClassicHeroFormSubmission> }
+> = {
+  iphone: {
+    label: "iPhone 14 Pro",
+    values: {
+      product_category: "iPhone 14 Pro",
+      product_condition: "semi_novo",
+      catDeprec: "smartphone",
+      product_age: "1.5",
+      product_working: "0.95",
+      product_repair_cost: "0",
+      market_value_new: "7500",
+      market_value_used_avg: "4200",
+      market_demand: "0.85",
+      market_supply: "0.25",
+      market_time_to_sell: "5",
+      mes: "8",
+      trader_mode: "giro",
+      trader_risk: "0.3",
+      trader_cash_pressure: "0.2",
+      market_share: "0.6",
+      market_pricing_power: "0.7",
+      market_competition: "0.3",
+    },
+  },
+  geladeira: {
+    label: "Geladeira Consul",
+    values: {
+      product_category: "Geladeira Consul",
+      product_condition: "usado",
+      catDeprec: "eletro",
+      product_age: "4",
+      product_working: "1.0",
+      product_repair_cost: "0",
+      market_value_new: "1890",
+      market_value_used_avg: "1590",
+      market_demand: "0.7",
+      market_supply: "0.6",
+      market_time_to_sell: "15",
+      mes: "8",
+      trader_mode: "margem",
+      trader_risk: "0.2",
+      trader_cash_pressure: "0.1",
+      market_share: "0.2",
+      market_pricing_power: "0.3",
+      market_competition: "0.8",
+    },
+  },
+  armario: {
+    label: "Armário MDF",
+    values: {
+      product_category: "Armário MDF",
+      product_condition: "usado",
+      catDeprec: "generico",
+      product_age: "2",
+      product_working: "0.8",
+      product_repair_cost: "150",
+      market_value_new: "2500",
+      market_value_used_avg: "1200",
+      market_demand: "0.4",
+      market_supply: "0.8",
+      market_time_to_sell: "30",
+      mes: "8",
+      trader_mode: "agressivo",
+      trader_risk: "0.6",
+      trader_cash_pressure: "0.5",
+      market_share: "0.1",
+      market_pricing_power: "0.2",
+      market_competition: "0.9",
+    },
+  },
+};

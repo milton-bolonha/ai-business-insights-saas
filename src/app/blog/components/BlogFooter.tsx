@@ -34,8 +34,10 @@ export function BlogFooter({ settings, tenantId }: BlogFooterProps) {
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Navegação</h4>
             <div className="flex flex-wrap md:justify-end gap-x-6 gap-y-3">
               {mainMenu.map((item: any, i: number) => {
-                const isExternal = item.href.startsWith("http");
-                const href = isExternal ? item.href : `/blog/${tenantId}/p/${item.href}`;
+                const isExternal = item.href?.startsWith("http");
+                const href = isExternal
+                  ? item.href
+                  : `/blog/${tenantId}/p/${item.href || ''}`;
                 return (
                   <a
                     key={i}

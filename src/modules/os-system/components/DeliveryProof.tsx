@@ -30,8 +30,7 @@ export const DeliveryProof: React.FC<DeliveryProofProps> = ({ os, onCompleteDeli
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-w-2xl mx-auto overflow-hidden">
       <div className="bg-orange-600 px-6 py-4 flex justify-between items-center text-white">
         <div>
-          <h2 className="text-xl font-semibold">Entrega de Equipamento</h2>
-          <p className="text-orange-100 text-sm">OS {os.osNumber} — {os.customer?.name}</p>
+          <h2 className="text-xl font-semibold">OS {os.osNumber} — {os.customer?.name}</h2>
         </div>
         <button onClick={onCancel} className="text-white hover:text-orange-200 font-medium">✕ Fechar</button>
       </div>
@@ -84,7 +83,7 @@ export const DeliveryProof: React.FC<DeliveryProofProps> = ({ os, onCompleteDeli
             {signature && (
               <div className="mt-2 text-xs text-green-600 font-medium flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                Assinatura salva localmente
+                Assinatura capturada
               </div>
             )}
           </div>

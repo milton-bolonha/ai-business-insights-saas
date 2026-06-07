@@ -1,26 +1,46 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { OSEntity } from "../types/OSEntity";
 import { OSIntakeForm } from "./OSIntakeForm";
 import { OrderDossier } from "./OrderDossier";
 import { GenericSectorBoard, SectorColumnDef } from "./GenericSectorBoard";
 import { OSFileGallery } from "./OSFileGallery";
+import { OSTasksGlobalBoard } from "./OSTasksGlobalBoard";
 import { IndustryLayoutManager } from "./IndustryLayoutManager";
 import { Briefcase, Paintbrush, Scissors, Truck, FolderOpen, Plus, X, Search, Settings } from "lucide-react";
 
 export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
-  const [activeTab, setActiveTab] = useState<"comercial" | "design" | "producao" | "expedicao" | "files">("comercial");
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban"); // Salva preferncia do usurio (poderia vir de um contexto global)
+  const [activeTab, setActiveTab] = useState<"comercial" | "design" | "producao" | "expedicao" | "files" | "tarefas">("comercial");
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban"); // Salva preferência do usuário
   
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
   const [osList, setOsList] = useState<OSEntity[]>([]);
   const [selectedOsId, setSelectedOsId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Buscar dados da API ao carregar
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch("/api/os-system");
+        if (res.ok) {
+          const data = await res.json();
+          setOsList(data.orders || []);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar OS:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
 
   const selectedOs = osList.find(os => os.id === selectedOsId) || null;
 
-  const handleCreateOS = (data: any) => {
+  const handleCreateOS = async (data: any) => {
     const newOs: OSEntity = {
       id: crypto.randomUUID(),
       title: data.itemDescription || "Novo Orçamento Comercial",
@@ -57,14 +77,38 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
       ]
     };
     
-    setOsList([newOs, ...osList]);
+    // Atualiza o estado local imediatamente
+    setOsList(prev => [newOs, ...prev]);
     setIsIntakeModalOpen(false);
     setActiveTab("comercial");
     setSelectedOsId(newOs.id);
+
+    // Salva no banco de dados via API
+    try {
+      await fetch("/api/os-system", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newOs),
+      });
+    } catch (err) {
+      console.error("Erro ao salvar OS:", err);
+    }
   };
 
-  const handleUpdateOS = (id: string, updates: Partial<OSEntity>) => {
+  const handleUpdateOS = async (id: string, updates: Partial<OSEntity>) => {
+    // Atualização otimista
     setOsList(prev => prev.map(os => os.id === id ? { ...os, ...updates, updatedAt: new Date().toISOString() } : os));
+    
+    // Atualiza no banco de dados
+    try {
+      await fetch(`/api/os-system/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar OS:", err);
+    }
   };
 
   const filteredOsList = osList.filter(os => {
@@ -141,6 +185,7 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
             { id: "producao", label: "Produção", icon: Scissors },
             { id: "expedicao", label: "Expedição", icon: Truck },
             { id: "files", label: "Galeria Geral", icon: FolderOpen },
+            { id: "tarefas", label: "Tarefas do Setor", icon: Briefcase },
           ].map(tab => (
             <button
               key={tab.id}
@@ -204,6 +249,18 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
                />
             </div>
           )}
+          {activeTab === 'tarefas' && (
+            <OSTasksGlobalBoard 
+              osList={osList} 
+              onUpdateTask={async (osId, taskId, updates) => {
+                const targetOs = osList.find(o => o.id === osId);
+                if (!targetOs) return;
+                
+                const updatedTasks = targetOs.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+                await handleUpdateOS(osId, { tasks: updatedTasks });
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -228,18 +285,15 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
 
       {/* Intake Fullscreen Modal */}
       {isIntakeModalOpen && (
-        <div className="fixed inset-0 bg-gray-50 z-[70] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
-          <div className="flex-1 max-w-4xl mx-auto w-full p-8 pt-12">
-            <div className="flex justify-between items-start mb-10">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Novo Orçamento Comercial</h2>
-                <p className="text-gray-500 mt-2 text-lg">Inicie um novo projeto de confecção ou estamparia.</p>
-              </div>
-              <button onClick={() => setIsIntakeModalOpen(false)} className="text-gray-400 hover:bg-gray-200 bg-gray-100 p-3 rounded-full transition-colors flex items-center gap-2">
-                <X className="w-5 h-5" />
-                <span className="text-sm font-medium pr-1">Cancelar</span>
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-gray-50 z-[70] flex flex-col justify-center animate-in fade-in zoom-in-95 duration-200 overflow-y-auto">
+          <div className="relative max-w-4xl mx-auto w-full p-8">
+            <button 
+              onClick={() => setIsIntakeModalOpen(false)} 
+              className="absolute top-4 right-4 z-10 group text-gray-400 hover:text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 shadow-sm p-2 rounded-full transition-all flex items-center gap-0 hover:gap-2 overflow-hidden"
+            >
+              <span className="w-0 overflow-hidden group-hover:w-14 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 pl-1">Cancelar</span>
+              <X className="w-5 h-5 shrink-0" />
+            </button>
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
               <OSIntakeForm onSubmit={handleCreateOS} onCancel={() => setIsIntakeModalOpen(false)} />
             </div>

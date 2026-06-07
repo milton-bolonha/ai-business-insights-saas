@@ -89,6 +89,20 @@ body {
   background-color: #94a3b8;
 }
 
+.home-main-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.home-main-scrollbar::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+.home-main-scrollbar::-webkit-scrollbar-thumb {
+  background: #ccff00;
+  border-radius: 10px;
+}
+.home-main-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #b3e600;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

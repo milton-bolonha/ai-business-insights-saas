@@ -77,10 +77,10 @@ export function BlogHeader({ settings, tenantId }: BlogHeaderProps) {
             className={`hidden md:flex items-center gap-8 ${menuPosition === "right" ? "ml-auto" : "mr-auto"}`}
           >
             {mainMenu.map((item: any, i: number) => {
-              const isExternal = item.href.startsWith("http");
+              const isExternal = item.href?.startsWith("http");
               const href = isExternal
                 ? item.href
-                : `/blog/${tenantId}/p/${item.href}`;
+                : `/blog/${tenantId}/p/${item.href || ''}`;
               return (
                 <a
                   key={i}
@@ -129,10 +129,10 @@ export function BlogHeader({ settings, tenantId }: BlogHeaderProps) {
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl py-6 px-4 animate-in slide-in-from-top-4 duration-200">
           <div className="flex flex-col gap-4">
             {mainMenu.map((item: any, i: number) => {
-              const isExternal = item.href.startsWith("http");
+              const isExternal = item.href?.startsWith("http");
               const href = isExternal
                 ? item.href
-                : `/blog/${tenantId}/p/${item.href}`;
+                : `/blog/${tenantId}/p/${item.href || ''}`;
               return (
                 <a
                   key={i}

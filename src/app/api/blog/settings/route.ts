@@ -70,6 +70,31 @@ export async function PUT(req: NextRequest) {
       await db.updateOne("blog_settings", { workspaceId }, { $set: { ...body, updatedAt: new Date() } });
     } else {
       await db.insertOne("blog_settings", { workspaceId, ...body, createdAt: new Date(), updatedAt: new Date() });
+      
+      // Auto-seed default pages if they don't exist
+      const hasPages = await db.findOne("blog_pages", { workspaceId });
+      if (!hasPages) {
+        await db.insertOne("blog_pages", {
+          workspaceId,
+          title: "Sobre Nós",
+          slug: "about-us",
+          description: "Conheça a nossa história.",
+          content: "<h2>Nossa Missão</h2><p>Texto padrão gerado pelo sistema.</p>",
+          status: "published",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        await db.insertOne("blog_pages", {
+          workspaceId,
+          title: "Contato",
+          slug: "contact",
+          description: "Entre em contato conosco.",
+          content: "<h2>Contato</h2><p>Email: contato@exemplo.com</p>",
+          status: "published",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
     }
 
     const updated = await db.findOne("blog_settings", { workspaceId });

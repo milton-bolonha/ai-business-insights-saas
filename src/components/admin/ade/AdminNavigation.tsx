@@ -187,7 +187,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                         initial={{ width: 0, opacity: 0, x: -80 }}
                         animate={{ width: 80, opacity: 1, x: 0 }}
                         exit={{ width: 0, opacity: 0, x: -80 }}
-                        className="flex flex-col border-r border-gray-100 bg-white h-screen fixed md:sticky top-0 left-0 z-50 items-center py-6 overflow-hidden shrink-0 shadow-2xl md:shadow-none"
+                        className="flex flex-col border-r border-gray-100 bg-white h-screen fixed md:sticky top-0 left-0 z-50 items-center py-6 overflow-hidden shrink-0"
                     >
                         {/* Dynamic Logo */}
                         {/* <div 
