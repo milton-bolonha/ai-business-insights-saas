@@ -51,9 +51,9 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://unpkg.com https://identity.netlify.com https://challenges.cloudflare.com https://vercel.live https://*.vercel.live",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://unpkg.com https://identity.netlify.com https://challenges.cloudflare.com https://vercel.live https://*.vercel.live https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline' https://unpkg.com",
-              "img-src 'self' data: https: https://img.clerk.com https://res.cloudinary.com",
+              "img-src 'self' blob: data: https: https://img.clerk.com https://res.cloudinary.com",
               "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
               "connect-src 'self' data: https://*.clerk.accounts.dev https://*.stripe.com https://api.openai.com https://unpkg.com https://*.cloudflare.com https://clerk-telemetry.com https://fonts.gstatic.com https://cdn.jsdelivr.net https://api.cloudinary.com https://auth.mercadolibre.com.br https://vercel.live https://*.vercel.live",
               "worker-src 'self' blob:",

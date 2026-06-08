@@ -127,6 +127,7 @@ export function VetorizeStudioPro() {
   const loadFile = (file) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
+        img.crossOrigin = 'anonymous';
     img.onload = () => {
       let w = img.width; let h = img.height;
       const MAX_DIM = 2500;
@@ -175,6 +176,7 @@ export function VetorizeStudioPro() {
       } else {
           // PNG, JPG, WEBP
           const img = new Image();
+        img.crossOrigin = 'anonymous';
           img.onload = () => {
               const canvas = document.createElement('canvas');
               canvas.width = activeLayer.mask ? activeLayer.mask.w : imageDimensions.w;
@@ -201,6 +203,7 @@ export function VetorizeStudioPro() {
     if (!imageSrc || !activeLayer) return;
     invalidateActiveVector();
     const img = new Image();
+        img.crossOrigin = 'anonymous';
     img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -258,6 +261,11 @@ export function VetorizeStudioPro() {
       setPalette(prev => prev.map(p => p.id === id ? { ...p, r: rgb.r, g: rgb.g, b: rgb.b, hex: newHex, lab } : p));
   };
 
+  const togglePaletteSelection = (id) => {
+      setSelectedPaletteIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  };
+
+
 
   // --- LIVE PREVIEW (RASTER APENAS - RÁPIDO) ---
   const activeSettingsStr = activeLayer ? JSON.stringify(activeLayer.settings) : null;
@@ -270,6 +278,7 @@ export function VetorizeStudioPro() {
     const timer = setTimeout(() => {
         const settings = JSON.parse(activeSettingsStr);
         const img = new Image();
+        img.crossOrigin = 'anonymous';
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -348,16 +357,20 @@ export function VetorizeStudioPro() {
         const file = new File([blob], "vectorize_input.png", { type: blob.type });
 
         // Envia para o Cloudinary
-        const url = await uploadToCloudinary(file, "os-system/vetorize");
+        const now = new Date();
+        const folder = `workspace/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/apps/vetorize`;
+        const url = await uploadToCloudinary(file, folder);
         
         // Aplica o add-on de vetorização do Cloudinary
         const parts = url.split('/upload/');
         const extMatch = parts[1].match(/\.(png|jpg|jpeg|webp)$/i);
         let vectorizedUrl = '';
+        const d = (layerObject.settings.detail / 100).toFixed(1);
+        const params = `colors:${layerObject.settings.colors}:detail:${d}:despeckle:${layerObject.settings.despeckle}`;
         if (extMatch) {
-            vectorizedUrl = parts[0] + '/upload/e_vectorize/' + parts[1].replace(extMatch[0], '.svg');
+            vectorizedUrl = parts[0] + '/upload/e_vectorize:' + params + '/' + parts[1].replace(extMatch[0], '.svg');
         } else {
-            vectorizedUrl = parts[0] + '/upload/e_vectorize/' + parts[1] + '.svg';
+            vectorizedUrl = parts[0] + '/upload/e_vectorize:' + params + '/' + parts[1] + '.svg';
         }
 
         setLayers(prev => prev.map(l => {
@@ -399,6 +412,7 @@ export function VetorizeStudioPro() {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const img = new Image();
+        img.crossOrigin = 'anonymous';
         
         img.onload = () => {
           let drawX = 0, drawY = 0, drawW = imageDimensions.w, drawH = imageDimensions.h;
@@ -526,7 +540,7 @@ export function VetorizeStudioPro() {
 
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200 font-sans overflow-hidden selection:bg-indigo-500/30">
+    <div className="absolute inset-0 flex flex-col bg-white text-gray-800 font-sans overflow-hidden selection:bg-indigo-500/30">
       
       {globalError && (
          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-red-600/90 text-white px-4 py-2 rounded shadow-xl flex items-center gap-2 text-xs font-bold border border-red-500">
@@ -536,25 +550,25 @@ export function VetorizeStudioPro() {
       )}
 
       {/* HEADER */}
-      <header className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 flex-shrink-0 relative z-50 shadow-md">
+      {imageSrc && (<header className="h-14 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0 relative z-50 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center shadow-lg"><Sparkles size={16} className="text-white" /></div>
-          <span className="font-semibold tracking-wide text-zinc-100 text-sm">Vetorizador Pro V6</span>
+          
         </div>
 
         {imageSrc && (
-          <div className="flex items-center gap-2 bg-zinc-950 p-1 rounded-md border border-zinc-800">
-             <button onClick={() => setZoom(z => Math.max(0.1, z - 0.1))} className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400"><ZoomOut size={14}/></button>
-             <span className="text-xs font-medium w-12 text-center text-zinc-500">{Math.round(zoom * 100)}%</span>
-             <button onClick={() => setZoom(z => Math.min(8, z + 0.1))} className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400"><ZoomIn size={14}/></button>
-             <div className="w-px h-4 bg-zinc-800 mx-1"></div>
-             <button onClick={() => centerCanvas(imageDimensions.w, imageDimensions.h)} className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400" title="Centralizar Visualização"><Focus size={14}/></button>
+          <div className="flex items-center gap-2 bg-white p-1 rounded-md border border-gray-200">
+             <button onClick={() => setZoom(z => Math.max(0.1, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><ZoomOut size={14}/></button>
+             <span className="text-xs font-medium w-12 text-center text-gray-9000">{Math.round(zoom * 100)}%</span>
+             <button onClick={() => setZoom(z => Math.min(8, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><ZoomIn size={14}/></button>
+             <div className="w-px h-4 bg-gray-100 mx-1"></div>
+             <button onClick={() => centerCanvas(imageDimensions.w, imageDimensions.h)} className="p-1.5 hover:bg-gray-100 rounded text-gray-500" title="Centralizar Visualização"><Focus size={14}/></button>
           </div>
         )}
 
         <div className="flex items-center gap-3">
            {imageSrc && (
-             <label className="flex items-center gap-2 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded cursor-pointer text-zinc-300 transition-colors">
+             <label className="flex items-center gap-2 text-xs font-medium bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded cursor-pointer text-gray-700 transition-colors">
                 <Plus size={14} /> Nova Imagem
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && loadFile(e.target.files[0])} />
              </label>
@@ -565,60 +579,60 @@ export function VetorizeStudioPro() {
                    <Download size={14} /> Exportar <ChevronDown size={14} />
                </button>
                {exportMenuOpen && (
-                   <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-800 border border-zinc-700 rounded-md shadow-xl z-50 overflow-hidden">
+                   <div className="absolute right-0 top-full mt-1 w-32 bg-gray-100 border border-gray-300 rounded-md shadow-xl z-50 overflow-hidden">
                        {['svg', 'png', 'jpg', 'webp'].map(fmt => (
-                           <button key={fmt} onClick={() => handleExport(fmt)} className="block w-full text-left px-4 py-2 text-xs hover:bg-zinc-700 uppercase font-medium">{fmt}</button>
+                           <button key={fmt} onClick={() => handleExport(fmt)} className="block w-full text-left px-4 py-2 text-xs hover:bg-gray-200 uppercase font-medium">{fmt}</button>
                        ))}
                    </div>
                )}
            </div>
         </div>
-      </header>
+      </header>)}
 
       <div className="flex flex-1 overflow-hidden relative z-0">
         
         {/* SIDEBAR FERRAMENTAS ESQUERDA */}
         {imageSrc && (
-          <aside className="w-16 bg-zinc-900 border-r border-zinc-800 flex flex-col items-center py-4 gap-2 relative z-40 flex-shrink-0 shadow-xl">
+          <aside className="w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-4 gap-2 relative z-40 flex-shrink-0 shadow-xl">
             {/* CTA VETORIZAR */}
             <button 
                onClick={activeLayer?.type === 'base' ? createFullImageDraft : () => { if (!activeLayer?.svgUrl) processLayerVector(activeLayer); }}
                disabled={activeLayer?.type === 'vector' && !!activeLayer?.svgUrl}
-               className={`w-10 h-10 mb-2 rounded-xl flex items-center justify-center transition-all ${activeLayer?.type === 'vector' && !!activeLayer?.svgUrl ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed' : 'bg-green-500 hover:bg-green-400 text-black shadow-[0_0_15px_rgba(34,197,94,0.4)] active:scale-95'}`}
+               className={`w-10 h-10 mb-2 rounded-xl flex items-center justify-center transition-all ${activeLayer?.type === 'vector' && !!activeLayer?.svgUrl ? 'bg-gray-100 text-zinc-600 cursor-not-allowed' : 'bg-green-500 hover:bg-green-400 text-black shadow-[0_0_15px_rgba(34,197,94,0.4)] active:scale-95'}`}
                title={activeLayer?.type === 'base' ? "Preparar Imagem Inteira" : (activeLayer?.svgUrl ? "Vetor Atualizado" : "Gerar Vetor SVG Agora (Local)")}
             >
                {activeLayer?.isProcessing ? <Loader2 size={18} className="animate-spin" /> : (activeLayer?.type === 'vector' && activeLayer?.svgUrl ? <Check size={20} /> : <Wand2 size={20} />)}
             </button>
             <button 
                onClick={() => activeLayer?.type !== 'base' && handleCloudinaryVectorize(activeLayer)}
-               className={`w-10 h-10 mb-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all active:scale-95 ${activeLayer?.type === 'base' ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-indigo-500 hover:bg-indigo-400 text-white'}`}
+               className={`w-10 h-10 mb-2 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all active:scale-95 ${activeLayer?.type === 'base' ? 'bg-gray-100 text-gray-9000 cursor-not-allowed' : 'bg-indigo-500 hover:bg-indigo-400 text-white'}`}
                title="Vetorizar com Cloudinary (Alta Precisão)"
                disabled={activeLayer?.type === 'base'}
             >
                {activeLayer?.isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Cloud size={20} />}
             </button>
-            <div className="w-8 h-px bg-zinc-800 mb-2"></div>
+            <div className="w-8 h-px bg-gray-100 mb-2"></div>
 
-            <button onClick={() => setActiveTool('select')} className={`p-3 rounded-xl transition-all ${activeTool === 'select' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800'}`} title="Seleção Normal"><MousePointer2 size={18} /></button>
-            <button onClick={() => setActiveTool('pan')} className={`p-3 rounded-xl transition-all ${activeTool === 'pan' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800'}`} title="Mover Tela (Ou segure Espaço)"><Hand size={18} /></button>
-            <button onClick={() => setActiveTool('rect')} className={`p-3 rounded-xl transition-all ${activeTool === 'rect' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800'}`} title="Recorte Retangular"><SquareDashed size={18} /></button>
-            <button onClick={() => setActiveTool('oval')} className={`p-3 rounded-xl transition-all ${activeTool === 'oval' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800'}`} title="Recorte Elíptico"><CircleDashed size={18} /></button>
+            <button onClick={() => setActiveTool('select')} className={`p-3 rounded-xl transition-all ${activeTool === 'select' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-gray-9000 hover:bg-gray-100'}`} title="Seleção Normal"><MousePointer2 size={18} /></button>
+            <button onClick={() => setActiveTool('pan')} className={`p-3 rounded-xl transition-all ${activeTool === 'pan' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-gray-9000 hover:bg-gray-100'}`} title="Mover Tela (Ou segure Espaço)"><Hand size={18} /></button>
+            <button onClick={() => setActiveTool('rect')} className={`p-3 rounded-xl transition-all ${activeTool === 'rect' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-gray-9000 hover:bg-gray-100'}`} title="Recorte Retangular"><SquareDashed size={18} /></button>
+            <button onClick={() => setActiveTool('oval')} className={`p-3 rounded-xl transition-all ${activeTool === 'oval' ? 'bg-indigo-600/20 text-indigo-400 shadow-inner' : 'text-gray-9000 hover:bg-gray-100'}`} title="Recorte Elíptico"><CircleDashed size={18} /></button>
             
-            <div className="mt-auto w-8 h-px bg-zinc-800 my-2"></div>
-            <button onClick={() => setActiveTool('compare')} className={`p-3 rounded-xl transition-all ${activeTool === 'compare' ? 'bg-blue-600/20 text-blue-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800'}`} title="Comparar Original vs Vetor"><SplitSquareHorizontal size={18} /></button>
+            <div className="mt-auto w-8 h-px bg-gray-100 my-2"></div>
+            <button onClick={() => setActiveTool('compare')} className={`p-3 rounded-xl transition-all ${activeTool === 'compare' ? 'bg-blue-600/20 text-blue-400 shadow-inner' : 'text-gray-9000 hover:bg-gray-100'}`} title="Comparar Original vs Vetor"><SplitSquareHorizontal size={18} /></button>
           </aside>
         )}
 
         {/* MAIN CANVAS */}
-        <main ref={containerRef} className={`flex-1 relative overflow-hidden bg-zinc-950 checkerboard-bg z-10 ${isSpaceDown || activeTool === 'pan' ? 'cursor-grab active:cursor-grabbing' : (activeTool==='select'?'cursor-default':'cursor-crosshair')}`}
+        <main ref={containerRef} className={`flex-1 relative overflow-hidden bg-[#e5e5e5]  z-10 ${isSpaceDown || activeTool === 'pan' ? 'cursor-grab active:cursor-grabbing' : (activeTool==='select'?'cursor-default':'cursor-crosshair')}`}
           onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
           
           {!imageSrc && (
              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto">
-                <label className="flex flex-col items-center justify-center w-80 h-80 rounded-3xl bg-zinc-900 border-2 border-dashed border-zinc-700 hover:border-indigo-500 hover:bg-zinc-800/50 cursor-pointer transition-all group shadow-2xl">
-                   <div className="w-20 h-20 rounded-full bg-zinc-800 group-hover:bg-indigo-500/20 flex items-center justify-center mb-6 shadow-inner transition-colors"><ImageIcon size={32} className="text-zinc-500 group-hover:text-indigo-400" /></div>
-                   <h2 className="text-xl font-medium text-zinc-300">Área de Trabalho</h2>
-                   <p className="text-sm mt-2 text-zinc-500 px-8 text-center">Arraste a imagem original aqui.</p>
+                <label className="flex flex-col items-center justify-center w-80 h-80 rounded-3xl bg-gray-50 border-2 border-dashed border-gray-300 hover:border-indigo-500 hover:bg-gray-100/50 cursor-pointer transition-all group shadow-2xl">
+                   <div className="w-20 h-20 rounded-full bg-gray-100 group-hover:bg-indigo-500/20 flex items-center justify-center mb-6 shadow-inner transition-colors"><ImageIcon size={32} className="text-gray-9000 group-hover:text-indigo-400" /></div>
+                   <h2 className="text-xl font-medium text-gray-700">Área de Trabalho</h2>
+                   <p className="text-sm mt-2 text-gray-9000 px-8 text-center">Arraste a imagem original aqui.</p>
                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && loadFile(e.target.files[0])} />
                 </label>
              </div>
@@ -647,11 +661,11 @@ export function VetorizeStudioPro() {
                    return (
                      <div key={layer.id} className="absolute pointer-events-none" style={{ left: isMasked?m.x:0, top: isMasked?m.y:0, width: isMasked?m.w:'100%', height: isMasked?m.h:'100%', clipPath: clip }}>
                         {layer.svgUrl ? (
-                           <img src={layer.svgUrl} className="w-full h-full object-contain drop-shadow-xl" />
+                           <img src={layer.svgUrl} className="w-full h-full object-contain drop-shadow-xl" onError={() => setGlobalError("Falha ao carregar vetor do Cloudinary. O add-on 'Vectorize' está ativo na sua conta?")} />
                         ) : layer.rasterUrl ? (
                            <img src={layer.rasterUrl} className="w-full h-full object-contain opacity-95" />
                         ) : (
-                           <div className={`w-full h-full border-2 border-dashed ${selectedLayerId === layer.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-zinc-500/50 bg-zinc-500/10'}`} style={{ borderRadius: isMasked && m.type==='oval'?'50%':'0' }} />
+                           <div className={`w-full h-full border-2 border-dashed ${selectedLayerId === layer.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-gray-300/50 bg-zinc-500/10'}`} style={{ borderRadius: isMasked && m.type==='oval'?'50%':'0' }} />
                         )}
                      </div>
                    );
@@ -660,7 +674,7 @@ export function VetorizeStudioPro() {
                 {/* 3. SLIDER MÁGICO DE COMPARAÇÃO */}
                 {activeTool === 'compare' && activeLayer?.type === 'vector' && (
                   <div className="absolute top-0 bottom-0 w-[2px] bg-indigo-500 shadow-[0_0_10px_rgba(0,0,0,0.8)] z-30 flex items-center justify-center pointer-events-none" style={{ left: `${splitPos}%`, transform: 'translateX(-50%)' }}>
-                     <div className="w-8 h-8 bg-zinc-900 rounded-full flex items-center justify-center shadow-lg border-2 border-indigo-500 pointer-events-auto cursor-ew-resize">
+                     <div onMouseDown={(e)=>{e.stopPropagation();}} className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-indigo-500 pointer-events-auto cursor-ew-resize">
                         <ArrowLeftRight size={14} className="text-white pointer-events-none" />
                         <input type="range" min="0" max="100" value={splitPos} onChange={(e) => setSplitPos(parseFloat(e.target.value))} className="absolute inset-y-0 -left-12 w-32 opacity-0 cursor-ew-resize" />
                      </div>
@@ -677,21 +691,21 @@ export function VetorizeStudioPro() {
 
         {/* RIGHT SIDEBAR (Propriedades) */}
         {imageSrc && (
-          <aside className="w-[340px] bg-zinc-900 border-l border-zinc-800 flex flex-col relative z-40 flex-shrink-0 shadow-[-5px_0_20px_rgba(0,0,0,0.5)]">
+          <aside className="w-[340px] bg-gray-50 border-l border-gray-200 flex flex-col relative z-40 flex-shrink-0 shadow-[-4px_0_15px_rgba(0,0,0,0.05)]">
             
             {/* PROPERTIES SCROLL AREA */}
-            <div className={`flex flex-col border-b border-zinc-800 transition-all overflow-hidden ${propsOpen ? 'flex-1' : 'flex-none'}`}>
-               <button onClick={() => setPropsOpen(!propsOpen)} className="p-4 bg-zinc-900 hover:bg-zinc-800 flex justify-between items-center flex-shrink-0 transition-colors border-b border-zinc-800">
-                  <h3 className="text-xs uppercase tracking-widest font-bold text-zinc-400 flex items-center gap-2">
+            <div className={`flex flex-col border-b border-gray-200 transition-all overflow-hidden ${propsOpen ? 'flex-1' : 'flex-none'}`}>
+               <button onClick={() => setPropsOpen(!propsOpen)} className="p-4 bg-gray-50 hover:bg-gray-100 flex justify-between items-center flex-shrink-0 transition-colors border-b border-gray-200">
+                  <h3 className="text-xs uppercase tracking-widest font-bold text-gray-500 flex items-center gap-2">
                      <Settings2 size={14} /> Controles: {activeLayer ? activeLayer.name : 'Nenhum'}
                   </h3>
-                  {propsOpen ? <ChevronDown size={16} className="text-zinc-500"/> : <ChevronRight size={16} className="text-zinc-500"/>}
+                  {propsOpen ? <ChevronDown size={16} className="text-gray-9000"/> : <ChevronRight size={16} className="text-gray-9000"/>}
                </button>
 
                {propsOpen && activeLayer && activeLayer.type === 'vector' && (
                  <div className="flex-1 p-5 space-y-6 overflow-y-auto">
                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-400">Preset Inteligente</label>
+                        <label className="text-xs font-semibold text-gray-500">Preset Inteligente</label>
                         <select 
                            value={currentPresetKey} 
                            onChange={(e) => {
@@ -700,55 +714,55 @@ export function VetorizeStudioPro() {
                                   setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...preset.settings } } : l));
                                }
                            }} 
-                           className="w-full bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-200 p-2 outline-none"
+                           className="w-full bg-white border border-gray-200 rounded text-xs text-gray-800 p-2 outline-none"
                         >
                            {Object.entries(PRESETS).map(([key, preset]) => <option key={key} value={key}>{preset.name} - {preset.desc}</option>)}
                         </select>
                      </div>
 
-                     <div className="space-y-4 pt-4 border-t border-zinc-800">
-                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase flex justify-between">1. Base Analógica</h4>
+                     <div className="space-y-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-[10px] font-bold text-gray-9000 uppercase flex justify-between">1. Base Analógica</h4>
                         {[{key:'blur', label:'Suavização e Fusão (px)', min:0, max:5, step:0.5}, {key:'contrast', label:'Contraste Linear', min:0.5, max:3.0, step:0.1}, {key:'threshold', label:'Corte Monocromático', min:0, max:255, step:1}].map(sl => (
                            <div key={sl.key} className="space-y-2">
-                              <div className="flex justify-between items-center"><label className="text-xs font-medium text-zinc-400">{sl.label}</label><span className="text-[10px] bg-zinc-950 px-1.5 py-0.5 rounded text-zinc-300 border border-zinc-800">{activeLayer.settings[sl.key]}</span></div>
-                              <input type="range" min={sl.min} max={sl.max} step={sl.step} value={activeLayer.settings[sl.key]} onChange={(e) => setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...l.settings, [sl.key]: parseFloat(e.target.value) } } : l))} className="w-full accent-indigo-500 h-1 bg-zinc-800 rounded appearance-none cursor-pointer" />
+                              <div className="flex justify-between items-center"><label className="text-xs font-medium text-gray-500">{sl.label}</label><span className="text-[10px] bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200">{activeLayer.settings[sl.key]}</span></div>
+                              <input type="range" min={sl.min} max={sl.max} step={sl.step} value={activeLayer.settings[sl.key]} onChange={(e) => setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...l.settings, [sl.key]: parseFloat(e.target.value) } } : l))} className="w-full accent-indigo-500 h-1 bg-gray-100 rounded appearance-none cursor-pointer" />
                            </div>
                         ))}
 
-                        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/50">
-                          <label className="text-xs font-medium text-zinc-400">Ignorar Fundo Branco</label>
-                          <button onClick={() => setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...l.settings, ignoreWhite: !l.settings.ignoreWhite } } : l))} className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${activeLayer.settings.ignoreWhite ? 'bg-indigo-500' : 'bg-zinc-700'}`}>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200/50">
+                          <label className="text-xs font-medium text-gray-500">Ignorar Fundo Branco</label>
+                          <button onClick={() => setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...l.settings, ignoreWhite: !l.settings.ignoreWhite } } : l))} className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${activeLayer.settings.ignoreWhite ? 'bg-indigo-500' : 'bg-gray-200'}`}>
                             <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${activeLayer.settings.ignoreWhite ? 'left-4.5' : 'left-0.5'}`} />
                           </button>
                         </div>
                      </div>
 
-                     <div className="space-y-3 pt-4 border-t border-zinc-800">
+                     <div className="space-y-3 pt-4 border-t border-gray-200">
                         <div className="flex items-center justify-between">
                           <label className="text-xs font-semibold text-indigo-400 flex items-center gap-2"><Pipette size={14} /> 2. Paleta Manual (Lab)</label>
-                          <button onClick={() => { setUseCustomPalette(!useCustomPalette); invalidateActiveVector(); }} className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${useCustomPalette ? 'bg-indigo-500' : 'bg-zinc-700'}`}>
+                          <button onClick={() => { setUseCustomPalette(!useCustomPalette); invalidateActiveVector(); }} className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${useCustomPalette ? 'bg-indigo-500' : 'bg-gray-200'}`}>
                              <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${useCustomPalette ? 'left-4.5' : 'left-0.5'}`} />
                           </button>
                         </div>
                         {useCustomPalette && (
-                           <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 shadow-inner">
-                              {palette.length === 0 ? <button onClick={extractPalette} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs text-indigo-300 font-medium rounded transition-colors shadow">Extrair Cores Brutas</button> : (
+                           <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-inner">
+                              {palette.length === 0 ? <button onClick={extractPalette} className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-xs text-indigo-300 font-medium rounded transition-colors shadow">Extrair Cores Brutas</button> : (
                                  <>
                                     <div className="flex justify-between items-center mb-3">
-                                       <span className="text-[10px] uppercase font-bold text-zinc-500">{palette.length} Detetadas</span>
+                                       <span className="text-[10px] uppercase font-bold text-gray-9000">{palette.length} Detetadas</span>
                                        <button onClick={() => { setPalette([]); invalidateActiveVector(); }} className="text-[10px] text-indigo-400 hover:underline">Resetar</button>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mb-3">
                                        {palette.map(c => (
-                                          <div key={c.id} onClick={() => togglePaletteSelection(c.id)} className={`w-6 h-6 rounded-full border-2 cursor-pointer transition-all ${selectedPaletteIds.includes(c.id) ? 'border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'border-zinc-700 hover:border-zinc-500'}`} style={{ backgroundColor: c.hex }} title="Selecionar" />
+                                          <div key={c.id} onClick={() => togglePaletteSelection(c.id)} className={`w-6 h-6 rounded-full border-2 cursor-pointer transition-all ${selectedPaletteIds.includes(c.id) ? 'border-indigo-500 scale-110 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'border-gray-300 hover:border-gray-300'}`} style={{ backgroundColor: c.hex }} title="Selecionar" />
                                        ))}
                                     </div>
                                     {selectedPaletteIds.length > 0 && (
                                        <div className="flex flex-col gap-2">
                                           {selectedPaletteIds.length === 1 ? (
-                                             <div className="flex items-center justify-between bg-zinc-900 p-2 rounded"><span className="text-xs text-zinc-400">Alterar cor:</span><input type="color" value={palette.find(c=>c.id===selectedPaletteIds[0])?.hex} onChange={(e) => updateSingleColor(selectedPaletteIds[0], e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0" /></div>
-                                          ) : <button onClick={handleMergeColors} className="flex items-center justify-center gap-2 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 rounded text-xs text-indigo-300 font-bold transition-colors"><Merge size={14} /> Mesclar Tudo</button>}
-                                          <button onClick={handleRemoveColor} className="flex items-center justify-center gap-2 py-2 bg-red-900/10 hover:bg-red-900/30 border border-red-900/50 text-red-400 rounded text-xs transition-colors"><Trash size={14} /> Excluir</button>
+                                             <div className="flex items-center justify-between bg-gray-50 p-2 rounded"><span className="text-xs text-gray-500">Alterar cor:</span><input type="color" value={palette.find(c=>c.id===selectedPaletteIds[0])?.hex} onChange={(e) => updateSingleColor(selectedPaletteIds[0], e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0" /></div>
+                                          ) : <button onClick={handleMergeColors} className="flex items-center justify-center gap-2 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded text-xs text-indigo-700 font-bold transition-colors"><Merge size={14} /> Mesclar Tudo</button>}
+                                          <button onClick={handleRemoveColor} className="flex items-center justify-center gap-2 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded text-xs transition-colors"><Trash size={14} /> Excluir</button>
                                        </div>
                                     )}
                                  </>
@@ -757,12 +771,12 @@ export function VetorizeStudioPro() {
                         )}
                      </div>
 
-                     <div className="space-y-4 pt-4 border-t border-zinc-800">
-                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase">3. Geometria (Vetor)</h4>
+                     <div className="space-y-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-[10px] font-bold text-gray-9000 uppercase">3. Geometria (Vetor)</h4>
                         {[{key:'colors', label:'Cores Limite', min:2, max:128, step:1}, {key:'detail', label:'Fidelidade (%)', min:1, max:100, step:1}, {key:'smoothness', label:'Cantos Retos (0) / Curvas (100)', min:0, max:100, step:1}, {key:'despeckle', label:'Ignorar Sujeira', min:0, max:10, step:1}, {key:'optimize', label:'Otimizar Curvas (%)', min:0, max:100, step:1}].map(sl => (
                            <div key={sl.key} className="space-y-2">
-                              <div className="flex justify-between items-center"><label className="text-xs font-medium text-zinc-400">{sl.label}</label><span className="text-[10px] bg-zinc-950 px-1.5 py-0.5 rounded text-zinc-300 border border-zinc-800">{activeLayer.settings[sl.key]}</span></div>
-                              <input type="range" min={sl.min} max={sl.max} step={sl.step} value={activeLayer.settings[sl.key]} onChange={(e) => setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...l.settings, [sl.key]: parseFloat(e.target.value) } } : l))} className="w-full accent-indigo-500 h-1 bg-zinc-800 rounded appearance-none cursor-pointer" />
+                              <div className="flex justify-between items-center"><label className="text-xs font-medium text-gray-500">{sl.label}</label><span className="text-[10px] bg-white px-1.5 py-0.5 rounded text-gray-700 border border-gray-200">{activeLayer.settings[sl.key]}</span></div>
+                              <input type="range" min={sl.min} max={sl.max} step={sl.step} value={activeLayer.settings[sl.key]} onChange={(e) => setLayers(prev => prev.map(l => l.id === activeLayer.id ? { ...l, svgUrl: null, settings: { ...l.settings, [sl.key]: parseFloat(e.target.value) } } : l))} className="w-full accent-indigo-500 h-1 bg-gray-100 rounded appearance-none cursor-pointer" />
                            </div>
                         ))}
                      </div>
@@ -770,11 +784,11 @@ export function VetorizeStudioPro() {
                )}
 
                {propsOpen && activeLayer && activeLayer.type === 'base' && (
-                  <div className="flex-1 p-8 text-center flex flex-col items-center justify-center gap-4 bg-zinc-900/50">
+                  <div className="flex-1 p-8 text-center flex flex-col items-center justify-center gap-4 bg-gray-50/50">
                      <ImageIcon size={48} className="text-zinc-700" />
                      <div>
-                        <p className="text-sm font-bold text-zinc-300 mb-1">Imagem Original (Apenas Leitura)</p>
-                        <p className="text-xs text-zinc-500 leading-relaxed">Faça um recorte na imagem à esquerda, ou clique abaixo para preparar a imagem inteira.</p>
+                        <p className="text-sm font-bold text-gray-700 mb-1">Imagem Original (Apenas Leitura)</p>
+                        <p className="text-xs text-gray-9000 leading-relaxed">Faça um recorte na imagem à esquerda, ou clique abaixo para preparar a imagem inteira.</p>
                      </div>
                      <button onClick={createFullImageDraft} className="mt-4 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded shadow flex items-center gap-2 transition-colors w-full justify-center">
                         <Settings2 size={14} /> Criar Camada de Ajuste Inteira
@@ -784,7 +798,7 @@ export function VetorizeStudioPro() {
                
                {/* CTA BOTÃO FINAL FIXO */}
                {propsOpen && activeLayer && activeLayer.type === 'vector' && (
-                  <div className="p-4 bg-zinc-900 border-t border-zinc-800">
+                  <div className="p-4 bg-gray-50 border-t border-gray-200">
                      {activeLayer.svgUrl ? (
                         <div className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 font-bold text-sm rounded-lg flex justify-center items-center gap-2">
                            <Check size={16} /> Vetor Gerado e Atualizado
@@ -800,43 +814,43 @@ export function VetorizeStudioPro() {
             </div>
 
             {/* LAYERS PANEL */}
-            <div className={`flex flex-col bg-zinc-950 transition-all border-t-4 border-zinc-950 ${propsOpen ? 'flex-none h-64' : 'flex-1'}`}>
-               <div className="p-4 border-b border-zinc-800 bg-zinc-900 flex justify-between items-center flex-shrink-0">
-                  <h3 className="text-xs uppercase tracking-widest font-bold text-zinc-400 flex items-center gap-2"><Layers size={14} /> Recortes e Vetores</h3>
-                  <button onClick={createFullImageDraft} className="text-[10px] bg-zinc-800 text-white px-2 py-1 rounded hover:bg-zinc-700 transition-colors flex items-center gap-1 font-medium"><Plus size={12}/> Inteira</button>
+            <div className={`flex flex-col bg-white transition-all border-t-4 border-gray-100 ${propsOpen ? 'flex-none h-64' : 'flex-1'}`}>
+               <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center flex-shrink-0">
+                  <h3 className="text-xs uppercase tracking-widest font-bold text-gray-500 flex items-center gap-2"><Layers size={14} /> Recortes e Vetores</h3>
+                  <button onClick={createFullImageDraft} className="text-[10px] bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded hover:bg-gray-200 transition-colors flex items-center gap-1 font-medium"><Plus size={12}/> Inteira</button>
                </div>
                
                <div className="flex-1 overflow-y-auto p-3 space-y-2 relative">
                   {layers.filter(l => l.type === 'vector').reverse().map(layer => (
                      <div key={layer.id} onClick={() => { setSelectedLayerId(layer.id); setPropsOpen(true); }}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group ${selectedLayerId === layer.id ? 'bg-indigo-600/10 border-indigo-500 shadow-sm relative z-10' : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800'}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group ${selectedLayerId === layer.id ? 'bg-indigo-600/10 border-indigo-500 shadow-sm relative z-10' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}
                      >
-                        <button onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(layer.id); }} className="text-zinc-500 hover:text-zinc-300">
+                        <button onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(layer.id); }} className="text-gray-9000 hover:text-gray-700">
                            {layer.visible ? <Eye size={16} /> : <EyeOff size={16} />}
                         </button>
                         
-                        <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${layer.isProcessing ? 'text-indigo-400 bg-indigo-900/20' : (layer.svgUrl ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800 text-zinc-500')}`}>
+                        <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${layer.isProcessing ? 'text-indigo-400 bg-indigo-900/20' : (layer.svgUrl ? 'bg-green-500/10 text-green-400' : 'bg-gray-100 text-gray-9000')}`}>
                            {layer.isProcessing ? <Loader2 size={14} className="animate-spin" /> : (layer.mask ? <SquareDashed size={14}/> : <FileCode2 size={14} />)}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                           <p className={`text-xs truncate ${selectedLayerId === layer.id ? 'text-indigo-300 font-bold' : 'text-zinc-300 font-medium'}`}>{layer.name}</p>
-                           {layer.isProcessing ? <p className="text-[9px] text-indigo-400">Processando...</p> : (layer.svgUrl ? <p className="text-[9px] text-green-500 font-medium">Vetor Final</p> : <p className="text-[9px] text-zinc-500">Preview (Em Ajuste)</p>)}
+                           <p className={`text-xs truncate ${selectedLayerId === layer.id ? 'text-indigo-300 font-bold' : 'text-gray-700 font-medium'}`}>{layer.name}</p>
+                           {layer.isProcessing ? <p className="text-[9px] text-indigo-400">Processando...</p> : (layer.svgUrl ? <p className="text-[9px] text-green-500 font-medium">Vetor Final</p> : <p className="text-[9px] text-gray-9000">Preview (Em Ajuste)</p>)}
                         </div>
 
                         <button onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }} className="text-zinc-600 hover:text-red-400 transition-colors p-1"><Trash2 size={14} /></button>
                      </div>
                   ))}
 
-                  <div className="mt-8 border-t border-zinc-800 pt-4">
+                  <div className="mt-8 border-t border-gray-200 pt-4">
                      <span className="text-[9px] font-bold uppercase text-zinc-600 block mb-2 px-2">Base Original Fixa</span>
                      {layers.filter(l => l.type === 'base').map(layer => (
                         <div key={layer.id} onClick={() => { setSelectedLayerId(layer.id); setPropsOpen(true); }}
-                           className={`flex items-center gap-3 p-3 rounded-lg border border-dashed transition-all cursor-pointer ${selectedLayerId === layer.id ? 'border-zinc-500 bg-zinc-800' : 'border-zinc-800 bg-transparent opacity-60 hover:opacity-100'}`}
+                           className={`flex items-center gap-3 p-3 rounded-lg border border-dashed transition-all cursor-pointer ${selectedLayerId === layer.id ? 'border-gray-300 bg-gray-100' : 'border-gray-200 bg-transparent opacity-60 hover:opacity-100'}`}
                         >
-                           <button onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(layer.id); }} className="text-zinc-500 hover:text-zinc-300"><Eye size={16} /></button>
-                           <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 bg-zinc-800 text-zinc-500"><ImageIcon size={14}/></div>
-                           <p className={`text-xs flex-1 truncate ${selectedLayerId === layer.id ? 'text-white font-bold' : 'text-zinc-400 font-medium'}`}>{layer.name}</p>
+                           <button onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(layer.id); }} className="text-gray-9000 hover:text-gray-700"><Eye size={16} /></button>
+                           <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 bg-gray-100 text-gray-9000"><ImageIcon size={14}/></div>
+                           <p className={`text-xs flex-1 truncate ${selectedLayerId === layer.id ? 'text-indigo-600 font-bold' : 'text-gray-500 font-medium'}`}>{layer.name}</p>
                         </div>
                      ))}
                   </div>
@@ -848,7 +862,7 @@ export function VetorizeStudioPro() {
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
-        .checkerboard-bg { background-image: linear-gradient(45deg, #121212 25%, transparent 25%), linear-gradient(-45deg, #121212 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #121212 75%), linear-gradient(-45deg, transparent 75%, #121212 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+        . { background-image: linear-gradient(45deg, #121212 25%, transparent 25%), linear-gradient(-45deg, #121212 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #121212 75%), linear-gradient(-45deg, transparent 75%, #121212 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
       `}} />
     </div>
   );

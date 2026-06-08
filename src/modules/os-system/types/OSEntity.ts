@@ -32,6 +32,7 @@ export interface OSTask {
   status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   isArchived?: boolean;
+  isFeatured?: boolean;
   assigneeId?: string;
   assigneeName?: string;
   equipmentId?: string; // NOVO: Para vincular tarefas a um equipamento (Impressora, Prensa, etc)

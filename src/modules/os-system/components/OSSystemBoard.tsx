@@ -29,7 +29,7 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch("/api/os-system");
+        const res = await fetch(`/api/os-system${workspaceId ? `?workspaceId=${workspaceId}` : ''}`);
         if (res.ok) {
           const data = await res.json();
           setOsList(data.orders || []);
@@ -90,7 +90,7 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
 
     // Salva no banco de dados via API
     try {
-      await fetch("/api/os-system", {
+      await fetch(`/api/os-system${workspaceId ? `?workspaceId=${workspaceId}` : ''}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newOs),
@@ -106,7 +106,7 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
     
     // Atualiza no banco de dados
     try {
-      await fetch(`/api/os-system/${id}`, {
+      await fetch(`/api/os-system/${id}${workspaceId ? `?workspaceId=${workspaceId}` : ''}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -184,12 +184,11 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
 
         <div className="flex gap-6">
           {[
-            { id: "comercial", label: t("osSystem.tabs.comercial"), icon: Briefcase },
-            { id: "design", label: t("osSystem.tabs.design"), icon: Paintbrush },
-            { id: "producao", label: t("osSystem.tabs.producao"), icon: Scissors },
-            { id: "expedicao", label: t("osSystem.tabs.expedicao"), icon: Truck },
+            { id: "comercial", label: `${t("osSystem.tabs.comercial")} (${osList.filter(os => columnsComercial.flatMap(c=>c.statuses).includes(os.status)).length})`, icon: Briefcase },
+            { id: "design", label: `${t("osSystem.tabs.design")} (${osList.filter(os => columnsDesign.flatMap(c=>c.statuses).includes(os.status)).length})`, icon: Paintbrush },
+            { id: "producao", label: `${t("osSystem.tabs.producao")} (${osList.filter(os => columnsProducao.flatMap(c=>c.statuses).includes(os.status)).length})`, icon: Scissors },
+            { id: "expedicao", label: `${t("osSystem.tabs.expedicao")} (${osList.filter(os => columnsExpedicao.flatMap(c=>c.statuses).includes(os.status)).length})`, icon: Truck },
             { id: "arquivadas", label: t("osSystem.tabs.arquivadas"), icon: Archive },
-            { id: "tarefas", label: t("osSystem.tabs.tarefas"), icon: Briefcase },
             { id: "clientes", label: t("osSystem.tabs.clientes"), icon: Users },
             { id: "files", label: t("osSystem.tabs.files"), icon: FolderOpen },
             { id: "vetorize", label: t("osSystem.tabs.vetorize"), icon: ImageIcon },
@@ -218,6 +217,12 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
               viewMode={viewMode} 
               onViewModeChange={setViewMode} 
               onSelectOS={(os) => setSelectedOsId(os.id)} 
+              onUpdateTask={async (osId, taskId, updates) => {
+                const targetOs = osList.find(o => o.id === osId);
+                if (!targetOs) return;
+                const updatedTasks = targetOs.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+                await handleUpdateOS(osId, { tasks: updatedTasks });
+              }}
             />
           )}
           {activeTab === 'design' && (
@@ -227,6 +232,12 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
               viewMode={viewMode} 
               onViewModeChange={setViewMode} 
               onSelectOS={(os) => setSelectedOsId(os.id)} 
+              onUpdateTask={async (osId, taskId, updates) => {
+                const targetOs = osList.find(o => o.id === osId);
+                if (!targetOs) return;
+                const updatedTasks = targetOs.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+                await handleUpdateOS(osId, { tasks: updatedTasks });
+              }}
             />
           )}
           {activeTab === 'producao' && (
@@ -236,6 +247,12 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
               viewMode={viewMode} 
               onViewModeChange={setViewMode} 
               onSelectOS={(os) => setSelectedOsId(os.id)} 
+              onUpdateTask={async (osId, taskId, updates) => {
+                const targetOs = osList.find(o => o.id === osId);
+                if (!targetOs) return;
+                const updatedTasks = targetOs.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+                await handleUpdateOS(osId, { tasks: updatedTasks });
+              }}
             />
           )}
           {activeTab === 'expedicao' && (
@@ -245,6 +262,12 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
               viewMode={viewMode} 
               onViewModeChange={setViewMode} 
               onSelectOS={(os) => setSelectedOsId(os.id)} 
+              onUpdateTask={async (osId, taskId, updates) => {
+                const targetOs = osList.find(o => o.id === osId);
+                if (!targetOs) return;
+                const updatedTasks = targetOs.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+                await handleUpdateOS(osId, { tasks: updatedTasks });
+              }}
             />
           )}
           {activeTab === 'files' && (
@@ -264,18 +287,7 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
                />
             </div>
           )}
-          {activeTab === 'tarefas' && (
-            <OSTasksGlobalBoard 
-              osList={osList} 
-              onUpdateTask={async (osId, taskId, updates) => {
-                const targetOs = osList.find(o => o.id === osId);
-                if (!targetOs) return;
-                
-                const updatedTasks = targetOs.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
-                await handleUpdateOS(osId, { tasks: updatedTasks });
-              }}
-            />
-          )}
+
           {activeTab === 'clientes' && (
             <div className="h-full">
                <OSCustomersBoard osList={osList} />

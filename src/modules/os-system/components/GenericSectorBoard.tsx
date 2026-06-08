@@ -1,7 +1,8 @@
 import React from 'react';
 import { OSEntity, OSStatus } from '../types/OSEntity';
-import { LayoutGrid, List as ListIcon, Check, Clock } from 'lucide-react';
+import { LayoutGrid, List as ListIcon, Check, Clock, Circle, AlertCircle, Archive, Star, Filter } from 'lucide-react';
 import { OSStatusBadge } from './OSStatusBadge';
+import { useUser } from "@/lib/stores/authStore";
 
 export interface SectorColumnDef {
   id: string;
@@ -16,11 +17,46 @@ interface GenericSectorBoardProps {
   viewMode: 'kanban' | 'list';
   onViewModeChange: (mode: 'kanban' | 'list') => void;
   onSelectOS: (os: OSEntity) => void;
+  onUpdateTask?: (osId: string, taskId: string, updates: any) => void;
 }
 
-export const GenericSectorBoard: React.FC<GenericSectorBoardProps> = ({ queue, columns, viewMode, onViewModeChange, onSelectOS }) => {
+export const GenericSectorBoard: React.FC<GenericSectorBoardProps> = ({ queue, columns, viewMode, onViewModeChange, onSelectOS, onUpdateTask }) => {
+  const user = useUser();
+  const isAdmin = user?.role === 'admin' || user?.globalRole === 'admin';
+
   const acceptedStatuses = columns.flatMap(c => c.statuses);
   const listQueue = queue.filter(os => acceptedStatuses.includes(os.status));
+  
+  // Extrair e filtrar as tarefas das OSs deste setor
+  const allSectorTasks = listQueue.flatMap(os => 
+    (os.tasks || []).map(t => ({ ...t, osId: os.id, osTitle: os.title, osNumber: os.osNumber }))
+  ).filter(t => !t.isArchived);
+
+  // Filtragem de acesso as tarefas
+  const visibleTasks = allSectorTasks.filter(t => {
+    if (isAdmin) return true;
+    if (!t.assigneeName) return true;
+    if (user?.name && t.assigneeName.toLowerCase().includes(user.name.toLowerCase())) return true;
+    if (user?.sector && t.assigneeName.toLowerCase().includes(user.sector.toLowerCase())) return true;
+    return false;
+  });
+
+  const [taskFilter, setTaskFilter] = React.useState<string>('all');
+
+  const priorityWeight: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+
+  const processedTasks = visibleTasks
+    .filter(t => taskFilter === 'all' || t.status === taskFilter)
+    .sort((a, b) => {
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      
+      const pA = priorityWeight[a.priority || 'medium'] || 2;
+      const pB = priorityWeight[b.priority || 'medium'] || 2;
+      if (pA !== pB) return pB - pA;
+      
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
   
   if (viewMode === 'list') {
     return (
@@ -104,6 +140,72 @@ export const GenericSectorBoard: React.FC<GenericSectorBoardProps> = ({ queue, c
       </div>
 
       <div className="flex gap-6 overflow-x-auto pb-4 h-full px-6">
+        
+        {/* COLUNA ÚNICA DE TAREFAS */}
+        <div className="flex gap-4 border-r-2 border-dashed border-gray-200 pr-6 mr-2 shrink-0">
+          <div className="w-[340px] shrink-0 flex flex-col rounded-xl border border-violet-200 bg-violet-50/30 h-full">
+            <div className="p-3 border-b border-violet-100 flex flex-col gap-2 bg-white/50 rounded-t-xl">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-violet-800">Tarefas do Setor</h3>
+                <span className="bg-white px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm text-violet-700">{processedTasks.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="w-3 h-3 text-gray-400" />
+                <select 
+                  className="text-[10px] bg-white border border-gray-200 rounded px-1 py-0.5 outline-none text-gray-600 cursor-pointer"
+                  value={taskFilter}
+                  onChange={(e) => setTaskFilter(e.target.value)}
+                >
+                  <option value="all">Todas</option>
+                  <option value="todo">Para Iniciar</option>
+                  <option value="in_progress">Em Andamento</option>
+                  <option value="done">Concluídas</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-3 flex-1 overflow-y-auto space-y-3">
+              {processedTasks.length === 0 ? (
+                <div className="text-center p-4 text-xs font-semibold opacity-50 uppercase tracking-widest border-2 border-dashed border-violet-200 rounded-lg">Vazio</div>
+              ) : (
+                processedTasks.map(task => (
+                  <div key={task.id} className={`bg-white p-3 rounded-lg shadow-sm border transition-all flex flex-col gap-2 ${task.isFeatured ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black/5 hover:border-violet-300'}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        {task.isFeatured && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+                        <span className="text-[10px] font-black uppercase text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                          {task.osNumber}
+                        </span>
+                        {task.priority === 'urgent' && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Urgente</span>}
+                        {task.priority === 'high' && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">Alta</span>}
+                      </div>
+                      
+                      {/* Controles de Status Diretos */}
+                      <div className="flex gap-1">
+                        <button onClick={() => onUpdateTask?.(task.osId, task.id, { status: "todo" })} title="Para Iniciar" className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'todo' ? 'bg-gray-200 text-gray-700' : 'text-gray-300 hover:bg-gray-100'}`}><Circle className="w-3 h-3" /></button>
+                        <button onClick={() => onUpdateTask?.(task.osId, task.id, { status: "in_progress" })} title="Em Andamento" className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'in_progress' ? 'bg-blue-200 text-blue-700' : 'text-gray-300 hover:bg-blue-50'}`}><Clock className="w-3 h-3" /></button>
+                        <button onClick={() => onUpdateTask?.(task.osId, task.id, { status: "done" })} title="Concluída" className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'done' ? 'bg-emerald-200 text-emerald-700' : 'text-gray-300 hover:bg-emerald-50'}`}><Check className="w-3 h-3" /></button>
+                        
+                        {/* Toggle Destaque */}
+                        <button onClick={() => onUpdateTask?.(task.osId, task.id, { isFeatured: !task.isFeatured })} title="Destaque" className={`w-5 h-5 ml-1 rounded-full flex items-center justify-center transition-colors ${task.isFeatured ? 'bg-yellow-100 text-yellow-600' : 'text-gray-300 hover:bg-yellow-50 hover:text-yellow-500'}`}><Star className="w-3 h-3" /></button>
+                      </div>
+                    </div>
+                    
+                    <h4 className={`text-xs font-bold leading-tight ${task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</h4>
+                    
+                    <div className="flex justify-between items-center mt-1 pt-2 border-t border-gray-50">
+                      <span className="text-[10px] font-bold text-slate-500 truncate" title={task.assigneeName || 'Não atribuído'}>👤 {task.assigneeName || 'Livre'}</span>
+                      {task.status === 'done' && (isAdmin || (user?.name && task.assigneeName?.includes(user.name))) && (
+                        <button onClick={() => onUpdateTask?.(task.osId, task.id, { isArchived: true })} className="flex items-center gap-1 text-[9px] font-bold text-gray-500 hover:text-emerald-600 bg-gray-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded" title="Arquivar tarefa"><Archive className="w-3 h-3" /> Arquivar</button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* COLUNAS DE OS */}
         {columns.map(col => {
           const items = queue.filter(os => col.statuses.includes(os.status));
           return (
