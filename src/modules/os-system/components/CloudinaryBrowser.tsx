@@ -1,48 +1,61 @@
 import React, { useRef, useState } from 'react';
 
+import { uploadToCloudinary } from '@/lib/services/cloudinary';
+import { OSEntity } from '../types/OSEntity';
+
 interface CloudinaryBrowserProps {
-  osId: string;
+  os: OSEntity;
   workspaceId: string;
   phase: string;
   onUploadSuccess: (fileData: { id: string; url: string; phase: string; filename: string; uploadedAt: string }) => void;
 }
 
-export const CloudinaryBrowser: React.FC<CloudinaryBrowserProps> = ({ osId, workspaceId, phase, onUploadSuccess }) => {
+export const CloudinaryBrowser: React.FC<CloudinaryBrowserProps> = ({ os, workspaceId, phase, onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // O caminho estruturado no Cloudinary: workspaces/{id}/os/{os_id}/{fase}/
-  const folderPath = `workspaces/${workspaceId}/os/${osId}/${phase}/`;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  
+  const customerName = os.customer?.name ? os.customer.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'cliente';
+  const projectName = os.title ? os.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'projeto';
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const baseName = `${customerName}-${projectName}-${day}-${month}-${year}`;
+  const folderPath = `${year}/${month}/${baseName}/${phase}`;
 
-    simulateUpload(file);
-  };
-
-  const simulateUpload = (file: File) => {
+  const handleUpload = async (file: File) => {
     setIsUploading(true);
 
-    // Simulando o delay de upload para o Cloudinary
-    setTimeout(() => {
-      const mockUrl = URL.createObjectURL(file); // Apenas mock visual local
+    try {
+      const url = await uploadToCloudinary(file, folderPath, workspaceId);
       
       const fileData = {
         id: crypto.randomUUID(),
-        url: mockUrl,
+        url: url,
         phase: phase,
         filename: file.name,
         uploadedAt: new Date().toISOString()
       };
       
       onUploadSuccess(fileData);
+    } catch (error) {
+      console.error("Upload failed", error);
+      alert("Falha ao fazer upload da imagem.");
+    } finally {
       setIsUploading(false);
-      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    }, 1500);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    handleUpload(file);
   };
 
   return (

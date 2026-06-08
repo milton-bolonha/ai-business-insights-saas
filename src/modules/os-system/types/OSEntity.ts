@@ -17,16 +17,25 @@ export type OSStatus =
   | 'entregue'
   | 'cancelado';
 
+export interface OSTaskComment {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+  photoUrl?: string;
+}
+
 export interface OSTask {
   id: string;
   title: string;
   description?: string;
   status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  isArchived?: boolean;
   assigneeId?: string;
   assigneeName?: string;
   equipmentId?: string; // NOVO: Para vincular tarefas a um equipamento (Impressora, Prensa, etc)
-  comments?: any[];
+  comments?: OSTaskComment[];
   createdAt: string;
 }
 

@@ -6,4 +6,6 @@ export interface Equipment {
   lastMaintenance?: string;
   nextMaintenance?: string;
   wikiContent?: string; // HTML ou JSON do TipTap com o know-how
+  assigneeId?: string; // NOVO: Usuário responsável pelo equipamento
+  assigneeName?: string; // NOVO: Nome do responsável
 }

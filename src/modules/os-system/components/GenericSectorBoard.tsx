@@ -51,7 +51,7 @@ export const GenericSectorBoard: React.FC<GenericSectorBoardProps> = ({ queue, c
                     <tr className="bg-gray-50/50">
                       <td colSpan={5} className="px-6 py-3 border-y border-gray-200">
                         <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full bg-${col.color}-400 inline-block`} style={{ backgroundColor: col.color === 'emerald' ? '#34d399' : col.color === 'blue' ? '#60a5fa' : col.color === 'orange' ? '#fb923c' : col.color === 'violet' ? '#a78bfa' : col.color === 'amber' ? '#fbbf24' : '#9ca3af' }}></span>
+                          <span className={`w-2 h-2 rounded-full bg-${col.color}-400 inline-block`} style={{ backgroundColor: col.color === 'emerald' ? '#34d399' : col.color === 'blue' ? '#60a5fa' : col.color === 'orange' ? '#fb923c' : col.color === 'violet' ? '#a78bfa' : col.color === 'amber' ? '#fbbf24' : col.color === 'gray' ? '#9ca3af' : col.color === 'yellow' ? '#facc15' : col.color === 'pink' ? '#f472b6' : col.color === 'fuchsia' ? '#e879f9' : col.color === 'teal' ? '#2dd4bf' : '#9ca3af' }}></span>
                           <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">{col.title}</span>
                           <span className="bg-white px-2 py-0.5 rounded border border-gray-200 text-gray-500 text-[10px] font-bold shadow-sm">{items.length}</span>
                         </div>

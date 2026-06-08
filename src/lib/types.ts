@@ -74,6 +74,7 @@ export interface Contact {
   createdAt: string;
   outreach?: ContactOutreach;
   chatHistory?: TileMessage[];
+  metadata?: Record<string, any>;
 }
 
 export interface WorkspaceAppearance {

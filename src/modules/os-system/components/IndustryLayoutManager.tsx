@@ -337,6 +337,45 @@ export const IndustryLayoutManager: React.FC<IndustryLayoutManagerProps> = ({ is
                                                 </span>
                                             </div>
                                             
+                                            {/* Responsável pelo Equipamento */}
+                                            <div className="mt-4 flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                <div>
+                                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Responsável</span>
+                                                    {selectedSpot.equipment.assigneeName ? (
+                                                        <span className="font-bold text-sm text-slate-700">{selectedSpot.equipment.assigneeName}</span>
+                                                    ) : (
+                                                        <span className="font-bold text-sm text-slate-400 italic">Nenhum operador atribuído</span>
+                                                    )}
+                                                </div>
+                                                <button 
+                                                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                                    onClick={() => {
+                                                        const newName = prompt("Digite o nome do operador responsável:");
+                                                        if (newName !== null) {
+                                                            const updatedSectors = sectors.map(sec => ({
+                                                                ...sec,
+                                                                spots: sec.spots.map(spot => {
+                                                                    if (spot.id === selectedSpot.id && spot.equipment) {
+                                                                        return {
+                                                                            ...spot,
+                                                                            equipment: { ...spot.equipment, assigneeName: newName || undefined }
+                                                                        };
+                                                                    }
+                                                                    return spot;
+                                                                })
+                                                            }));
+                                                            setSectors(updatedSectors);
+                                                            setSelectedSpot({
+                                                                ...selectedSpot, 
+                                                                equipment: { ...selectedSpot.equipment, assigneeName: newName || undefined }
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    {selectedSpot.equipment.assigneeName ? 'Alterar' : 'Atribuir'}
+                                                </button>
+                                            </div>
+                                            
                                             {/* Integração WIKI */}
                                             <div className="mt-6 pt-4 border-t border-slate-100">
                                                 <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { X, MessageCircle, Mail, Phone } from "lucide-react";
 import type { Contact } from "@/lib/types";
 
@@ -9,6 +9,7 @@ interface ContactDetailModalProps {
   onClose: () => void;
   onSubmitChat?: (message: string) => void;
   isChatting?: boolean;
+  onUpdateContact?: (updated: Contact) => void;
 }
 
 export function ContactDetailModal({
@@ -16,8 +17,19 @@ export function ContactDetailModal({
   onClose,
   onSubmitChat,
   isChatting = false,
+  onUpdateContact,
 }: ContactDetailModalProps) {
   const [chatMessage, setChatMessage] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+
+  // Sync internal state when contact changes
+  React.useEffect(() => {
+    if (contact) {
+      setNotes(contact.notes || "");
+      setIsEditingNotes(false);
+    }
+  }, [contact]);
 
   if (!contact) return null;
 
@@ -89,6 +101,59 @@ export function ContactDetailModal({
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Notes Section */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-900">
+                  Notes & Details
+                </h3>
+                {onUpdateContact && !isEditingNotes && (
+                  <button
+                    onClick={() => setIsEditingNotes(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              {isEditingNotes ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full h-32 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Add details about this contact..."
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => {
+                        setNotes(contact.notes || "");
+                        setIsEditingNotes(false);
+                      }}
+                      className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-md"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (onUpdateContact) {
+                          onUpdateContact({ ...contact, notes });
+                        }
+                        setIsEditingNotes(false);
+                      }}
+                      className="px-3 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg border border-gray-100 min-h-[3rem]">
+                  {contact.notes || "No notes available."}
+                </div>
+              )}
             </div>
 
             {/* Outreach Content */}

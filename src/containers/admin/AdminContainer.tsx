@@ -1544,6 +1544,27 @@ export function AdminContainer() {
             }
           }}
           isChatting={content.chattingContactId === modals.selectedContact?.id}
+          onUpdateContact={async (updatedContact) => {
+            if (currentWorkspace && currentDashboard) {
+              const updatedContacts = currentDashboard.contacts?.map((c) =>
+                c.id === updatedContact.id ? updatedContact : c
+              );
+              if (updatedContacts) {
+                await workspaceActions.updateDashboard(
+                  currentWorkspace.id,
+                  currentDashboard.id,
+                  { contacts: updatedContacts }
+                );
+                // Also update the currently selected contact in the modal
+                setSelectedContact(updatedContact);
+                push({
+                  title: "Contact Updated",
+                  description: "Contact notes saved successfully.",
+                  variant: "success",
+                });
+              }
+            }
+          }}
         />
       )}
 

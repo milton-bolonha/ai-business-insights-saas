@@ -68,7 +68,7 @@ export const OSFileGallery: React.FC<OSFileGalleryProps> = ({ os, workspaceId, o
           </div>
 
           <CloudinaryBrowser 
-            osId={os.id} 
+            os={os} 
             workspaceId={workspaceId} 
             phase={activePhase} 
             onUploadSuccess={handleUploadSuccess} 

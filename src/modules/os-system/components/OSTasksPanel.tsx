@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { OSTask } from '../types/OSEntity';
-import { Check, Plus, Trash2, User, ChevronDown, ChevronRight, MessageSquare, Paperclip, Clock, Calendar } from 'lucide-react';
+import { Check, Plus, Trash2, User, ChevronDown, ChevronRight, MessageSquare, Paperclip, Clock, Calendar, Loader2, Image as ImageIcon, Send } from 'lucide-react';
+import { uploadToCloudinary } from '@/lib/services/cloudinary';
 
 interface OSTasksPanelProps {
   tasks: OSTask[];
@@ -11,6 +12,45 @@ export const OSTasksPanel: React.FC<OSTasksPanelProps> = ({ tasks, onTasksUpdate
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskAssignee, setNewTaskAssignee] = useState('');
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<string | null>(null);
+
+  const handleAddComment = (taskId: string, photoUrl?: string) => {
+    const text = commentTexts[taskId] || '';
+    if (!text.trim() && !photoUrl) return;
+
+    const newComment = {
+      id: crypto.randomUUID(),
+      text: text.trim(),
+      author: 'Milton Bolonha',
+      createdAt: new Date().toISOString(),
+      photoUrl
+    };
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const updatedComments = [...(task.comments || []), newComment];
+    updateTask(taskId, { comments: updatedComments });
+    
+    setCommentTexts(prev => ({ ...prev, [taskId]: '' }));
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, taskId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(taskId);
+    try {
+      const url = await uploadToCloudinary(file, "os-system/tasks/comments", "global");
+      handleAddComment(taskId, url);
+    } catch (err) {
+      console.error(err);
+      alert("Falha ao enviar foto.");
+    } finally {
+      setIsUploadingPhoto(null);
+    }
+  };
 
   const addTask = () => {
     if (!newTaskTitle.trim()) return;
@@ -148,6 +188,64 @@ export const OSTasksPanel: React.FC<OSTasksPanelProps> = ({ tasks, onTasksUpdate
                             placeholder="Adicione instruções, links ou contexto para esta tarefa..."
                             className="w-full text-sm border border-gray-200 rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-violet-500 outline-none resize-y bg-white"
                           />
+                        </div>
+
+                        {/* Comments Section */}
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4" /> Comentários e Fotos
+                          </h4>
+                          
+                          <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2">
+                            {(!task.comments || task.comments.length === 0) && (
+                              <p className="text-xs text-gray-400 italic">Nenhum comentário ainda.</p>
+                            )}
+                            {task.comments?.map(comment => (
+                              <div key={comment.id} className="bg-white border border-gray-100 p-3 rounded-lg shadow-sm">
+                                <div className="flex justify-between items-start mb-1">
+                                  <span className="text-xs font-bold text-gray-800">{comment.author}</span>
+                                  <span className="text-[10px] text-gray-400">{new Date(comment.createdAt).toLocaleString()}</span>
+                                </div>
+                                {comment.text && <p className="text-sm text-gray-600 mb-2">{comment.text}</p>}
+                                {comment.photoUrl && (
+                                  <a href={comment.photoUrl} target="_blank" rel="noreferrer" className="block w-32 h-32 rounded-md overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity">
+                                    <img src={comment.photoUrl} alt="Anexo" className="w-full h-full object-cover" />
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1 relative">
+                              <textarea
+                                value={commentTexts[task.id] || ''}
+                                onChange={e => setCommentTexts(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                placeholder="Escreva um comentário..."
+                                className="w-full text-sm border border-gray-200 rounded-lg p-3 pr-12 focus:ring-2 focus:ring-violet-500 outline-none resize-none bg-white min-h-[44px]"
+                                rows={1}
+                              />
+                            </div>
+                            
+                            <label className={`w-11 h-11 flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${isUploadingPhoto === task.id ? 'bg-gray-100 border-gray-200 text-gray-400' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-violet-600'}`}>
+                              {isUploadingPhoto === task.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={(e) => handlePhotoUpload(e, task.id)}
+                                disabled={isUploadingPhoto === task.id}
+                              />
+                            </label>
+
+                            <button 
+                              onClick={() => handleAddComment(task.id)}
+                              disabled={!(commentTexts[task.id]?.trim())}
+                              className="w-11 h-11 flex items-center justify-center rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       

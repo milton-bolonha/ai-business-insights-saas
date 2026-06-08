@@ -1906,5 +1906,45 @@
       "viewAuthor": "Ver Autor",
       "footer": "I/O MENTORIA • TODOS OS DIREITOS RESERVADOS"
     }
+  },
+  "osSystem": {
+    "title": "OS System - Vice Versa",
+    "subtitle": "Gestão de Produção e Confecção",
+    "searchPlaceholder": "Buscar cliente ou OS...",
+    "newCommercialOrder": "Novo Orçamento Comercial",
+    "tabs": {
+      "comercial": "Comercial",
+      "design": "Arte & Impressão",
+      "producao": "Produção",
+      "expedicao": "Expedição",
+      "arquivadas": "Arquivadas",
+      "tarefas": "Tarefas",
+      "clientes": "Clientes",
+      "files": "Galeria",
+      "vetorize": "Vetorizador"
+    }
+  },
+  "loveWriters": {
+    "newBook": "Criar Novo Livro",
+    "title": "Título",
+    "createFirst": "Clique para criar o primeiro.",
+    "deleteConfirmTitle": "Tem certeza?",
+    "deleteConfirmText": "Esta ação não pode ser desfeita.",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "deleting": "Excluindo...",
+    "pause": "Pausar",
+    "resume": "Continuar",
+    "stop": "Parar",
+    "edit": "Editar",
+    "open": "Abrir",
+    "generating": "Gerando...",
+    "generatingImages": "Gerando Imagens...",
+    "status": {
+      "mapping": "Mapeando",
+      "writing": "Escrevendo"
+    },
+    "read": "Ler",
+    "noBooksGenerated": "Nenhum livro gerado ainda."
   }
 }

@@ -214,16 +214,15 @@ export function BookLibrarySection({
     }
 
     const baseArcs = sortedTiles.length;
-    const calculatedTargetArcs = Math.ceil(formData.pagesCountGoal / 20);
-    const totalArcs = Math.max(baseArcs, calculatedTargetArcs);
+    const totalArcs = Math.max(baseArcs, Math.ceil(formData.pagesCountGoal / 20));
 
     if (totalArcs > baseArcs) {
       const lastTile = sortedTiles[sortedTiles.length - 1];
       for (let i = baseArcs; i < totalArcs; i++) {
         sortedTiles.push({
           ...lastTile,
-          title: `${lastTile.title} (Extended ${i - baseArcs + 1})`,
-          content: `Continue and extend the story from the previous arc, building on the established narrative for the longer book format.`,
+          title: `Arc ${i + 1}`,
+          content: `Continue and extend the story from the previous arc, building on the established narrative for the longer book format. Expand the plot towards the climax and resolution.`,
           orderIndex: lastTile.orderIndex + (i - baseArcs + 1),
         });
       }
@@ -458,7 +457,12 @@ export function BookLibrarySection({
             }));
             resolve();
           })
-          .catch(() => resolve());
+          .catch((err) => {
+            console.error("Arc generation error:", err);
+            toast.error(`Arc ${arcNum} failed: ${err.message || "Unknown error"}`);
+            // Still resolve to allow the loop to finish gracefully or be paused
+            resolve();
+          });
       });
     }
 

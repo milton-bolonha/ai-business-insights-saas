@@ -1906,5 +1906,45 @@
       "viewAuthor": "View Author",
       "footer": "I/O MENTORING • ALL RIGHTS RESERVED"
     }
+  },
+  "osSystem": {
+    "title": "OS System - Vice Versa",
+    "subtitle": "Production and Confection Management",
+    "searchPlaceholder": "Search customer or OS...",
+    "newCommercialOrder": "New Commercial Order",
+    "tabs": {
+      "comercial": "Commercial",
+      "design": "Art & Print",
+      "producao": "Production",
+      "expedicao": "Shipping",
+      "arquivadas": "Archived",
+      "tarefas": "Tasks",
+      "clientes": "Customers",
+      "files": "Gallery",
+      "vetorize": "Vectorizer"
+    }
+  },
+  "loveWriters": {
+    "newBook": "Create New Book",
+    "title": "Title",
+    "createFirst": "Click to create the first one.",
+    "deleteConfirmTitle": "Are you sure?",
+    "deleteConfirmText": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "edit": "Edit",
+    "open": "Open",
+    "generating": "Generating...",
+    "generatingImages": "Generating Images...",
+    "status": {
+      "mapping": "Mapping",
+      "writing": "Writing"
+    },
+    "read": "Read",
+    "noBooksGenerated": "No books generated yet."
   }
 }

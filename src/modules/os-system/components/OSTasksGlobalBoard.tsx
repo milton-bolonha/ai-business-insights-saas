@@ -1,6 +1,7 @@
 import React from "react";
 import { OSEntity } from "../types/OSEntity";
-import { Clock, CheckCircle, Circle, AlertCircle } from "lucide-react";
+import { Clock, CheckCircle, Circle, AlertCircle, Archive } from "lucide-react";
+import { useUser } from "@/lib/stores/authStore";
 
 interface OSTasksGlobalBoardProps {
   osList: OSEntity[];
@@ -8,21 +9,33 @@ interface OSTasksGlobalBoardProps {
 }
 
 export function OSTasksGlobalBoard({ osList, onUpdateTask }: OSTasksGlobalBoardProps) {
-  // Aggregate all tasks
+  const user = useUser();
+  const isAdmin = user?.role === 'admin' || user?.globalRole === 'admin';
+
+  // Aggregate all tasks and filter out archived ones
   const allTasks = osList.flatMap(os => 
     (os.tasks || []).map(task => ({ ...task, osId: os.id, osTitle: os.title, osNumber: os.osNumber }))
-  );
+  ).filter(t => !t.isArchived);
+
+  // Filter visibility based on role
+  const visibleTasks = allTasks.filter(t => {
+    if (isAdmin) return true;
+    if (!t.assigneeName) return true; // Unassigned are visible
+    if (user?.name && t.assigneeName.toLowerCase().includes(user.name.toLowerCase())) return true;
+    if (user?.sector && t.assigneeName.toLowerCase().includes(user.sector.toLowerCase())) return true;
+    return false;
+  });
 
   const columns = [
-    { id: "pending", title: "Pendentes", status: "pending", color: "bg-gray-100 border-gray-200 text-gray-800" },
+    { id: "todo", title: "A Fazer", status: "todo", color: "bg-gray-100 border-gray-200 text-gray-800" },
     { id: "in_progress", title: "Em Andamento", status: "in_progress", color: "bg-blue-50 border-blue-200 text-blue-800" },
-    { id: "completed", title: "Concluídas", status: "completed", color: "bg-emerald-50 border-emerald-200 text-emerald-800" }
+    { id: "done", title: "Concluídas", status: "done", color: "bg-emerald-50 border-emerald-200 text-emerald-800" }
   ];
 
   return (
     <div className="flex h-full p-8 gap-6 overflow-x-auto items-start">
       {columns.map(col => {
-        const colTasks = allTasks.filter(t => t.status === col.status);
+        const colTasks = visibleTasks.filter(t => t.status === col.status);
         
         return (
           <div key={col.id} className={`w-80 shrink-0 flex flex-col rounded-2xl border ${col.color} h-full max-h-full`}>
@@ -44,8 +57,8 @@ export function OSTasksGlobalBoard({ osList, onUpdateTask }: OSTasksGlobalBoardP
                       </span>
                       <div className="flex gap-1">
                         <button 
-                          onClick={() => onUpdateTask(task.osId, task.id, { status: "pending" })}
-                          className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'pending' ? 'bg-gray-200 text-gray-700' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'}`}
+                          onClick={() => onUpdateTask(task.osId, task.id, { status: "todo" })}
+                          className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'todo' ? 'bg-gray-200 text-gray-700' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'}`}
                         >
                           <Circle className="w-3 h-3" />
                         </button>
@@ -56,8 +69,8 @@ export function OSTasksGlobalBoard({ osList, onUpdateTask }: OSTasksGlobalBoardP
                           <Clock className="w-3 h-3" />
                         </button>
                         <button 
-                          onClick={() => onUpdateTask(task.osId, task.id, { status: "completed" })}
-                          className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'completed' ? 'bg-emerald-200 text-emerald-700' : 'text-gray-300 hover:bg-emerald-50 hover:text-emerald-600'}`}
+                          onClick={() => onUpdateTask(task.osId, task.id, { status: "done" })}
+                          className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${task.status === 'done' ? 'bg-emerald-200 text-emerald-700' : 'text-gray-300 hover:bg-emerald-50 hover:text-emerald-600'}`}
                         >
                           <CheckCircle className="w-3 h-3" />
                         </button>
@@ -71,18 +84,28 @@ export function OSTasksGlobalBoard({ osList, onUpdateTask }: OSTasksGlobalBoardP
                     )}
                     
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
-                      {task.assignee ? (
-                        <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                          👤 {task.assignee}
+                      {task.assigneeName ? (
+                        <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1 truncate max-w-[120px]" title={task.assigneeName}>
+                          👤 {task.assigneeName}
                         </span>
                       ) : (
                         <span className="text-[10px] font-bold text-slate-400 italic">Não atribuído</span>
                       )}
                       
-                      {task.dueDate && (
-                        <span className={`text-[10px] font-bold flex items-center gap-1 ${new Date(task.dueDate) < new Date() && task.status !== 'completed' ? 'text-rose-500' : 'text-gray-400'}`}>
-                          📅 {new Date(task.dueDate).toLocaleDateString()}
+                      {task.priority && (
+                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${task.priority === 'urgent' ? 'bg-red-50 text-red-700 border-red-200' : task.priority === 'high' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                          {task.priority}
                         </span>
+                      )}
+                      
+                      {task.status === 'done' && isAdmin && (
+                        <button
+                          onClick={() => onUpdateTask(task.osId, task.id, { isArchived: true })}
+                          className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-emerald-600 transition-colors bg-gray-100 hover:bg-emerald-50 px-2 py-1 rounded"
+                          title="Arquivar tarefa"
+                        >
+                          <Archive className="w-3 h-3" /> Arquivar
+                        </button>
                       )}
                     </div>
                   </div>

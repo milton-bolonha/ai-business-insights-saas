@@ -6,11 +6,16 @@ import { OrderDossier } from "./OrderDossier";
 import { GenericSectorBoard, SectorColumnDef } from "./GenericSectorBoard";
 import { OSFileGallery } from "./OSFileGallery";
 import { OSTasksGlobalBoard } from "./OSTasksGlobalBoard";
+import { OSArchivedBoard } from "./OSArchivedBoard";
+import { OSCustomersBoard } from "./OSCustomersBoard";
 import { IndustryLayoutManager } from "./IndustryLayoutManager";
-import { Briefcase, Paintbrush, Scissors, Truck, FolderOpen, Plus, X, Search, Settings } from "lucide-react";
+import { VetorizeStudioPro } from "./VetorizeStudioPro";
+import { Briefcase, Paintbrush, Scissors, Truck, FolderOpen, Plus, X, Search, Settings, Archive, Users, Image as ImageIcon } from "lucide-react";
+import { useTranslation } from "@/lib/hooks/useTranslation";
 
 export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
-  const [activeTab, setActiveTab] = useState<"comercial" | "design" | "producao" | "expedicao" | "files" | "tarefas">("comercial");
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<"comercial" | "design" | "producao" | "expedicao" | "arquivadas" | "files" | "tarefas" | "clientes" | "vetorize">("comercial");
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban"); // Salva preferência do usuário
   
   const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
@@ -136,9 +141,8 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
   ];
 
   const columnsExpedicao: SectorColumnDef[] = [
-    { id: 'conferencia', title: 'Em Conferência', statuses: ['em_conferencia'], color: 'orange' },
-    { id: 'empacotado', title: 'Empacotado', statuses: ['empacotado'], color: 'amber' },
-    { id: 'pronto', title: 'Pronto p/ Entrega', statuses: ['pronto_para_entrega'], color: 'teal' },
+    { id: 'preparar_entrega', title: 'Preparar Entrega', statuses: ['em_conferencia', 'empacotado'], color: 'orange' },
+    { id: 'conferidos_prontos', title: 'Conferidos e Prontos', statuses: ['pronto_para_entrega'], color: 'teal' },
     { id: 'entregue', title: 'Entregue', statuses: ['entregue'], color: 'gray' },
   ];
 
@@ -148,15 +152,15 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
       <div className="border-b border-gray-200 px-8 pt-8 bg-gray-50/50 sticky top-0 z-10 shrink-0">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">OS System - Vice Versa</h1>
-            <p className="text-gray-500 mt-1">Gestão de Produção e Confecção</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t("osSystem.title")}</h1>
+            <p className="text-gray-500 mt-1">{t("osSystem.subtitle")}</p>
           </div>
           <div className="flex gap-4">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Buscar cliente ou OS..." 
+                placeholder={t("osSystem.searchPlaceholder")} 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:ring-2 focus:ring-violet-500 outline-none"
@@ -173,19 +177,22 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
               onClick={() => setIsIntakeModalOpen(true)}
               className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
             >
-              <Plus className="w-4 h-4" /> Novo Orçamento Comercial
+              <Plus className="w-4 h-4" /> {t("osSystem.newCommercialOrder")}
             </button>
           </div>
         </div>
 
         <div className="flex gap-6">
           {[
-            { id: "comercial", label: "Comercial", icon: Briefcase },
-            { id: "design", label: "Arte & Impressão", icon: Paintbrush },
-            { id: "producao", label: "Produção", icon: Scissors },
-            { id: "expedicao", label: "Expedição", icon: Truck },
-            { id: "files", label: "Galeria Geral", icon: FolderOpen },
-            { id: "tarefas", label: "Tarefas do Setor", icon: Briefcase },
+            { id: "comercial", label: t("osSystem.tabs.comercial"), icon: Briefcase },
+            { id: "design", label: t("osSystem.tabs.design"), icon: Paintbrush },
+            { id: "producao", label: t("osSystem.tabs.producao"), icon: Scissors },
+            { id: "expedicao", label: t("osSystem.tabs.expedicao"), icon: Truck },
+            { id: "arquivadas", label: t("osSystem.tabs.arquivadas"), icon: Archive },
+            { id: "tarefas", label: t("osSystem.tabs.tarefas"), icon: Briefcase },
+            { id: "clientes", label: t("osSystem.tabs.clientes"), icon: Users },
+            { id: "files", label: t("osSystem.tabs.files"), icon: FolderOpen },
+            { id: "vetorize", label: t("osSystem.tabs.vetorize"), icon: ImageIcon },
           ].map(tab => (
             <button
               key={tab.id}
@@ -249,6 +256,14 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
                />
             </div>
           )}
+          {activeTab === 'arquivadas' && (
+            <div className="h-full">
+               <OSArchivedBoard 
+                 osList={osList} 
+                 onViewOS={(osId) => setSelectedOsId(osId)}
+               />
+            </div>
+          )}
           {activeTab === 'tarefas' && (
             <OSTasksGlobalBoard 
               osList={osList} 
@@ -260,6 +275,16 @@ export function OSSystemBoard({ workspaceId }: { workspaceId?: string }) {
                 await handleUpdateOS(osId, { tasks: updatedTasks });
               }}
             />
+          )}
+          {activeTab === 'clientes' && (
+            <div className="h-full">
+               <OSCustomersBoard osList={osList} />
+            </div>
+          )}
+          {activeTab === 'vetorize' && (
+            <div className="h-full">
+               <VetorizeStudioPro />
+            </div>
           )}
         </div>
       </div>
