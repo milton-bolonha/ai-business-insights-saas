@@ -90,9 +90,25 @@
     "os_system": {
       "label": "OS System",
       "subtitle": "Intake, quoting, and production of service orders."
+    },
+    "io_editais": {
+      "label": "Tenders & Bidding",
+      "subtitle": "AI-powered analysis and bidding proposals for tenders."
     }
   },
   "attributes": {
+    "edital_name": {
+      "label": "Tender Name",
+      "placeholder": "e.g., Electronic Auction 042/2025"
+    },
+    "company_name": {
+      "label": "Company Name",
+      "placeholder": "Which company do you represent?"
+    },
+    "subscription_purpose": {
+      "label": "Application Purpose",
+      "placeholder": "e.g., IT Equipment Sales"
+    },
     "company": {
       "label": "Sales Rep Company",
       "placeholder": "Which company do you represent?"

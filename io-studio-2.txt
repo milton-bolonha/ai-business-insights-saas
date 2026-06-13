@@ -1,0 +1,906 @@
+import { useState, useEffect, useRef } from "react";
+import {
+  MousePointer2, Type, Image as ImageIcon, Layers, Layout,
+  Plus, Trash2, Settings, FileText,
+  Printer, X, Download, AlignCenter, AlignLeft, AlignRight,
+  LayoutTemplate, Code, Sparkles, Grid3X3, ChevronRight, Shirt
+} from "lucide-react";
+
+const CATALOGO = {
+  categorias: {
+    "Camisetas": ["Unissex", "Masculina", "Feminina", "Infantil"],
+    "Baby Look": ["Feminina", "Infantil"],
+    "Regatas": ["Masculina", "Feminina", "Esportiva"],
+    "Polos": ["Masculina", "Feminina"],
+    "Moletons": ["Fechado", "Com Capuz", "Zíper"],
+    "Jaquetas": ["Corta Vento", "Esportiva", "Corporativa"],
+    "Coletes": ["Promocional", "Corporativo"]
+  },
+  cores: [
+    { nome: "Branco", hex: "#FFFFFF" }, { nome: "Preto", hex: "#1A1A1A" },
+    { nome: "Cinza", hex: "#888888" }, { nome: "Azul Marinho", hex: "#1E3A8A" },
+    { nome: "Azul Royal", hex: "#2563EB" }, { nome: "Vermelho", hex: "#DC2626" },
+    { nome: "Verde", hex: "#16A34A" }, { nome: "Amarelo", hex: "#FACC15" },
+    { nome: "Laranja", hex: "#F97316" }, { nome: "Roxo", hex: "#9333EA" }
+  ],
+  posicoesFixas: [
+    { id: "FC", nome: "Frente Central", x: 200, y: 220, vista: "frente" },
+    { id: "PE", nome: "Peito Esquerdo", x: 270, y: 140, vista: "frente" },
+    { id: "PD", nome: "Peito Direito", x: 130, y: 140, vista: "frente" },
+    { id: "GF", nome: "Gola Frente", x: 200, y: 85, vista: "frente" },
+    { id: "BF", nome: "Barra Frente", x: 200, y: 420, vista: "frente" },
+    { id: "NC", nome: "Nuca Costas", x: 200, y: 80, vista: "costas" },
+    { id: "CC", nome: "Costas Central", x: 200, y: 220, vista: "costas" },
+    { id: "BC", nome: "Barra Costas", x: 200, y: 420, vista: "costas" },
+    { id: "ME", nome: "Manga Esquerda", x: 200, y: 220, vista: "manga_esq" },
+    { id: "MD", nome: "Manga Direita", x: 200, y: 220, vista: "manga_dir" },
+  ],
+  tamanhos: ["P", "M", "G", "GG", "X1"]
+};
+
+const FONTES = {
+  "Escolar / Universitária": ["Montserrat", "Roboto Slab", "Oswald"],
+  "Corporativa / Moderna": ["Inter", "Lato", "Open Sans"],
+  "Esportiva / Impacto": ["Teko", "Bebas Neue", "Russo One"],
+  "Elegante / Manuscrita": ["Playfair Display", "Pacifico", "Dancing Script"]
+};
+
+const CANVAS_W = 400;
+const CANVAS_H = 500;
+const COLS = 16;
+const ROWS = 34;
+
+const calcularCoordenada = (x, y) => {
+  const col = Math.max(0, Math.min(COLS - 1, Math.floor(x / (CANVAS_W / COLS))));
+  const row = Math.max(1, Math.min(ROWS, Math.floor(y / (CANVAS_H / ROWS)) + 1));
+  return `${String.fromCharCode(65 + col)}${row.toString().padStart(2, "0")}`;
+};
+
+const getMatrizAlinhamento = (vista) => {
+  switch (vista) {
+    case "frente": return [[null, "GF", null], ["PD", "FC", "PE"], [null, "BF", null]];
+    case "costas": return [[null, "NC", null], [null, "CC", null], [null, "BC", null]];
+    case "manga_esq": return [[null, null, null], [null, "ME", null], [null, null, null]];
+    case "manga_dir": return [[null, null, null], [null, "MD", null], [null, null, null]];
+    default: return Array(3).fill(Array(3).fill(null));
+  }
+};
+
+const ShirtSVG = ({ corBase, vista }) => {
+  const paths = {
+    frente: "M118 58 C100 62 82 78 72 100 L55 148 L42 245 L38 485 L362 485 L358 245 L345 148 L328 100 C318 78 300 62 282 58 Q250 48 200 46 Q150 48 118 58 Z M118 58 Q145 82 200 86 Q255 82 282 58",
+    costas: "M118 48 C100 54 82 74 72 98 L55 148 L42 245 L38 485 L362 485 L358 245 L345 148 L328 98 C318 74 300 54 282 48 Q250 32 200 30 Q150 32 118 48 Z",
+    manga_esq: "M140 80 L90 180 L100 420 L310 420 L320 180 L260 80 Q200 68 140 80 Z",
+    manga_dir: "M140 80 L90 180 L100 420 L310 420 L320 180 L260 80 Q200 68 140 80 Z"
+  };
+  return (
+    <svg viewBox="0 0 400 500" className="w-full h-full absolute inset-0 pointer-events-none" style={{ filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.35))" }}>
+      <defs>
+        <linearGradient id="shirtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.12" />
+          <stop offset="50%" stopColor="#fff" stopOpacity="0.0" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0.18" />
+        </linearGradient>
+        <linearGradient id="shirtEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#000" stopOpacity="0.25" />
+          <stop offset="20%" stopColor="transparent" />
+          <stop offset="80%" stopColor="transparent" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0.25" />
+        </linearGradient>
+      </defs>
+      <path d={paths[vista] || paths.frente} fill={corBase} stroke={corBase === "#FFFFFF" ? "#e5e7eb" : "transparent"} strokeWidth="1" />
+      <path d={paths[vista] || paths.frente} fill="url(#shirtGrad)" />
+      <path d={paths[vista] || paths.frente} fill="url(#shirtEdge)" />
+    </svg>
+  );
+};
+
+const FontInjector = () => {
+  const families = Object.values(FONTES).flat().map(f => `family=${f.replace(/ /g, "+")}`).join("&");
+  return <style>{`@import url('https://fonts.googleapis.com/css2?${families}&display=swap');`}</style>;
+};
+
+export default function App() {
+  const [projeto, setProjeto] = useState({
+    nome: "Projeto Sem Título", categoria: "Camisetas", produto: "Unissex",
+    corBase: "#1E3A8A", tamanhos: ["P", "M", "G"]
+  });
+
+  const [vistas, setVistas] = useState([
+    { id: "frente", nome: "Frente", objetos: [] },
+    { id: "costas", nome: "Costas", objetos: [] },
+    { id: "manga_esq", nome: "Manga Esq.", objetos: [] },
+    { id: "manga_dir", nome: "Manga Dir.", objetos: [] }
+  ]);
+
+  const [ui, setUi] = useState({
+    vistaAtiva: "frente", selecionadoId: null, ferramenta: "select",
+    modalOsAberto: false, editandoNome: false
+  });
+
+  const [dragState, setDragState] = useState(null);
+  const nomeRef = useRef(null);
+
+  const atualizarUi = (u) => setUi(p => ({ ...p, ...u }));
+  const getVistaAtual = () => vistas.find(v => v.id === ui.vistaAtiva);
+  const getObjetos = () => getVistaAtual()?.objetos || [];
+  const getObjSelecionado = () => getObjetos().find(o => o.id === ui.selecionadoId);
+
+  const atualizarObjetos = (novos) =>
+    setVistas(p => p.map(v => v.id === ui.vistaAtiva ? { ...v, objetos: novos } : v));
+
+  const atualizarObjeto = (id, changes) =>
+    atualizarObjetos(getObjetos().map(o => o.id === id ? { ...o, ...changes } : o));
+
+  const adicionarElemento = (tipo, extras = {}) => {
+    const novoObj = {
+      id: `${tipo}_${Date.now()}`, tipo,
+      nome: tipo === "texto" ? "Novo Texto" : "Nova Imagem",
+      x: CANVAS_W / 2, y: CANVAS_H / 2 - 30,
+      alinhamento: "center", visivel: true, bloqueado: false, posicaoFixa: "Livre",
+      ...extras
+    };
+    atualizarObjetos([...getObjetos(), novoObj]);
+    atualizarUi({ selecionadoId: novoObj.id, ferramenta: "select" });
+  };
+
+  const handleUploadImagem = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => adicionarElemento("imagem", {
+        src: ev.target.result, w: 100, h: 100 / (img.width / img.height), assetName: file.name
+      });
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const aplicarPosicaoFixa = (objId, posId) => {
+    const pos = CATALOGO.posicoesFixas.find(p => p.id === posId);
+    if (!pos) return;
+    if (pos.vista !== ui.vistaAtiva) {
+      const obj = getObjetos().find(o => o.id === objId);
+      setVistas(p => p.map(v => {
+        if (v.id === pos.vista) return { ...v, objetos: [...v.objetos, { ...obj, x: pos.x, y: pos.y, posicaoFixa: pos.id }] };
+        if (v.id === ui.vistaAtiva) return { ...v, objetos: v.objetos.filter(o => o.id !== objId) };
+        return v;
+      }));
+      atualizarUi({ vistaAtiva: pos.vista });
+    } else {
+      atualizarObjeto(objId, { x: pos.x, y: pos.y, posicaoFixa: pos.id });
+    }
+  };
+
+  const aplicarTemplate = (tipo) => {
+    if (tipo === "escola") {
+      adicionarElemento("imagem", {
+        x: 265, y: 130, w: 70, h: 70, posicaoFixa: "PE",
+        src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iMC4zIi8+PHRleHQgeD0iNTAiIHk9IjU4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjQwIiBmaWxsPSIjZmZmIj7wn4qxPC90ZXh0Pjwvc3ZnPg=="
+      });
+      setTimeout(() => {
+        setVistas(p => p.map(v => v.id === "costas" ? {
+          ...v, objetos: [...v.objetos, {
+            id: `texto_${Date.now()}`, tipo: "texto", nome: "Nome da Escola",
+            x: 200, y: 200, alinhamento: "center", visivel: true, bloqueado: false,
+            posicaoFixa: "CC", conteudo: "ESCOLA MODELO", fonte: "Montserrat", tamanho: 28, cor: "#FFFFFF"
+          }]
+        } : v));
+        atualizarUi({ vistaAtiva: "costas" });
+      }, 80);
+    }
+  };
+
+  const onMouseDown = (e, obj) => {
+    if (obj.bloqueado) return;
+    e.stopPropagation();
+    atualizarUi({ selecionadoId: obj.id });
+    if (ui.ferramenta === "select") {
+      setDragState({ id: obj.id, startX: e.clientX, startY: e.clientY, origX: obj.x, origY: obj.y });
+    }
+  };
+
+  useEffect(() => {
+    if (!dragState) return;
+    const onMove = (e) => atualizarObjeto(dragState.id, {
+      x: dragState.origX + (e.clientX - dragState.startX),
+      y: dragState.origY + (e.clientY - dragState.startY),
+      posicaoFixa: "Livre"
+    });
+    const onUp = () => setDragState(null);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [dragState, ui.vistaAtiva]);
+
+  const exportarJson = () => {
+    const placements = vistas.flatMap(v => v.objetos.map(o => ({
+      position: o.posicaoFixa || "Livre",
+      coordinate: calcularCoordenada(o.x, o.y),
+      type: o.tipo === "texto" ? "text" : "logo",
+      asset: o.assetName || "gerado_via_canvas",
+      widthMm: Math.round(o.w || o.tamanho * 2),
+      ...(o.tipo === "texto" && { text: o.conteudo, font: o.fonte, align: o.alinhamento })
+    })));
+    const json = JSON.stringify({
+      project: {
+        name: projeto.nome,
+        product: `${projeto.categoria.toLowerCase()}-${projeto.produto.toLowerCase()}`,
+        color: projeto.corBase,
+        sizeRange: projeto.tamanhos,
+        placements
+      }
+    }, null, 2);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    link.download = `os_${projeto.nome.replace(/\s/g, "_")}.json`;
+    link.click();
+  };
+
+  const obj = getObjSelecionado();
+
+  return (
+    <div style={{
+      display: "flex", height: "100vh", width: "100%", background: "#0d0d12",
+      color: "#c8c8d4", fontFamily: "system-ui, sans-serif", overflow: "hidden", userSelect: "none"
+    }}>
+      <FontInjector />
+
+      {/* LEFT PANEL */}
+      <div style={{
+        width: 240, background: "#111118", borderRight: "1px solid #1e1e2e",
+        display: "flex", flexDirection: "column", zIndex: 10, overflowY: "auto"
+      }}>
+        {/* Logo / Project name */}
+        <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #1e1e2e" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Shirt size={15} color="#fff" />
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#e8e8f4", letterSpacing: "0.02em" }}>UniformeStudio</span>
+          </div>
+          {ui.editandoNome ? (
+            <input
+              ref={nomeRef}
+              autoFocus
+              value={projeto.nome}
+              onChange={e => setProjeto(p => ({ ...p, nome: e.target.value }))}
+              onBlur={() => atualizarUi({ editandoNome: false })}
+              onKeyDown={e => e.key === "Enter" && atualizarUi({ editandoNome: false })}
+              style={{
+                background: "#1a1a28", border: "1px solid #6366f1", borderRadius: 6,
+                color: "#fff", fontSize: 13, padding: "5px 8px", width: "100%", outline: "none"
+              }}
+            />
+          ) : (
+            <div onClick={() => atualizarUi({ editandoNome: true })} style={{
+              fontSize: 13, color: "#888899", cursor: "text", padding: "4px 6px",
+              borderRadius: 5, border: "1px dashed transparent", transition: "border-color 0.2s"
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#333344"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "transparent"}
+            >
+              {projeto.nome}
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: "12px 12px 8px", flex: 1 }}>
+          {/* Templates */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+              <LayoutTemplate size={11} /> Templates
+            </div>
+            <button onClick={() => aplicarTemplate("escola")} style={{
+              width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 7,
+              background: "#1a1a28", border: "1px solid #252535",
+              color: "#a0a0c0", fontSize: 12, cursor: "pointer", display: "flex",
+              alignItems: "center", justifyContent: "space-between", transition: "all 0.15s"
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#222235"; e.currentTarget.style.color = "#c8c8e8"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#1a1a28"; e.currentTarget.style.color = "#a0a0c0"; }}
+            >
+              <span>Uniforme Escolar</span>
+              <Plus size={13} />
+            </button>
+          </div>
+
+          {/* Vistas */}
+          <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+            <Layers size={11} /> Vistas & Camadas
+          </div>
+          {vistas.map(vista => (
+            <div key={vista.id} style={{ marginBottom: 4 }}>
+              <div
+                onClick={() => atualizarUi({ vistaAtiva: vista.id, selecionadoId: null })}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "7px 10px",
+                  borderRadius: 7, cursor: "pointer", transition: "all 0.15s",
+                  background: ui.vistaAtiva === vista.id ? "#1e1e35" : "transparent",
+                  border: ui.vistaAtiva === vista.id ? "1px solid #2e2e50" : "1px solid transparent",
+                  color: ui.vistaAtiva === vista.id ? "#a0a0ff" : "#6a6a80"
+                }}
+              >
+                <Layout size={14} />
+                <span style={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{vista.nome}</span>
+                {vista.objetos.length > 0 && (
+                  <span style={{ fontSize: 10, background: "#2a2a45", color: "#7070a0", borderRadius: 4, padding: "1px 5px" }}>
+                    {vista.objetos.length}
+                  </span>
+                )}
+              </div>
+
+              {ui.vistaAtiva === vista.id && vista.objetos.length > 0 && (
+                <div style={{ paddingLeft: 22, marginTop: 2 }}>
+                  {vista.objetos.map(o => (
+                    <div
+                      key={o.id}
+                      onClick={() => atualizarUi({ selecionadoId: o.id })}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "5px 8px",
+                        borderRadius: 6, cursor: "pointer", fontSize: 12, marginBottom: 2,
+                        background: ui.selecionadoId === o.id ? "#1e2545" : "transparent",
+                        color: ui.selecionadoId === o.id ? "#8080ff" : "#606070",
+                        borderLeft: ui.selecionadoId === o.id ? "2px solid #6366f1" : "2px solid transparent",
+                        transition: "all 0.12s"
+                      }}
+                    >
+                      {o.tipo === "texto" ? <Type size={11} /> : <ImageIcon size={11} />}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>{o.nome}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Cor base */}
+        <div style={{ padding: 14, borderTop: "1px solid #1e1e2e" }}>
+          <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Cor da Peça</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {CATALOGO.cores.map(c => (
+              <button
+                key={c.hex}
+                title={c.nome}
+                onClick={() => setProjeto(p => ({ ...p, corBase: c.hex }))}
+                style={{
+                  width: 24, height: 24, borderRadius: "50%",
+                  backgroundColor: c.hex,
+                  border: projeto.corBase === c.hex ? "2px solid #6366f1" : "2px solid #333344",
+                  cursor: "pointer", transition: "transform 0.15s",
+                  transform: projeto.corBase === c.hex ? "scale(1.18)" : "scale(1)"
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CANVAS AREA */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#0d0d12", position: "relative" }}>
+
+        {/* Top bar */}
+        <div style={{
+          height: 52, borderBottom: "1px solid #1a1a28", display: "flex",
+          alignItems: "center", justifyContent: "space-between", padding: "0 20px",
+          background: "#0f0f18"
+        }}>
+          <div style={{ display: "flex", background: "#111118", borderRadius: 8, padding: 3, border: "1px solid #1e1e2e", gap: 2 }}>
+            {vistas.map(v => (
+              <button
+                key={v.id}
+                onClick={e => { e.stopPropagation(); atualizarUi({ vistaAtiva: v.id, selecionadoId: null }); }}
+                style={{
+                  padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500,
+                  border: "none", cursor: "pointer", transition: "all 0.15s",
+                  background: ui.vistaAtiva === v.id ? "#1e1e35" : "transparent",
+                  color: ui.vistaAtiva === v.id ? "#a0a0ff" : "#555570"
+                }}
+              >
+                {v.nome}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={e => { e.stopPropagation(); exportarJson(); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+                background: "transparent", border: "1px solid #2a2a3e", borderRadius: 8,
+                color: "#7070a0", fontSize: 12, cursor: "pointer", fontWeight: 500, transition: "all 0.15s"
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#4040a0"; e.currentTarget.style.color = "#a0a0e0"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a3e"; e.currentTarget.style.color = "#7070a0"; }}
+            >
+              <Code size={13} /> JSON
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); atualizarUi({ modalOsAberto: true }); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 16px",
+                background: "linear-gradient(135deg,#4f46e5,#7c3aed)", border: "none",
+                borderRadius: 8, color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600,
+                boxShadow: "0 2px 12px rgba(99,102,241,0.3)", transition: "opacity 0.15s"
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <FileText size={13} /> Gerar OS
+            </button>
+          </div>
+        </div>
+
+        {/* Canvas workspace */}
+        <div
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            backgroundImage: "radial-gradient(circle, #1e1e2e 1px, transparent 1px)",
+            backgroundSize: "22px 22px", position: "relative", overflow: "hidden"
+          }}
+          id="area-bg"
+          onPointerDown={e => { if (e.target.id === "area-bg") atualizarUi({ selecionadoId: null }); }}
+        >
+          <div
+            id="canvas-container"
+            style={{ width: 400, height: 500, position: "relative" }}
+            onPointerDown={e => { if (e.target.id === "canvas-container") atualizarUi({ selecionadoId: null }); }}
+          >
+            <ShirtSVG corBase={projeto.corBase} vista={ui.vistaAtiva} />
+
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+              {getObjetos().filter(o => o.visivel).map(o => (
+                <div
+                  key={o.id}
+                  onPointerDown={e => onMouseDown(e, o)}
+                  style={{
+                    position: "absolute",
+                    left: o.x, top: o.y,
+                    pointerEvents: "auto",
+                    cursor: o.bloqueado ? "not-allowed" : "move",
+                    outline: ui.selecionadoId === o.id ? "2px solid #6366f1" : "1px solid transparent",
+                    outlineOffset: 3,
+                    borderRadius: 3,
+                    transform: o.tipo === "texto"
+                      ? (o.alinhamento === "center" || !o.alinhamento ? "translateX(-50%)"
+                        : o.alinhamento === "right" ? "translateX(-100%)" : "none")
+                      : "translateX(-50%)",
+                    transition: "outline-color 0.1s"
+                  }}
+                >
+                  {o.tipo === "texto" && (
+                    <div style={{
+                      fontFamily: `"${o.fonte}", sans-serif`,
+                      fontSize: o.tamanho,
+                      color: o.cor,
+                      whiteSpace: "pre-wrap",
+                      textAlign: o.alinhamento || "center",
+                      lineHeight: 1.25
+                    }}>
+                      {o.conteudo}
+                    </div>
+                  )}
+                  {o.tipo === "imagem" && <img src={o.src} width={o.w} height={o.h} alt="" style={{ pointerEvents: "none", display: "block" }} />}
+
+                  {ui.selecionadoId === o.id && !o.bloqueado && (
+                    <div style={{
+                      position: "absolute", top: -38, left: "50%", transform: "translateX(-50%)",
+                      display: "flex", alignItems: "center", gap: 2,
+                      background: "#1a1a28", border: "1px solid #2e2e48",
+                      borderRadius: 8, padding: "3px 6px", whiteSpace: "nowrap",
+                      zIndex: 50, boxShadow: "0 4px 20px rgba(0,0,0,0.5)"
+                    }}>
+                      <span style={{ fontSize: 10, color: "#6366f1", fontFamily: "monospace", background: "#13132a", padding: "1px 5px", borderRadius: 4, marginRight: 4 }}>
+                        {calcularCoordenada(o.x, o.y)}
+                      </span>
+                      <button
+                        onClick={e => { e.stopPropagation(); atualizarObjeto(o.id, { x: CANVAS_W / 2 }); }}
+                        title="Centralizar"
+                        style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: "2px 4px", borderRadius: 4 }}
+                      ><AlignCenter size={14} /></button>
+                      <div style={{ width: 1, height: 16, background: "#2e2e48", margin: "0 2px" }} />
+                      <button
+                        onClick={e => { e.stopPropagation(); atualizarObjetos(getObjetos().filter(x => x.id !== o.id)); atualizarUi({ selecionadoId: null }); }}
+                        style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: "2px 4px", borderRadius: 4 }}
+                      ><Trash2 size={14} /></button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom toolbar */}
+        <div style={{
+          position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          background: "#111118", border: "1px solid #1e1e30",
+          borderRadius: 16, padding: "6px 8px", display: "flex", gap: 4,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)", zIndex: 20
+        }}>
+          <button
+            onClick={e => { e.stopPropagation(); atualizarUi({ ferramenta: "select" }); }}
+            title="Selecionar"
+            style={{
+              padding: 10, borderRadius: 10, border: "none", cursor: "pointer",
+              background: ui.ferramenta === "select" ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "transparent",
+              color: ui.ferramenta === "select" ? "#fff" : "#5a5a70", transition: "all 0.15s"
+            }}
+          ><MousePointer2 size={19} /></button>
+          <div style={{ width: 1, background: "#1e1e30", margin: "6px 2px" }} />
+          <button
+            onClick={e => { e.stopPropagation(); adicionarElemento("texto", { conteudo: "NOVO TEXTO", fonte: "Montserrat", tamanho: 28, cor: "#FFFFFF" }); }}
+            title="Adicionar Texto"
+            style={{
+              padding: 10, borderRadius: 10, border: "none", cursor: "pointer",
+              background: "transparent", color: "#5a5a70", transition: "all 0.15s"
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#1e1e2e"; e.currentTarget.style.color = "#a0a0c0"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a70"; }}
+          ><Type size={19} /></button>
+          <label
+            title="Adicionar Imagem"
+            style={{
+              padding: 10, borderRadius: 10, cursor: "pointer",
+              color: "#5a5a70", display: "flex", alignItems: "center", transition: "all 0.15s"
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#1e1e2e"; e.currentTarget.style.color = "#a0a0c0"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a70"; }}
+          >
+            <ImageIcon size={19} />
+            <input type="file" accept="image/*,.svg" style={{ display: "none" }} onChange={handleUploadImagem} onClick={e => e.stopPropagation()} />
+          </label>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div style={{
+        width: 280, background: "#111118", borderLeft: "1px solid #1e1e2e",
+        display: "flex", flexDirection: "column", zIndex: 10, overflowY: "auto"
+      }}>
+        <div style={{
+          padding: "14px 16px", borderBottom: "1px solid #1e1e2e",
+          display: "flex", alignItems: "center", gap: 8,
+          position: "sticky", top: 0, background: "#111118", zIndex: 5
+        }}>
+          <Settings size={15} color="#6366f1" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#c0c0d8" }}>
+            {obj ? "Propriedades" : "Configurações"}
+          </span>
+        </div>
+
+        <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 20 }}>
+          {!obj ? (
+            <div>
+              <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Tamanhos</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {CATALOGO.tamanhos.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      const has = projeto.tamanhos.includes(t);
+                      setProjeto(p => ({ ...p, tamanhos: has ? p.tamanhos.filter(x => x !== t) : [...p.tamanhos, t] }));
+                    }}
+                    style={{
+                      padding: "5px 10px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+                      cursor: "pointer", transition: "all 0.15s",
+                      background: projeto.tamanhos.includes(t) ? "#1e1e45" : "#1a1a28",
+                      color: projeto.tamanhos.includes(t) ? "#8080ff" : "#606070",
+                      border: projeto.tamanhos.includes(t) ? "1px solid #3030a0" : "1px solid #252535"
+                    }}
+                  >{t}</button>
+                ))}
+              </div>
+              <div style={{ marginTop: 20, fontSize: 10, color: "#555566", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Categoria</div>
+              <select
+                value={projeto.categoria}
+                onChange={e => setProjeto(p => ({ ...p, categoria: e.target.value, produto: Object.values(CATALOGO.categorias)[Object.keys(CATALOGO.categorias).indexOf(e.target.value)][0] }))}
+                style={{
+                  width: "100%", background: "#1a1a28", border: "1px solid #252535",
+                  borderRadius: 7, color: "#a0a0c0", fontSize: 13, padding: "7px 10px", outline: "none"
+                }}
+              >
+                {Object.keys(CATALOGO.categorias).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          ) : (
+            <>
+              {/* AI Assistant */}
+              <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 10, color: "#8080d0", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                  <Sparkles size={11} /> Assistente IA
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {["Remover Fundo", "Vetorizar Arte"].map(a => (
+                    <button key={a} style={{
+                      background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)",
+                      borderRadius: 6, color: "#a0a0e0", fontSize: 11, padding: "6px", cursor: "pointer",
+                      fontWeight: 500, transition: "background 0.15s"
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.22)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "rgba(99,102,241,0.12)"}
+                    >{a}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Alignment grid */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Posição Fixa</span>
+                  <span style={{ fontSize: 10, color: "#6366f1", fontFamily: "monospace", background: "#13132a", padding: "2px 6px", borderRadius: 5 }}>{obj.posicaoFixa}</span>
+                </div>
+                <div style={{ background: "#0d0d18", border: "1px solid #1e1e2e", borderRadius: 10, padding: 12, display: "flex", justifyContent: "center" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 40px)", gridTemplateRows: "repeat(3, 40px)", gap: 4 }}>
+                    {getMatrizAlinhamento(ui.vistaAtiva).flat().map((posId, idx) => {
+                      if (!posId) return <div key={idx} style={{ width: 40, height: 40, borderRadius: 7, background: "#111118", border: "1px solid #1a1a28" }} />;
+                      const ativo = obj.posicaoFixa === posId;
+                      const nomePos = CATALOGO.posicoesFixas.find(p => p.id === posId)?.nome;
+                      return (
+                        <button
+                          key={idx}
+                          title={nomePos}
+                          onClick={() => aplicarPosicaoFixa(obj.id, posId)}
+                          style={{
+                            width: 40, height: 40, borderRadius: 7, cursor: "pointer",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            border: ativo ? "1px solid #6366f1" : "1px solid #252535",
+                            background: ativo ? "rgba(99,102,241,0.2)" : "#1a1a28",
+                            transition: "all 0.15s"
+                          }}
+                          onMouseEnter={e => { if (!ativo) e.currentTarget.style.background = "#222235"; }}
+                          onMouseLeave={e => { if (!ativo) e.currentTarget.style.background = "#1a1a28"; }}
+                        >
+                          <div style={{
+                            width: 8, height: 8, borderRadius: "50%",
+                            background: ativo ? "#818cf8" : "#363650",
+                            boxShadow: ativo ? "0 0 8px #6366f1" : "none"
+                          }} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Coords + size */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Coord.</div>
+                  <div style={{
+                    background: "#0d0d18", border: "1px solid #1e1e2e", borderRadius: 7,
+                    padding: "7px", textAlign: "center", fontFamily: "monospace", fontSize: 14,
+                    color: "#7070c0", display: "flex", alignItems: "center", justifyContent: "center", gap: 4
+                  }}>
+                    <Grid3X3 size={12} color="#333355" />
+                    {calcularCoordenada(obj.x, obj.y)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Tamanho</div>
+                  <input
+                    type="number"
+                    value={Math.round(obj.tipo === "texto" ? obj.tamanho : obj.w)}
+                    onChange={e => {
+                      const v = parseInt(e.target.value) || 10;
+                      if (obj.tipo === "texto") atualizarObjeto(obj.id, { tamanho: v });
+                      else atualizarObjeto(obj.id, { w: v, h: v / (obj.w / obj.h) });
+                    }}
+                    style={{
+                      width: "100%", background: "#0d0d18", border: "1px solid #1e1e2e",
+                      borderRadius: 7, color: "#c0c0e0", fontSize: 14, padding: "7px", outline: "none",
+                      textAlign: "center"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {obj.tipo === "texto" && (
+                <>
+                  <div>
+                    <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Conteúdo</div>
+                    <textarea
+                      value={obj.conteudo}
+                      onChange={e => atualizarObjeto(obj.id, { conteudo: e.target.value })}
+                      style={{
+                        width: "100%", background: "#0d0d18", border: "1px solid #1e1e2e", borderRadius: 7,
+                        color: "#c0c0e0", fontSize: 13, padding: "8px", outline: "none",
+                        resize: "none", minHeight: 64, fontFamily: "system-ui", boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Fonte</div>
+                    <select
+                      value={obj.fonte}
+                      onChange={e => atualizarObjeto(obj.id, { fonte: e.target.value })}
+                      style={{
+                        width: "100%", background: "#0d0d18", border: "1px solid #1e1e2e",
+                        borderRadius: 7, color: "#a0a0c0", fontSize: 13, padding: "7px", outline: "none",
+                        fontFamily: `"${obj.fonte}", sans-serif`
+                      }}
+                    >
+                      {Object.entries(FONTES).map(([cat, fontes]) => (
+                        <optgroup label={cat} key={cat}>
+                          {fontes.map(f => <option key={f} value={f} style={{ fontFamily: `"${f}", sans-serif` }}>{f}</option>)}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Alinhamento</div>
+                    <div style={{ display: "flex", background: "#0d0d18", border: "1px solid #1e1e2e", borderRadius: 8, padding: 3, gap: 2 }}>
+                      {[["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]].map(([al, Icon]) => (
+                        <button
+                          key={al}
+                          onClick={() => atualizarObjeto(obj.id, { alinhamento: al })}
+                          style={{
+                            flex: 1, display: "flex", justifyContent: "center", padding: "6px",
+                            borderRadius: 6, border: "none", cursor: "pointer", transition: "all 0.12s",
+                            background: (obj.alinhamento === al || (!obj.alinhamento && al === "center")) ? "#1e1e35" : "transparent",
+                            color: (obj.alinhamento === al || (!obj.alinhamento && al === "center")) ? "#a0a0ff" : "#5a5a70"
+                          }}
+                        ><Icon size={15} /></button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 10, color: "#555566", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Cor do Texto</div>
+                    <input
+                      type="color"
+                      value={obj.cor || "#ffffff"}
+                      onChange={e => atualizarObjeto(obj.id, { cor: e.target.value })}
+                      style={{ width: "100%", height: 38, cursor: "pointer", borderRadius: 7, border: "1px solid #1e1e2e", background: "#0d0d18" }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Delete element */}
+              <button
+                onClick={() => { atualizarObjetos(getObjetos().filter(o => o.id !== obj.id)); atualizarUi({ selecionadoId: null }); }}
+                style={{
+                  width: "100%", padding: "8px", borderRadius: 8, border: "1px solid #3a1a1a",
+                  background: "rgba(248,113,113,0.06)", color: "#f87171", fontSize: 12,
+                  fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center",
+                  justifyContent: "center", gap: 6, transition: "background 0.15s", marginTop: 4
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.14)"}
+                onMouseLeave={e => e.currentTarget.style.background = "rgba(248,113,113,0.06)"}
+              >
+                <Trash2 size={13} /> Remover Elemento
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL OS */}
+      {ui.modalOsAberto && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.85)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 32
+          }}
+          onClick={() => atualizarUi({ modalOsAberto: false })}
+        >
+          <div
+            style={{ background: "#fff", width: "100%", maxWidth: 900, maxHeight: "90vh", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden", color: "#111" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                <FileText size={18} color="#6366f1" /> Aprovação / Ordem de Serviço
+              </h2>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => window.print()}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", background: "#111", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+                >
+                  <Printer size={14} /> Imprimir
+                </button>
+                <button
+                  onClick={() => atualizarUi({ modalOsAberto: false })}
+                  style={{ padding: 8, background: "transparent", border: "1px solid #e5e7eb", borderRadius: 8, cursor: "pointer", color: "#666", display: "flex" }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 32, background: "#fff" }} id="pdf-content">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, paddingBottom: 18, borderBottom: "2px solid #111" }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em" }}>Ordem de Produção</h1>
+                  <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888", fontFamily: "monospace" }}>
+                    ID: OS-{Date.now().toString().slice(-6)} &nbsp;|&nbsp; {new Date().toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: "0.06em" }}>Projeto</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{projeto.nome}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28, background: "#f9f9f9", padding: 20, borderRadius: 10, border: "1px solid #eee" }}>
+                {[
+                  ["Categoria", projeto.categoria],
+                  ["Modelo", projeto.produto],
+                  ["Grade", projeto.tamanhos.join(", ")],
+                ].map(([label, val]) => (
+                  <div key={label}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#999", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
+                    <div style={{ fontWeight: 500 }}>{val}</div>
+                  </div>
+                ))}
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#999", textTransform: "uppercase", marginBottom: 5 }}>Cor do Tecido</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: projeto.corBase, border: "1px solid #ccc" }} />
+                    <span style={{ fontFamily: "monospace", fontSize: 13 }}>{projeto.corBase.toUpperCase()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid #e5e7eb", paddingBottom: 8, marginBottom: 18 }}>Gabarito de Estamparia</h3>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
+                {vistas.filter(v => v.objetos.length > 0).map(v => (
+                  <div key={v.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, display: "flex", gap: 16 }}>
+                    <div style={{ width: 120, height: 160, background: "#f5f5f5", borderRadius: 8, border: "1px solid #eee", position: "relative", overflow: "hidden", flexShrink: 0 }}>
+                      <svg viewBox="0 0 400 500" style={{ width: "100%", height: "100%", opacity: 0.2, position: "absolute" }}>
+                        <path d="M120 60 L80 110 L60 240 L55 480 L365 480 L360 240 L340 110 L300 60 Z" fill="#000" />
+                      </svg>
+                      {v.objetos.map(o => (
+                        <div key={o.id} style={{
+                          position: "absolute", background: "rgba(99,102,241,0.15)", border: "1px solid #6366f1",
+                          left: `${(o.x / CANVAS_W) * 100}%`, top: `${(o.y / CANVAS_H) * 100}%`,
+                          width: `${((o.w || o.tamanho * 2) / CANVAS_W) * 100}%`, height: 14,
+                          transform: "translateX(-50%)", display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 7, fontWeight: 700, color: "#4f46e5", fontFamily: "monospace"
+                        }}>
+                          {calcularCoordenada(o.x, o.y)}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, textTransform: "uppercase" }}>{v.nome}</h4>
+                      <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid #eee" }}>
+                            {["Coord.", "Tipo", "Detalhe"].map(h => (
+                              <th key={h} style={{ textAlign: "left", paddingBottom: 4, fontSize: 10, fontWeight: 700, color: "#999", textTransform: "uppercase" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {v.objetos.map(o => (
+                            <tr key={o.id} style={{ borderBottom: "1px solid #f5f5f5" }}>
+                              <td style={{ padding: "6px 0", fontFamily: "monospace", fontWeight: 700, color: "#6366f1" }}>{calcularCoordenada(o.x, o.y)}</td>
+                              <td style={{ padding: "6px 0", fontSize: 10, color: "#888", textTransform: "uppercase" }}>{o.tipo}</td>
+                              <td style={{ padding: "6px 0", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 100, whiteSpace: "nowrap" }}>
+                                {o.tipo === "texto" ? `"${o.conteudo}"` : (o.assetName || "Imagem Vetorial")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <style>{`@media print { body * { visibility: hidden; } #pdf-content, #pdf-content * { visibility: visible; } #pdf-content { position: absolute; left: 0; top: 0; width: 100%; } }`}</style>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

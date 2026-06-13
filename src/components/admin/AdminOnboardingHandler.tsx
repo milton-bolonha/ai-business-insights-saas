@@ -30,7 +30,7 @@ export function AdminOnboardingHandler() {
 
                 // Duplicate guard: if we already have a workspace with this name, skip
                 const existingWorkspaces = useWorkspaceStore.getState().workspaces;
-                const workspaceName = data.os_company_name || data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
+                const workspaceName = data.edital_name || data.os_company_name || data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
                 if (workspaceName && existingWorkspaces.some(w => w.name === workspaceName)) {
                     console.log(`[Onboarding] Workspace "${workspaceName}" already exists, skipping duplicate creation.`);
                     setIsProcessing(false);
@@ -59,6 +59,8 @@ export function AdminOnboardingHandler() {
                     await handleBlogCreation(data);
                 } else if (type === "os_system") {
                     await handleOsSystemCreation(data);
+                } else if (type === "io_editais") {
+                    await handleIoEditaisCreation(data);
                 }
 
                 push({
@@ -480,6 +482,55 @@ export function AdminOnboardingHandler() {
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             throw new Error(err.error || "Failed to generate OS System workspace");
+        }
+
+        const resData = await response.json();
+        if (resData.workspace) {
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
+    };
+
+    const handleIoEditaisCreation = async (data: any) => {
+        const targetUrl = "/api/generate";
+        
+        const safeString = (val: string | undefined, fallback: string) => {
+            const v = (val || "").trim();
+            return v.length >= 2 ? v : fallback;
+        };
+
+        const workspaceName = safeString(data.edital_name, "Novo Edital");
+        const companyName = safeString(data.company_name, "Minha Empresa");
+        const subscriptionPurpose = safeString(data.subscription_purpose, "Licitação Geral");
+        
+        const payload = {
+            salesRepCompany: companyName,
+            salesRepWebsite: "https://io.editais",
+            solution: "Análise de Editais",
+            targetCompany: workspaceName,
+            targetWebsite: "https://io.editais",
+            templateId: "template_io_editais",
+            model: "gpt-4o-mini",
+            promptAgent: "ade_research_analyst",
+            responseLength: "long",
+            promptVariables: [
+                `edital_name:${workspaceName}`,
+                `company_name:${companyName}`,
+                `subscription_purpose:${subscriptionPurpose}`
+            ],
+            bulkPrompts: [],
+        };
+
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to generate IoEditais workspace");
         }
 
         const resData = await response.json();

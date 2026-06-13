@@ -540,7 +540,7 @@ export function VetorizeStudioPro() {
 
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-white text-gray-800 font-sans overflow-hidden selection:bg-indigo-500/30">
+    <div className="flex flex-col min-h-[calc(100vh-140px)] w-full bg-[#e5e5e5] text-gray-800 font-sans overflow-hidden selection:bg-indigo-500/30">
       
       {globalError && (
          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-red-600/90 text-white px-4 py-2 rounded shadow-xl flex items-center gap-2 text-xs font-bold border border-red-500">

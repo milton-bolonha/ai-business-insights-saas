@@ -1,6 +1,6 @@
 import React from "react";
 
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system" | "io_editais";
 
 export interface AppTag {
   id: AppTagId;
@@ -68,6 +68,12 @@ export const APP_TAGS: AppTag[] = [
     label: "OS System",
     labelKey: "appTags.os_system.label",
     color: "#f97316", // Orange-500
+  },
+  {
+    id: "io_editais",
+    label: "Licitações & Editais",
+    labelKey: "appTags.io_editais.label",
+    color: "#0284c7", // Sky-600
   },
 ];
 
@@ -394,5 +400,31 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
     appTagId: "os_system",
     placeholder: "Ex: Gráfica, Assistência Técnica...",
     placeholderKey: "attributes.os_company_niche.placeholder",
+  },
+
+  // I/O Editais Attributes
+  {
+    id: "edital_name",
+    label: "Nome do Edital",
+    labelKey: "attributes.edital_name.label",
+    appTagId: "io_editais",
+    placeholder: "Ex: Pregão Eletrônico 042/2025",
+    placeholderKey: "attributes.edital_name.placeholder",
+  },
+  {
+    id: "company_name",
+    label: "Nome da Empresa",
+    labelKey: "attributes.company_name.label",
+    appTagId: "io_editais",
+    placeholder: "Qual empresa você representa?",
+    placeholderKey: "attributes.company_name.placeholder",
+  },
+  {
+    id: "subscription_purpose",
+    label: "Propósito da Inscrição",
+    labelKey: "attributes.subscription_purpose.label",
+    appTagId: "io_editais",
+    placeholder: "Ex: Venda de equipamentos de TI",
+    placeholderKey: "attributes.subscription_purpose.placeholder",
   },
 ];

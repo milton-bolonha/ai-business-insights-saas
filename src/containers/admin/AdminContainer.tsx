@@ -117,6 +117,10 @@ const OSSystemBoard = dynamic(
   () => import("@/modules/os-system/components/OSSystemBoard").then(m => ({ default: m.OSSystemBoard })),
   { ssr: false, loading: () => <BoardSkeleton /> }
 );
+const IoEditaisBoard = dynamic(
+  () => import("@/modules/io-editais/components/IoEditaisBoard").then(m => ({ default: m.IoEditaisBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
 
 
 // Zustand stores
@@ -396,6 +400,7 @@ export function AdminContainer() {
           if (tid === "template_smart_survey") return "survey";
           if (tid === "template_ai_blog") return "blog" as any;
           if (tid === "template_os_system") return "os_system" as any;
+          if (tid === "template_io_editais") return "io_editais" as any;
           return "arcs";
       };
 
@@ -415,6 +420,7 @@ export function AdminContainer() {
       if (templateId === "template_smart_survey" && activeTab === "arcs") setActiveTab("survey");
       if (templateId === "template_ai_blog" && activeTab === "arcs") setActiveTab("blog" as any);
       if (templateId === "template_os_system" && activeTab === "arcs") setActiveTab("os_system" as any);
+      if (templateId === "template_io_editais" && activeTab === "arcs") setActiveTab("io_editais" as any);
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -1292,6 +1298,12 @@ export function AdminContainer() {
               {(activeTab as any) === "os_system" && currentWorkspace && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
                   <OSSystemBoard workspaceId={currentWorkspace.id} />
+                </div>
+              )}
+
+              {(activeTab as any) === "io_editais" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
+                  <IoEditaisBoard />
                 </div>
               )}
 

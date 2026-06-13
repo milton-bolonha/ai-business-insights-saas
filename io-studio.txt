@@ -1,0 +1,537 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MousePointer2, Type, Image as ImageIcon, Layers, Layout, 
+  Plus, Trash2, Eye, EyeOff, Lock, Unlock, Settings, FileText,
+  Printer, X, Download, Wand2, Scissors, AlignCenter, AlignLeft, AlignRight,
+  LayoutTemplate, Code, Sparkles, Move, Grid3X3
+} from 'lucide-react';
+
+// ==========================================
+// 1. DADOS E CONFIGURAÇÕES DO DOMÍNIO
+// ==========================================
+
+const CATALOGO = {
+  categorias: {
+    'Camisetas': ['Unissex', 'Masculina', 'Feminina', 'Infantil'],
+    'Baby Look': ['Feminina', 'Infantil'],
+    'Regatas': ['Masculina', 'Feminina', 'Esportiva'],
+    'Polos': ['Masculina', 'Feminina'],
+    'Moletons': ['Fechado', 'Com Capuz', 'Zíper'],
+    'Jaquetas': ['Corta Vento', 'Esportiva', 'Corporativa'],
+    'Coletes': ['Promocional', 'Corporativo']
+  },
+  cores: [
+    { nome: 'Branco', hex: '#FFFFFF' }, { nome: 'Preto', hex: '#1A1A1A' },
+    { nome: 'Cinza', hex: '#888888' }, { nome: 'Azul Marinho', hex: '#1E3A8A' },
+    { nome: 'Azul Royal', hex: '#2563EB' }, { nome: 'Vermelho', hex: '#DC2626' },
+    { nome: 'Verde', hex: '#16A34A' }, { nome: 'Amarelo', hex: '#FACC15' },
+    { nome: 'Laranja', hex: '#F97316' }, { nome: 'Roxo', hex: '#9333EA' }
+  ],
+  posicoesFixas: [
+    { id: 'FC', nome: 'Frente Central', x: 200, y: 150, vista: 'frente' },
+    { id: 'PE', nome: 'Peito Esquerdo', x: 270, y: 110, vista: 'frente' },
+    { id: 'PD', nome: 'Peito Direito', x: 130, y: 110, vista: 'frente' },
+    { id: 'GF', nome: 'Gola Frente', x: 200, y: 70, vista: 'frente' },
+    { id: 'BF', nome: 'Barra Frente', x: 200, y: 400, vista: 'frente' },
+    { id: 'NC', nome: 'Nuca Costas', x: 200, y: 80, vista: 'costas' },
+    { id: 'CC', nome: 'Costas Central', x: 200, y: 200, vista: 'costas' },
+    { id: 'BC', nome: 'Barra Costas', x: 200, y: 400, vista: 'costas' },
+    { id: 'ME', nome: 'Manga Esquerda', x: 200, y: 150, vista: 'manga_esq' },
+    { id: 'MD', nome: 'Manga Direita', x: 200, y: 150, vista: 'manga_dir' },
+  ],
+  tamanhos: ['P', 'M', 'G', 'GG', 'X1']
+};
+
+const FONTES = {
+  'Escolar / Universitária': ['Montserrat', 'Roboto Slab', 'Oswald'],
+  'Corporativa / Moderna': ['Inter', 'Lato', 'Open Sans'],
+  'Esportiva / Impacto': ['Teko', 'Bebas Neue', 'Russo One'],
+  'Elegante / Manuscrita': ['Playfair Display', 'Pacifico', 'Dancing Script']
+};
+
+// ==========================================
+// 2. FUNÇÕES DE UTILIDADE E CÁLCULOS
+// ==========================================
+
+const CANVAS_W = 400;
+const CANVAS_H = 500;
+const COLS = 16;
+const ROWS = 34;
+
+const calcularCoordenada = (x, y) => {
+  const colIndex = Math.max(0, Math.min(COLS - 1, Math.floor(x / (CANVAS_W / COLS))));
+  const rowIndex = Math.max(1, Math.min(ROWS, Math.floor(y / (CANVAS_H / ROWS)) + 1));
+  const letra = String.fromCharCode(65 + colIndex);
+  const numero = rowIndex.toString().padStart(2, '0');
+  return `${letra}${numero}`;
+};
+
+const FontInjector = () => {
+  const fontFamilies = Object.values(FONTES).flat().map(f => `family=${f.replace(/ /g, '+')}`).join('&');
+  return <style>{`@import url('https://fonts.googleapis.com/css2?${fontFamilies}&display=swap');`}</style>;
+};
+
+const getMatrizAlinhamento = (vista) => {
+  switch (vista) {
+    case 'frente': return [[null, 'GF', null], ['PD', 'FC', 'PE'], [null, 'BF', null]];
+    case 'costas': return [[null, 'NC', null], [null, 'CC', null], [null, 'BC', null]];
+    case 'manga_esq': return [[null, null, null], [null, 'ME', null], [null, null, null]];
+    case 'manga_dir': return [[null, null, null], [null, 'MD', null], [null, null, null]];
+    default: return [[null, null, null], [null, null, null], [null, null, null]];
+  }
+};
+
+// ==========================================
+// 3. COMPONENTE PRINCIPAL (APP)
+// ==========================================
+
+export default function App() {
+  const [projeto, setProjeto] = useState({
+    nome: 'Projeto Sem Título', categoria: 'Camisetas', produto: 'Unissex',
+    corBase: '#FFFFFF', tamanhos: ['P', 'M', 'G']
+  });
+
+  const [vistas, setVistas] = useState([
+    { id: 'frente', nome: 'Frente', objetos: [] },
+    { id: 'costas', nome: 'Costas', objetos: [] },
+    { id: 'manga_esq', nome: 'Manga Esquerda', objetos: [] },
+    { id: 'manga_dir', nome: 'Manga Direita', objetos: [] }
+  ]);
+  
+  const [ui, setUi] = useState({
+    vistaAtiva: 'frente', selecionadoId: null, ferramenta: 'select',
+    modalOsAberto: false, menuIaAberto: false
+  });
+  const [dragState, setDragState] = useState(null);
+
+  const atualizarUi = (updates) => setUi(prev => ({ ...prev, ...updates }));
+  const getVistaAtual = () => vistas.find(v => v.id === ui.vistaAtiva);
+  const getObjetos = () => getVistaAtual()?.objetos || [];
+  const getObjSelecionado = () => getObjetos().find(o => o.id === ui.selecionadoId);
+
+  const atualizarObjetos = (novosObjetos) => {
+    setVistas(prev => prev.map(v => v.id === ui.vistaAtiva ? { ...v, objetos: novosObjetos } : v));
+  };
+
+  const atualizarObjeto = (id, alteracoes) => {
+    atualizarObjetos(getObjetos().map(obj => obj.id === id ? { ...obj, ...alteracoes } : obj));
+  };
+
+  const adicionarElemento = (tipo, extras = {}) => {
+    const isTexto = tipo === 'texto';
+    const novoObj = {
+      id: `${tipo}_${Date.now()}`, tipo,
+      nome: isTexto ? 'Novo Texto' : 'Nova Imagem',
+      x: CANVAS_W / 2, // Ponto X centralizado
+      y: CANVAS_H / 2 - 20,
+      alinhamento: 'center', // Adicionando propriedade de alinhamento
+      visivel: true, bloqueado: false, posicaoFixa: 'Livre',
+      ...extras
+    };
+    atualizarObjetos([...getObjetos(), novoObj]);
+    atualizarUi({ selecionadoId: novoObj.id, ferramenta: 'select' });
+  };
+
+  const handleUploadImagem = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => adicionarElemento('imagem', { src: event.target.result, w: 100, h: 100 / (img.width / img.height), assetName: file.name });
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const aplicarPosicaoFixa = (objId, posId) => {
+    const pos = CATALOGO.posicoesFixas.find(p => p.id === posId);
+    if (!pos) return;
+    
+    if (pos.vista !== ui.vistaAtiva) {
+      atualizarUi({ vistaAtiva: pos.vista });
+      setTimeout(() => {
+        setVistas(prev => prev.map(v => {
+          if (v.id === pos.vista) return { ...v, objetos: [...v.objetos, { ...getObjetos().find(o=>o.id===objId), x: pos.x, y: pos.y, posicaoFixa: pos.id }] };
+          if (v.id === ui.vistaAtiva) return { ...v, objetos: v.objetos.filter(o => o.id !== objId) };
+          return v;
+        }));
+      }, 50);
+    } else {
+      atualizarObjeto(objId, { x: pos.x, y: pos.y, posicaoFixa: pos.id });
+    }
+  };
+
+  const aplicarTemplate = (tipo) => {
+    if (tipo === 'escola') {
+       adicionarElemento('imagem', { x: 270, y: 110, w: 60, h: 60, posicaoFixa: 'PE', src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iIzIyMiIvPjwvc3ZnPg==' });
+       atualizarUi({ vistaAtiva: 'costas' });
+       setTimeout(() => adicionarElemento('texto', { x: 200, y: 200, conteudo: 'ESCOLA MODELO', tamanho: 24, posicaoFixa: 'CC', alinhamento: 'center' }), 100);
+    }
+  };
+
+  const onMouseDown = (e, obj) => {
+    if (obj.bloqueado) return;
+    e.stopPropagation();
+    atualizarUi({ selecionadoId: obj.id });
+    if (ui.ferramenta === 'select') {
+      setDragState({ id: obj.id, startX: e.clientX, startY: e.clientY, origX: obj.x, origY: obj.y });
+    }
+  };
+
+  useEffect(() => {
+    if (!dragState) return;
+    const onMouseMove = (e) => {
+      atualizarObjeto(dragState.id, { x: dragState.origX + (e.clientX - dragState.startX), y: dragState.origY + (e.clientY - dragState.startY), posicaoFixa: 'Livre' });
+    };
+    const onMouseUp = () => setDragState(null);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+  }, [dragState]);
+
+  const exportarJsonProducao = () => {
+    const pl = vistas.flatMap(v => v.objetos.map(o => ({
+      position: o.posicaoFixa || "Livre", coordinate: calcularCoordenada(o.x, o.y),
+      type: o.tipo === 'texto' ? 'text' : 'logo', asset: o.assetName || "gerado_via_canvas",
+      widthMm: Math.round(o.w || o.tamanho * 2), ...(o.tipo === 'texto' && { text: o.conteudo, font: o.fonte, align: o.alinhamento })
+    })));
+    const json = JSON.stringify({ project: { name: projeto.nome, product: `${projeto.categoria.toLowerCase()}-${projeto.produto.toLowerCase()}`, color: projeto.corBase, sizeRange: projeto.tamanhos, placements: pl } }, null, 2);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    link.download = `os_${projeto.nome.replace(/\s/g, '_')}.json`;
+    link.click();
+  };
+
+  const renderPainelEsquerdo = () => (
+    <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-10 shadow-xl overflow-y-auto">
+      <div className="p-4 border-b border-zinc-800 flex items-center gap-2 text-zinc-100 font-medium sticky top-0 bg-zinc-900/95 z-10">
+        <Layers size={18} className="text-indigo-400" />
+        <span>Vistas & Camadas</span>
+      </div>
+      <div className="p-3">
+        {/* TEMPLATES RESTAURADOS */}
+        <div className="mb-6 border-b border-zinc-800/50 pb-4">
+          <div className="text-xs text-zinc-500 uppercase font-bold mb-2 flex items-center gap-2"><LayoutTemplate size={12}/> Templates Ágeis</div>
+          <button onClick={() => aplicarTemplate('escola')} className="w-full text-left p-2 rounded bg-zinc-800 hover:bg-zinc-700 text-sm transition-colors flex justify-between">
+            Uniforme Escolar <Plus size={14}/>
+          </button>
+        </div>
+
+        {vistas.map(vista => (
+          <div key={vista.id} className="mb-4">
+            <div className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${ui.vistaAtiva === vista.id ? 'bg-zinc-800 text-white border border-zinc-700' : 'hover:bg-zinc-800/50'}`} onClick={() => atualizarUi({ vistaAtiva: vista.id, selecionadoId: null })}>
+              <Layout size={16} className={ui.vistaAtiva === vista.id ? 'text-indigo-400' : 'text-zinc-500'} />
+              <span className="text-sm font-medium">{vista.nome}</span>
+            </div>
+            {ui.vistaAtiva === vista.id && (
+              <div className="pl-6 mt-1 flex flex-col gap-1">
+                {vista.objetos.map(obj => (
+                  <div key={obj.id} className={`flex items-center justify-between p-1.5 rounded text-xs border ${ui.selecionadoId === obj.id ? 'bg-indigo-500/20 border-indigo-500/30 text-white' : 'border-transparent hover:bg-zinc-800/80'}`} onClick={() => atualizarUi({ selecionadoId: obj.id })}>
+                    <div className="flex items-center gap-2 truncate cursor-pointer">
+                      {obj.tipo === 'texto' ? <Type size={12} className="text-zinc-400" /> : <ImageIcon size={12} className="text-zinc-400" />}
+                      <span className="truncate w-24">{obj.nome}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderPainelDireito = () => {
+    const obj = getObjSelecionado();
+    
+    return (
+      <div className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col z-10 shadow-xl overflow-y-auto pb-20">
+        <div className="p-4 border-b border-zinc-800 flex items-center gap-2 text-zinc-100 font-medium sticky top-0 bg-zinc-900/95 z-10">
+          <Settings size={18} className="text-indigo-400" />
+          <span>{obj ? 'Propriedades da Arte' : 'Configuração Global'}</span>
+        </div>
+
+        <div className="p-5 flex flex-col gap-6">
+          {!obj ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-zinc-500 mb-2 block">Cor Principal</label>
+                <div className="flex flex-wrap gap-2">
+                  {CATALOGO.cores.map(c => (
+                    <button key={c.hex} title={c.nome} onClick={() => setProjeto({...projeto, corBase: c.hex})} className={`w-8 h-8 rounded-full border-2 transition-all ${projeto.corBase === c.hex ? 'border-indigo-500 scale-110' : 'border-zinc-700'}`} style={{ backgroundColor: c.hex }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              
+              {/* ASSISTENTE IA RESTAURADO */}
+              <div className="bg-indigo-900/20 border border-indigo-500/30 p-3 rounded-lg">
+                <div className="text-xs text-indigo-400 font-bold uppercase mb-2 flex items-center gap-1"><Sparkles size={12}/> Assistente Criativo</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs py-1.5 rounded transition">Remover Fundo</button>
+                  <button className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs py-1.5 rounded transition">Vetorizar Arte</button>
+                </div>
+              </div>
+
+              {/* PAINEL DE ALINHAMENTO VISUAL */}
+              <div>
+                <label className="text-xs text-zinc-500 mb-2 flex items-center justify-between">
+                  <span>Alinhamento Automático</span>
+                  <span className="text-indigo-400 font-mono text-[10px] bg-indigo-900/30 px-1.5 py-0.5 rounded">{obj.posicaoFixa}</span>
+                </label>
+                <div className="flex justify-center p-3 bg-zinc-950 border border-zinc-800 rounded-lg">
+                  <div className="grid grid-cols-3 gap-1">
+                    {getMatrizAlinhamento(ui.vistaAtiva).flat().map((posId, idx) => {
+                      if (!posId) return <div key={idx} className="w-10 h-10 rounded border border-zinc-800/50 bg-zinc-900/30"></div>;
+                      const isAtivo = obj.posicaoFixa === posId;
+                      const nomePos = CATALOGO.posicoesFixas.find(p => p.id === posId)?.nome;
+                      return (
+                        <button 
+                          key={idx} 
+                          title={nomePos}
+                          onClick={() => aplicarPosicaoFixa(obj.id, posId)}
+                          className={`w-10 h-10 rounded flex items-center justify-center transition-all ${isAtivo ? 'bg-indigo-600 border border-indigo-400 shadow-inner' : 'bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500'}`}
+                        >
+                          <div className={`w-2 h-2 rounded-full ${isAtivo ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'bg-zinc-400'}`}></div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* OUTRAS PROPRIEDADES */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-zinc-500 mb-1 block">Régua Coord.</label>
+                  <div className="bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-300 font-mono text-center flex items-center justify-center gap-2">
+                     <Grid3X3 size={12} className="text-zinc-600"/> {calcularCoordenada(obj.x, obj.y)}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-500 mb-1 block">Tamanho</label>
+                  <input type="number" value={Math.round(obj.tipo==='texto'?obj.tamanho:obj.w)} onChange={e => {
+                    const val = parseInt(e.target.value) || 10;
+                    if(obj.tipo==='texto') atualizarObjeto(obj.id, {tamanho: val});
+                    else atualizarObjeto(obj.id, {w: val, h: val / (obj.w/obj.h)});
+                  }} className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-white outline-none" />
+                </div>
+              </div>
+
+              {obj.tipo === 'texto' && (
+                <>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Conteúdo</label>
+                    <textarea value={obj.conteudo} onChange={e => atualizarObjeto(obj.id, {conteudo: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-white min-h-[60px] outline-none resize-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Fonte da Letra</label>
+                    <select value={obj.fonte} onChange={e => atualizarObjeto(obj.id, {fonte: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-white outline-none" style={{fontFamily: `"${obj.fonte}", sans-serif`}}>
+                      {Object.entries(FONTES).map(([cat, fontes]) => (
+                        <optgroup label={cat} key={cat}>{fontes.map(f => <option key={f} value={f} style={{fontFamily: `"${f}", sans-serif`}}>{f}</option>)}</optgroup>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* ALINHAMENTO DO TEXTO RESTAURADO E MELHORADO */}
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Alinhamento</label>
+                    <div className="flex bg-zinc-950 border border-zinc-800 rounded p-1">
+                      <button onClick={() => atualizarObjeto(obj.id, {alinhamento: 'left'})} className={`flex-1 flex justify-center p-1.5 rounded ${obj.alinhamento === 'left' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}><AlignLeft size={16}/></button>
+                      <button onClick={() => atualizarObjeto(obj.id, {alinhamento: 'center'})} className={`flex-1 flex justify-center p-1.5 rounded ${obj.alinhamento === 'center' || !obj.alinhamento ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}><AlignCenter size={16}/></button>
+                      <button onClick={() => atualizarObjeto(obj.id, {alinhamento: 'right'})} className={`flex-1 flex justify-center p-1.5 rounded ${obj.alinhamento === 'right' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}><AlignRight size={16}/></button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Cor do Texto</label>
+                    <input type="color" value={obj.cor || '#000000'} onChange={e => atualizarObjeto(obj.id, {cor: e.target.value})} className="w-full h-10 cursor-pointer rounded border border-zinc-800 bg-zinc-950" />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderCanvasArea = () => (
+    <div className="flex-1 relative flex flex-col bg-zinc-950" id="area-trabalho-bg" onPointerDown={(e) => { if (e.target.id === 'area-trabalho-bg') atualizarUi({ selecionadoId: null }); }}>
+      
+      {/* HEADER DO CANVAS (BOTÕES EXPORT RESTAURADOS) */}
+      <div className="h-14 border-b border-zinc-800/50 flex items-center justify-between px-6 bg-zinc-900/50 pointer-events-none">
+        <div className="flex bg-zinc-900 rounded-md p-1 border border-zinc-800 pointer-events-auto">
+          {vistas.map(v => (
+            <button key={v.id} onClick={(e) => { e.stopPropagation(); atualizarUi({ vistaAtiva: v.id, selecionadoId: null }); }} className={`px-4 py-1 text-sm rounded-sm transition-all ${ui.vistaAtiva === v.id ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>
+              {v.nome}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 pointer-events-auto">
+          <button onClick={(e) => { e.stopPropagation(); exportarJsonProducao(); }} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-md text-sm transition-colors border border-zinc-700">
+            <Code size={14} /> JSON Máquina
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); atualizarUi({ modalOsAberto: true }); }} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-lg shadow-indigo-900/20">
+            <FileText size={14} /> Gerar PDF / OS
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center overflow-hidden relative pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)', backgroundSize: '24px 24px' }}>
+        <div className="w-[400px] h-[500px] relative shadow-2xl bg-black/20 pointer-events-auto" id="canvas-container" onPointerDown={(e) => { if (e.target.id === 'canvas-container') atualizarUi({ selecionadoId: null }); }}>
+          
+          <svg viewBox="0 0 400 500" className="w-full h-full drop-shadow-xl absolute inset-0 pointer-events-none">
+            {ui.vistaAtiva === 'frente' && <path d="M120 60 L80 110 L60 240 L55 480 L365 480 L360 240 L340 110 L300 60 Q260 50 210 48 Q160 50 120 60 Z" fill={projeto.corBase} />}
+            {ui.vistaAtiva === 'costas' && <path d="M120 50 L80 110 L60 240 L55 480 L365 480 L360 240 L340 110 L300 50 Q260 30 210 30 Q160 30 120 50 Z" fill={projeto.corBase} />}
+            {(ui.vistaAtiva === 'manga_esq' || ui.vistaAtiva === 'manga_dir') && <path d="M150 100 L100 200 L120 400 L280 400 L300 200 L250 100 Z" fill={projeto.corBase} />}
+            <path d="M0 0 h400 v500 h-400 Z" fill="url(#shirt-shade)" opacity="0.3"/>
+            <defs>
+              <linearGradient id="shirt-shade" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#000" stopOpacity="0.4"/><stop offset="50%" stopColor="#fff" stopOpacity="0.1"/><stop offset="100%" stopColor="#000" stopOpacity="0.4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <div className="absolute inset-0 pointer-events-none">
+            {getObjetos().filter(o => o.visivel).map(obj => (
+              <div key={obj.id} onPointerDown={(e) => onMouseDown(e, obj)}
+                className={`absolute group pointer-events-auto ${ui.selecionadoId === obj.id ? 'ring-2 ring-indigo-500' : 'hover:ring-1 hover:ring-zinc-400/50'} ${obj.bloqueado ? 'cursor-not-allowed' : 'cursor-move'}`}
+                style={{ 
+                  left: obj.x, top: obj.y,
+                  // TRUQUE DO ALINHAMENTO: Transforma o CSS baseado no alinhamento para o X funcionar como centro, esquerda ou direita real
+                  transform: obj.tipo === 'texto' ? (
+                    obj.alinhamento === 'center' || !obj.alinhamento ? 'translateX(-50%)' :
+                    obj.alinhamento === 'right' ? 'translateX(-100%)' : 'none'
+                  ) : 'translateX(-50%)' // imagens sempre centralizadas no eixo X
+                }}
+              >
+                {/* TEXTO COM ALINHAMENTO CSS E QUEBRA DE LINHA PERMITIDA */}
+                {obj.tipo === 'texto' && (
+                  <div style={{ 
+                    fontFamily: `"${obj.fonte}", sans-serif`, 
+                    fontSize: `${obj.tamanho}px`, 
+                    color: obj.cor, 
+                    whiteSpace: 'pre-wrap', 
+                    textAlign: obj.alinhamento || 'center',
+                    lineHeight: '1.2'
+                  }}>
+                    {obj.conteudo}
+                  </div>
+                )}
+                
+                {obj.tipo === 'imagem' && <img src={obj.src} width={obj.w} height={obj.h} alt="" className="pointer-events-none" />}
+                
+                {ui.selecionadoId === obj.id && !obj.bloqueado && (
+                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl">
+                     <span className="text-[10px] bg-zinc-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono mr-1 border border-zinc-800">{calcularCoordenada(obj.x, obj.y)}</span>
+                     <button onClick={(e) => { e.stopPropagation(); atualizarObjeto(obj.id, { x: CANVAS_W/2 }); }} className="text-zinc-400 hover:text-white p-1" title="Centralizar na Camisa"><AlignCenter size={14} /></button>
+                     <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+                     <button onClick={(e) => { e.stopPropagation(); atualizarObjetos(getObjetos().filter(o => o.id !== obj.id)); atualizarUi({selecionadoId:null}); }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={14} /></button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-800/95 backdrop-blur border border-zinc-700/50 rounded-2xl p-1.5 flex gap-1 shadow-2xl z-20">
+        <button className={`p-3 rounded-xl transition-all ${ui.ferramenta === 'select' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'}`} onClick={(e) => { e.stopPropagation(); atualizarUi({ ferramenta: 'select' }); }}><MousePointer2 size={20} /></button>
+        <div className="w-px bg-zinc-700 my-2 mx-1"></div>
+        <button className="p-3 rounded-xl text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 transition-all" onClick={(e) => { e.stopPropagation(); adicionarElemento('texto', { conteudo: 'NOVO TEXTO', fonte: 'Montserrat', tamanho: 28, cor: '#000000' }); }}><Type size={20} /></button>
+        <label className="p-3 rounded-xl text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 cursor-pointer transition-all"><ImageIcon size={20} /><input type="file" accept="image/*,.svg" className="hidden" onChange={handleUploadImagem} onClick={e => e.stopPropagation()} /></label>
+      </div>
+    </div>
+  );
+
+  // MODAL OS RESTAURADO TOTALMENTE
+  const renderModalOS = () => {
+    if (!ui.modalOsAberto) return null;
+    return (
+      <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-8 text-zinc-900 font-sans" onClick={() => atualizarUi({ modalOsAberto: false })}>
+        <div className="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden relative" onClick={e => e.stopPropagation()}>
+          <div className="h-16 border-b bg-zinc-50 flex items-center justify-between px-6 shrink-0 print:hidden">
+            <h2 className="text-xl font-bold text-zinc-800 flex items-center gap-2"><FileText className="text-indigo-600" /> Aprovação / OS</h2>
+            <div className="flex gap-2">
+              <button onClick={() => window.print()} className="flex items-center gap-2 bg-zinc-900 text-white px-4 py-2 rounded hover:bg-zinc-800 text-sm font-medium"><Printer size={16} /> Imprimir</button>
+              <button onClick={() => atualizarUi({ modalOsAberto: false })} className="p-2 text-zinc-400 hover:bg-zinc-200 rounded"><X size={20} /></button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-8 bg-white" id="pdf-content">
+            <div className="flex justify-between items-start mb-8 border-b-2 border-zinc-900 pb-4">
+               <div>
+                 <h1 className="text-3xl font-black uppercase tracking-tighter">Ordem de Produção</h1>
+                 <p className="text-zinc-500 font-mono text-sm mt-1">ID: OS-{Date.now().toString().slice(-6)} | {new Date().toLocaleDateString('pt-BR')}</p>
+               </div>
+               <div className="text-right">
+                 <div className="text-xs font-bold text-zinc-400 uppercase">Projeto</div>
+                 <div className="text-xl font-bold">{projeto.nome}</div>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 mb-8 bg-zinc-50 p-6 rounded-lg border">
+              <div><div className="text-xs font-bold text-zinc-400 uppercase">Categoria</div><div className="font-medium">{projeto.categoria}</div></div>
+              <div><div className="text-xs font-bold text-zinc-400 uppercase">Modelo</div><div className="font-medium">{projeto.produto}</div></div>
+              <div><div className="text-xs font-bold text-zinc-400 uppercase">Grade de Tamanhos</div><div className="font-medium">{projeto.tamanhos.join(', ')}</div></div>
+              <div>
+                <div className="text-xs font-bold text-zinc-400 uppercase mb-1">Cor do Tecido</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded border shadow-sm" style={{ backgroundColor: projeto.corBase }}></div>
+                  <span className="font-mono text-sm">{projeto.corBase.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-bold border-b pb-2 mb-4">Gabarito de Estamparia</h3>
+            <div className="grid grid-cols-2 gap-8">
+              {vistas.filter(v => v.objetos.length > 0).map(v => (
+                <div key={v.id} className="border rounded p-4 flex gap-6">
+                  <div className="w-40 h-52 bg-zinc-100 rounded relative border overflow-hidden shrink-0">
+                    <svg viewBox="0 0 400 500" className="w-full h-full opacity-30 absolute"><path d="M120 60 L80 110 L60 240 L55 480 L365 480 L360 240 L340 110 L300 60 Z" fill="#000"/></svg>
+                    {v.objetos.map(o => (
+                      <div key={o.id} className="absolute border border-indigo-500 bg-indigo-500/10 flex items-center justify-center text-[8px] font-bold text-indigo-700" style={{ left: `${(o.x/CANVAS_W)*100}%`, top: `${(o.y/CANVAS_H)*100}%`, width: `${(o.w||o.tamanho*2)/4}%`, height: '20px', transform: 'translateX(-50%)' }}>
+                        {calcularCoordenada(o.x, o.y)}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold uppercase text-sm mb-3">{v.nome}</h4>
+                    <table className="w-full text-sm text-left">
+                      <thead><tr className="border-b text-zinc-500 text-xs uppercase"><th className="pb-1">Coord</th><th className="pb-1">Tipo</th><th className="pb-1">Detalhe</th></tr></thead>
+                      <tbody>
+                        {v.objetos.map(o => (
+                          <tr key={o.id} className="border-b border-zinc-100 last:border-0">
+                            <td className="py-2 font-mono font-bold text-indigo-600">{calcularCoordenada(o.x, o.y)}</td>
+                            <td className="py-2 uppercase text-xs text-zinc-500">{o.tipo}</td>
+                            <td className="py-2 truncate max-w-[120px]">{o.tipo === 'texto' ? `"${o.conteudo}"` : o.assetName || 'Imagem Vetorial'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <style>{`@media print { body * { visibility: hidden; } #pdf-content, #pdf-content * { visibility: visible; } #pdf-content { position: absolute; left: 0; top: 0; width: 100%; height: 100%; padding: 0 !important; } }`}</style>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-zinc-950 text-zinc-300 font-sans overflow-hidden select-none">
+      <FontInjector />
+      {renderPainelEsquerdo()}
+      {renderCanvasArea()}
+      {renderPainelDireito()}
+      {renderModalOS()}
+    </div>
+  );
+}

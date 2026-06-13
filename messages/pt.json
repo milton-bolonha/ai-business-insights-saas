@@ -90,9 +90,25 @@
     "os_system": {
       "label": "OS System",
       "subtitle": "Sistema de triagem, orçamento e produção de ordens de serviço."
+    },
+    "io_editais": {
+      "label": "Licitações & Editais",
+      "subtitle": "Análise de editais e montagem de propostas com IA."
     }
   },
   "attributes": {
+    "edital_name": {
+      "label": "Nome do Edital",
+      "placeholder": "Ex: Pregão Eletrônico 042/2025"
+    },
+    "company_name": {
+      "label": "Nome da Empresa",
+      "placeholder": "Qual empresa você representa?"
+    },
+    "subscription_purpose": {
+      "label": "Propósito da Inscrição",
+      "placeholder": "Ex: Venda de equipamentos de TI"
+    },
     "company": {
       "label": "Empresa do Vendedor",
       "placeholder": "Qual empresa você representa?"

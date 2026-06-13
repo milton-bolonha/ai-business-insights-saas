@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { clientPromise } from '@/lib/db/mongodb';
+import { connect } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   
   if (workspaceId) {
     try {
-      const client = await clientPromise;
+      const client = await connect();
       const db = client.db('ai_business_insights');
       const workspace = await db.collection('workspaces').findOne({ _id: new ObjectId(workspaceId) });
       if (workspace && workspace.name) {

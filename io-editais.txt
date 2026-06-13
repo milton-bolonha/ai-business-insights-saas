@@ -1,0 +1,609 @@
+import { useState, useRef } from "react";
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  blue50:"#E6F1FB", blue100:"#B5D4F4", blue600:"#185FA5", blue800:"#0C447C", blue900:"#042C53",
+  teal50:"#E1F5EE", teal600:"#0F6E56", teal800:"#085041",
+  amber50:"#FAEEDA", amber600:"#854F0B", amber800:"#633806",
+  red50:"#FCEBEB", red600:"#A32D2D",
+  green50:"#EAF3DE", green600:"#3B6D11", green800:"#27500A",
+  purple50:"#EEEDFE", purple600:"#534AB7", purple800:"#3C3489",
+  gray50:"#F1EFE8", gray100:"#D3D1C7", gray400:"#888780", gray600:"#5F5E5A",
+};
+
+const S = {
+  app:{ display:"flex", height:"100vh", fontFamily:"'DM Sans','Segoe UI',sans-serif", background:"var(--color-background-tertiary,#F7F6F3)", overflow:"hidden", fontSize:14 },
+  sidebar:{ width:228, minWidth:228, background:"var(--color-background-primary,#fff)", borderRight:"0.5px solid rgba(0,0,0,0.1)", display:"flex", flexDirection:"column" },
+  logo:{ padding:"18px 16px 14px", borderBottom:"0.5px solid rgba(0,0,0,0.08)" },
+  navLabel:{ fontSize:10, color:C.gray400, padding:"12px 16px 4px", textTransform:"uppercase", letterSpacing:"0.8px" },
+  navItem:(a)=>({ display:"flex", alignItems:"center", gap:8, padding:"8px 16px", fontSize:13, cursor:"pointer",
+    borderLeft:`2px solid ${a?C.blue600:"transparent"}`, background:a?C.blue50:"transparent",
+    color:a?C.blue800:C.gray600, fontWeight:a?500:400, transition:"all 0.15s" }),
+  main:{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" },
+  topbar:{ background:"var(--color-background-primary,#fff)", borderBottom:"0.5px solid rgba(0,0,0,0.08)",
+    padding:"0 20px", height:52, display:"flex", alignItems:"center", justifyContent:"space-between" },
+  content:{ flex:1, overflowY:"auto", padding:20 },
+  card:{ background:"var(--color-background-primary,#fff)", border:"0.5px solid rgba(0,0,0,0.1)", borderRadius:12, padding:16, marginBottom:16 },
+  row:{ display:"flex", gap:16 },
+  col:{ flex:1 },
+  colSide:{ width:288, flexShrink:0 },
+  btn:(p)=>({ padding:"6px 14px", borderRadius:8, fontSize:12, cursor:"pointer", fontWeight:500,
+    border:p?"none":"0.5px solid rgba(0,0,0,0.2)", background:p?C.blue600:"var(--color-background-primary,#fff)",
+    color:p?"#fff":"var(--color-text-primary,#111)", display:"flex", alignItems:"center", gap:5 }),
+  badge:(c)=>({ fontSize:10, padding:"2px 8px", borderRadius:20, fontWeight:500,
+    background:c==="red"?C.red50:c==="amber"?C.amber50:c==="blue"?C.blue50:c==="green"?C.green50:c==="teal"?C.teal50:C.purple50,
+    color:c==="red"?C.red600:c==="amber"?C.amber800:c==="blue"?C.blue800:c==="green"?C.green800:c==="teal"?C.teal800:C.purple800 }),
+  tag:(c)=>({ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px",
+    borderRadius:20, fontWeight:500, cursor:"pointer",
+    background:c==="blue"?C.blue50:c==="amber"?C.amber50:c==="green"?C.green50:C.teal50,
+    color:c==="blue"?C.blue800:c==="amber"?C.amber800:c==="green"?C.green800:C.teal800 }),
+  statCard:{ background:"var(--color-background-secondary,#F7F6F3)", borderRadius:8, padding:"10px 14px", flex:1 },
+  progWrap:{ background:"rgba(0,0,0,0.08)", borderRadius:20, height:5, overflow:"hidden", marginTop:6 },
+  aiBadge:{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11, padding:"3px 9px", borderRadius:20, background:C.blue50, color:C.blue800, fontWeight:500 },
+};
+
+// ─── Dados mock ───────────────────────────────────────────────────────────────
+const EDITAIS = [
+  {
+    id:1, nome:"Pregão Eletrônico 042/2025", orgao:"Prefeitura Municipal de Campinas",
+    objeto:"Aquisição de equipamentos de informática (computadores, monitores e periféricos)",
+    tipo:"Compra Imediata", disputa:"Por Item", plataforma:"Comprasnet", processo:"0142/2025-SP",
+    sessao:"28/01/2025", horario:"10h00", prazo:"25/01/2025", progresso:72, cor:"blue",
+    vr:"R$ 380.000,00", pagamento:"30 dias", validade:"60 dias", criterio:"Menor Preço",
+    secoes:[
+      { id:"s1", titulo:"Objeto e especificações técnicas", prioridade:"obrigatorio",
+        itens:["Computadores: processador i5 12ª geração mínimo","Monitor 21,5\" Full HD IPS","Teclado e mouse USB sem fio","Garantia mínima 36 meses on-site","Certificação INMETRO obrigatória"],
+        contexto:"Critério eliminatório: produto que não atender QUALQUER especificação técnica é desclassificado automaticamente. Verifique ficha técnica do fabricante antes de propor." },
+      { id:"s2", titulo:"Habilitação — documentação exigida", prioridade:"obrigatorio",
+        itens:["Contrato social atualizado","Certidão negativa federal, estadual e municipal","Certidão FGTS regular","Certidão trabalhista (CNDT)","Balanço patrimonial último exercício","Atestado de capacidade técnica (mín. 30% do objeto)"],
+        contexto:"A falta de qualquer documento resulta em inabilitação imediata. Prepare toda a documentação antes do pregão — não há prazo para complementação em licitações eletrônicas." },
+      { id:"s3", titulo:"Qualificação técnica e atestados", prioridade:"importante",
+        itens:["Atestado de fornecimento de equipamentos similares","Mínimo de 30% da quantidade total licitada","Emitido por pessoa jurídica de direito público ou privado","Reconhecimento de firma não exigido","Permite somatório de atestados"],
+        contexto:"Se não tiver atestado individual suficiente, a soma de múltiplos atestados é aceita. Garanta que os COs/notas fiscais que comprovem as entregas estejam disponíveis para eventual diligência." },
+      { id:"s4", titulo:"Prazo de entrega e local", prioridade:"importante",
+        itens:["Prazo: 30 dias corridos após emissão da OS","Entrega: Almoxarifado Central — Av. Anchieta, 200, Campinas/SP","Horário de recebimento: 08h00 às 17h00","Frete CIF (por conta da contratada)","Instalação e configuração incluídas"],
+        contexto:"Frete CIF até Campinas. Calcule o custo logístico no preço final — este item é frequentemente subestimado e pode comprometer a margem." },
+      { id:"s5", titulo:"Penalidades e garantias", prioridade:"atencao",
+        itens:["Multa por atraso: 0,5% ao dia sobre o valor não entregue","Multa por inexecução: 10% sobre o valor total","Garantia contratual: 5% do valor do contrato","Prazo para apresentar garantia: 5 dias após assinatura","Seguro-garantia ou fiança bancária aceitos"],
+        contexto:"A multa por atraso de 0,5% ao dia é elevada. Só aceite o prazo de 30 dias se tiver estoque ou fornecedor confirmado. O custo da garantia contratual (5%) deve entrar na formação de preço." },
+      { id:"s6", titulo:"Condições de pagamento e preço", prioridade:"info",
+        itens:["Pagamento em 30 dias após liquidação","Valor estimado (total): R$ 380.000,00","Referência: PNCP e cotações publicadas","Proposta com validade mínima 60 dias","Nota fiscal eletrônica obrigatória"],
+        contexto:"O valor estimado de R$ 380k foi pesquisado no PNCP — verifique se condiz com seus custos atuais. Margem apertada indica concorrência acirrada neste órgão." },
+    ],
+    checklist:{
+      objeto:true, especTecnica:true, tr:true, dadosOp:true, estrutura:true, disputa:true,
+      habilitacao:false, docsEspecificos:false, qualTecnica:true, prazos:true, amostras:false,
+      localEntrega:true, viabilidade:false, precoRef:true, pagamento:true, penalidades:false,
+    },
+    pontosFora:["Exige instalação e configuração sem custo separado — verifique se está no objeto","Garantia on-site 36 meses — confirme cobertura do fabricante antes de precificar","Item 7.4: sem registro no Sicaf a empresa não pode participar desta modalidade"],
+    timeline:[
+      { texto:"Edital analisado pela IA", data:"Hoje", status:"ok" },
+      { texto:"Documentação verificada", data:"Hoje", status:"warn" },
+      { texto:"Proposta de preço", data:"24/01", status:"neutral" },
+      { texto:"Sessão do pregão", data:"28/01 — 10h", status:"neutral" },
+    ],
+  },
+  {
+    id:2, nome:"Pregão Eletrônico 018/2025", orgao:"Secretaria Estadual de Saúde — SP",
+    objeto:"Fornecimento de material de limpeza e higienização hospitalar",
+    tipo:"Ata de Registro de Preços", disputa:"Por Lote", plataforma:"BEC-SP", processo:"0082/2025-SEL",
+    sessao:"02/02/2025", horario:"14h30", prazo:"30/01/2025", progresso:100, cor:"teal",
+    vr:"R$ 1.200.000,00", pagamento:"45 dias", validade:"90 dias", criterio:"Menor Preço",
+    secoes:[], checklist:{}, pontosFora:[], timeline:[],
+  },
+];
+
+const CHAT_INICIAL = [
+  { role:"bot", text:"Analisei o Pregão 042/2025 da Prefeitura de Campinas. Encontrei 6 seções, 2 pontos fora do padrão críticos e 4 itens do checklist pendentes. Por onde quer começar?" }
+];
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
+function Prog({ pct, color=C.blue600 }) {
+  return <div style={S.progWrap}><div style={{ height:"100%", borderRadius:20, background:color, width:`${pct}%`, transition:"width 0.4s" }}/></div>;
+}
+
+function SecaoItem({ s }) {
+  const [open,setOpen]=useState(false);
+  const cor = s.prioridade==="obrigatorio"?"red":s.prioridade==="importante"?"amber":s.prioridade==="atencao"?"amber":"blue";
+  const label = s.prioridade==="obrigatorio"?"Obrigatório":s.prioridade==="importante"?"Importante":s.prioridade==="atencao"?"Atenção":"Informativo";
+  return (
+    <div style={{ border:"0.5px solid rgba(0,0,0,0.1)", borderRadius:8, overflow:"hidden", marginBottom:6 }}>
+      <div onClick={()=>setOpen(!open)} style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", cursor:"pointer", background:open?"var(--color-background-secondary,#F7F6F3)":"var(--color-background-primary,#fff)" }}>
+        <span style={S.badge(cor)}>{label}</span>
+        <span style={{ fontSize:12, fontWeight:500, flex:1, color:"var(--color-text-primary,#111)" }}>{s.titulo}</span>
+        <span style={{ fontSize:12, color:C.gray400, transform:open?"rotate(180deg)":"none", transition:"transform 0.2s" }}>▾</span>
+      </div>
+      {open&&(
+        <div style={{ padding:"10px 14px", borderTop:"0.5px solid rgba(0,0,0,0.08)", background:"var(--color-background-secondary,#FAFAF8)" }}>
+          <div style={{ fontSize:11, color:C.blue800, background:C.blue50, padding:"7px 10px", borderRadius:6, marginBottom:10, lineHeight:1.6 }}>
+            <strong>Contexto da IA:</strong> {s.contexto}
+          </div>
+          <ul style={{ paddingLeft:16, margin:0 }}>
+            {s.itens.map((it,i)=><li key={i} style={{ fontSize:12, color:"var(--color-text-primary,#333)", marginBottom:4, lineHeight:1.5 }}>{it}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CheckItem({ label, done, onToggle }) {
+  return (
+    <div onClick={onToggle} style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 10px", borderRadius:8, cursor:"pointer", background:done?C.green50:"var(--color-background-secondary,#F7F6F3)", border:`0.5px solid ${done?C.green600:"rgba(0,0,0,0.08)"}`, marginBottom:5, transition:"all 0.15s" }}>
+      <span style={{ fontSize:14, color:done?C.green600:C.gray400 }}>{done?"✓":"○"}</span>
+      <span style={{ fontSize:12, color:done?C.green800:"var(--color-text-primary,#111)" }}>{label}</span>
+    </div>
+  );
+}
+
+// ─── Painel ───────────────────────────────────────────────────────────────────
+function PainelTab({ editais, nav }) {
+  const ativos=editais.length, prontos=editais.filter(e=>e.progresso===100).length;
+  return (
+    <div style={S.row}>
+      <div style={S.col}>
+        <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+          {[[ativos,"Editais ativos","#111"],[prontos,"Prontos p/ envio",C.green600],[ativos-prontos,"Em análise","#BA7517"],[3,"Dias até sessão",C.red600]].map(([v,l,c],i)=>(
+            <div key={i} style={S.statCard}><div style={{ fontSize:24, fontWeight:500, color:c }}>{v}</div><div style={{ fontSize:10, color:C.gray400, marginTop:2 }}>{l}</div></div>
+          ))}
+        </div>
+
+        <div style={S.card}>
+          <div style={{ ...S.btn(false), marginBottom:14, fontSize:13, fontWeight:500, padding:0, border:"none", background:"transparent" }}>Editais em andamento</div>
+          {editais.map(e=>(
+            <div key={e.id} onClick={()=>nav("edital",e.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:10, border:"0.5px solid rgba(0,0,0,0.1)", borderRadius:8, marginBottom:8, cursor:"pointer" }}>
+              <div style={{ width:38, height:38, borderRadius:8, background:e.cor==="teal"?C.teal50:C.blue50, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>
+                {e.cor==="teal"?"🏥":"🏛"}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:500, color:"var(--color-text-primary,#111)" }}>{e.nome}</div>
+                <div style={{ fontSize:11, color:C.gray400 }}>{e.orgao} · Sessão: {e.sessao} {e.horario}</div>
+              </div>
+              <div style={{ textAlign:"right", minWidth:72 }}>
+                <div style={{ fontSize:11, fontWeight:500, color:e.progresso===100?C.green600:"#BA7517" }}>{e.progresso}%</div>
+                <Prog pct={e.progresso} color={e.progresso===100?C.green600:"#BA7517"} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:12, color:"var(--color-text-primary,#111)" }}>Análise IA — Pregão 042/2025</div>
+          {EDITAIS[0].secoes.slice(0,3).map(s=><SecaoItem key={s.id} s={s}/>)}
+        </div>
+      </div>
+
+      <div style={S.colSide}>
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:12 }}>Cronograma</div>
+          {EDITAIS[0].timeline.map((t,i)=>(
+            <div key={i} style={{ display:"flex", gap:10, paddingBottom:10, borderBottom:i<3?"0.5px solid rgba(0,0,0,0.07)":"none", marginBottom:8 }}>
+              <div style={{ width:8, height:8, borderRadius:"50%", background:t.status==="ok"?C.green600:t.status==="warn"?"#BA7517":C.gray400, marginTop:5, flexShrink:0 }}/>
+              <div><div style={{ fontSize:12 }}>{t.texto}</div><div style={{ fontSize:10, color:C.gray400 }}>{t.data}</div></div>
+            </div>
+          ))}
+        </div>
+
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>Pontos fora do padrão</div>
+          {EDITAIS[0].pontosFora.map((p,i)=>(
+            <div key={i} style={{ display:"flex", gap:8, marginBottom:8, padding:"7px 10px", background:C.amber50, borderRadius:8, border:`0.5px solid ${C.amber600}` }}>
+              <span>⚠️</span>
+              <span style={{ fontSize:11, color:C.amber800, lineHeight:1.5 }}>{p}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>Checklist — progresso</div>
+          {[["objeto","Objeto compreendido"],["especTecnica","Especificações técnicas"],["habilitacao","Habilitação verificada"],["viabilidade","Viabilidade financeira"],["penalidades","Penalidades analisadas"]].map(([k,l])=>(
+            <CheckItem key={k} label={l} done={EDITAIS[0].checklist[k]} onToggle={()=>{}}/>
+          ))}
+          <Prog pct={72}/>
+          <div style={{ fontSize:10, color:C.gray400, marginTop:4 }}>11 de 15 itens concluídos</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Edital ───────────────────────────────────────────────────────────────────
+function EditalTab({ edital }) {
+  const [analyzed,setAnalyzed]=useState(!!edital?.secoes?.length);
+  const [loading,setLoading]=useState(false);
+  const [filter,setFilter]=useState("todos");
+
+  const handleUpload = ()=>{ setLoading(true); setTimeout(()=>{ setLoading(false); setAnalyzed(true); },2400); };
+
+  const secoes = edital?.secoes||[];
+  const filtradas = filter==="todos"?secoes:secoes.filter(s=>s.prioridade===filter);
+
+  return (
+    <div style={S.row}>
+      <div style={S.col}>
+        {!analyzed?(
+          <div style={S.card}>
+            <div style={{ fontSize:13, fontWeight:500, marginBottom:14 }}>Carregar edital de licitação</div>
+            {loading?(
+              <div style={{ textAlign:"center", padding:48 }}>
+                <div style={{ fontSize:32, marginBottom:16 }}>⚙️</div>
+                <div style={{ fontWeight:500, marginBottom:6 }}>Lendo edital com IA...</div>
+                <div style={{ fontSize:12, color:C.gray400, marginBottom:20 }}>Identificando objeto, TR, habilitação, prazos e pontos críticos</div>
+                <div style={S.progWrap}><div style={{ height:"100%", borderRadius:20, background:C.blue600, width:"65%" }}/></div>
+              </div>
+            ):(
+              <div onClick={handleUpload} style={{ border:"0.5px dashed rgba(0,0,0,0.25)", borderRadius:8, padding:36, textAlign:"center", cursor:"pointer", background:"var(--color-background-secondary,#F7F6F3)" }}>
+                <div style={{ fontSize:40, marginBottom:10 }}>📑</div>
+                <div style={{ fontWeight:500, marginBottom:4 }}>Arraste o PDF/DOC do edital ou clique para selecionar</div>
+                <div style={{ fontSize:12, color:C.gray400, marginBottom:16 }}>A IA vai ler o edital completo e extrair todas as seções importantes</div>
+                <button style={{ ...S.btn(true), margin:"0 auto" }}>Selecionar arquivo</button>
+              </div>
+            )}
+          </div>
+        ):(
+          <>
+            <div style={{ ...S.card, background:C.blue50, border:`0.5px solid ${C.blue100}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ fontSize:28 }}>✅</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:500, color:C.blue900 }}>{edital?.nome}</div>
+                  <div style={{ fontSize:12, color:C.blue600 }}>{edital?.orgao} · Sessão: {edital?.sessao} às {edital?.horario} · Plataforma: {edital?.plataforma}</div>
+                </div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, justifyContent:"flex-end" }}>
+                  <span style={S.badge("red")}>{secoes.filter(s=>s.prioridade==="obrigatorio").length} obrigatórios</span>
+                  <span style={S.badge("amber")}>{secoes.filter(s=>["importante","atencao"].includes(s.prioridade)).length} importantes</span>
+                  <span style={S.badge("blue")}>{secoes.filter(s=>s.prioridade==="info").length} informativos</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={S.card}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:500 }}>Seções extraídas pela IA</div>
+                <div style={{ display:"flex", gap:6 }}>
+                  {[["todos","Todos"],["obrigatorio","Obrigatórios"],["importante","Importantes"],["info","Informativos"]].map(([f,l])=>(
+                    <button key={f} onClick={()=>setFilter(f)} style={{ ...S.btn(filter===f), fontSize:11, padding:"5px 10px" }}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              {filtradas.map(s=><SecaoItem key={s.id} s={s}/>)}
+            </div>
+          </>
+        )}
+        <ChatIA edital={edital}/>
+      </div>
+
+      <div style={S.colSide}>
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:12 }}>Dados operacionais</div>
+          {[["Plataforma",edital?.plataforma||"—"],["Nº do processo",edital?.processo||"—"],["Data da sessão",edital?.sessao||"—"],["Horário",edital?.horario||"—"],["Tipo de contratação",edital?.tipo||"—"],["Disputa",edital?.disputa||"—"],["Critério",edital?.criterio||"—"],["Valor estimado",edital?.vr||"—"],["Pagamento",edital?.pagamento||"—"],["Validade proposta",edital?.validade||"—"]].map(([l,v],i,arr)=>(
+            <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:i<arr.length-1?"0.5px solid rgba(0,0,0,0.07)":"none" }}>
+              <span style={{ fontSize:12, color:C.gray400 }}>{l}</span>
+              <span style={{ fontSize:12, fontWeight:500, color:"var(--color-text-primary,#111)" }}>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>Pontos fora do padrão</div>
+          {(edital?.pontosFora||[]).map((p,i)=>(
+            <div key={i} style={{ display:"flex", gap:8, marginBottom:8, padding:"7px 10px", background:C.amber50, borderRadius:8, border:`0.5px solid ${C.amber600}` }}>
+              <span>⚠️</span>
+              <span style={{ fontSize:11, color:C.amber800, lineHeight:1.5 }}>{p}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Checklist ────────────────────────────────────────────────────────────────
+function ChecklistTab({ edital }) {
+  const ITEMS = [
+    { key:"objeto", label:"Entendi completamente o objeto", grupo:"Análise inicial", desc:"O que será comprado? Minha empresa atende?" },
+    { key:"especTecnica", label:"Atendo todas as especificações técnicas", grupo:"Análise inicial", desc:"Características, quantidades, normas, certificações" },
+    { key:"tr", label:"Li integralmente o Termo de Referência", grupo:"Análise inicial", desc:"Escopo, execução, critérios de aceitação, obrigações" },
+    { key:"dadosOp", label:"Registrei todos os dados operacionais", grupo:"Análise inicial", desc:"Plataforma, número do processo, data e horário da sessão" },
+    { key:"estrutura", label:"Entendi a estrutura da contratação", grupo:"Análise inicial", desc:"Compra imediata ou ARP? Impacto no preço e estoque" },
+    { key:"disputa", label:"Verifiquei se disputa é por item ou lote", grupo:"Análise inicial", desc:"Um item ruim em lote pode comprometer tudo" },
+    { key:"habilitacao", label:"Possuo toda a documentação de habilitação", grupo:"Habilitação", desc:"Contrato social, regularidade fiscal, trabalhista, etc." },
+    { key:"docsEspecificos", label:"Possuo documentos específicos exigidos", grupo:"Habilitação", desc:"Catálogos, fichas técnicas, licenças, declarações" },
+    { key:"qualTecnica", label:"Atendo os requisitos de qualificação técnica", grupo:"Habilitação", desc:"Atestados, experiência anterior, certificações" },
+    { key:"prazos", label:"Consigo cumprir todos os prazos", grupo:"Execução", desc:"Proposta, entrega, execução, amostras, correções" },
+    { key:"amostras", label:"Amostras verificadas (se exigidas)", grupo:"Execução", desc:"Prazo, quantidade, local, critérios de avaliação" },
+    { key:"localEntrega", label:"Conheço os locais de entrega", grupo:"Execução", desc:"Município, distância, frete incluído no preço?" },
+    { key:"viabilidade", label:"A operação é lucrativa", grupo:"Financeiro", desc:"Custos, impostos, frete, garantias, administrativo" },
+    { key:"precoRef", label:"Analisei o preço de referência", grupo:"Financeiro", desc:"Valor estimado compatível com meus custos?" },
+    { key:"pagamento", label:"Consigo suportar o prazo de pagamento", grupo:"Financeiro", desc:"Fluxo de caixa considerado na formação do preço" },
+    { key:"penalidades", label:"Compreendo as penalidades do contrato", grupo:"Riscos", desc:"Multas, suspensões, rescisão contratual" },
+  ];
+
+  const grupos = [...new Set(ITEMS.map(i=>i.grupo))];
+  const init = Object.fromEntries(ITEMS.map(i=>[i.key, edital?.checklist?.[i.key]||false]));
+  const [checks,setChecks]=useState(init);
+  const toggle=(k)=>setChecks(c=>({...c,[k]:!c[k]}));
+  const total=ITEMS.length, done=Object.values(checks).filter(Boolean).length, pct=Math.round(done/total*100);
+
+  return (
+    <div style={S.row}>
+      <div style={S.col}>
+        {grupos.map(g=>{
+          const its=ITEMS.filter(i=>i.grupo===g);
+          return (
+            <div key={g} style={S.card}>
+              <div style={{ fontSize:13, fontWeight:500, marginBottom:10, color:C.blue800 }}>{g}</div>
+              {its.map(item=>(
+                <div key={item.key} onClick={()=>toggle(item.key)} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"8px 10px", borderRadius:8, cursor:"pointer", background:checks[item.key]?C.green50:"var(--color-background-secondary,#F7F6F3)", border:`0.5px solid ${checks[item.key]?C.green600:"rgba(0,0,0,0.08)"}`, marginBottom:6, transition:"all 0.15s" }}>
+                  <span style={{ fontSize:15, color:checks[item.key]?C.green600:C.gray400, marginTop:1 }}>{checks[item.key]?"✓":"○"}</span>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:500, color:checks[item.key]?C.green800:"var(--color-text-primary,#111)" }}>{item.label}</div>
+                    <div style={{ fontSize:11, color:C.gray400, marginTop:2 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={S.colSide}>
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:8 }}>Progresso do checklist</div>
+          <div style={{ fontSize:36, fontWeight:500, color:pct===100?C.green600:pct>60?"#BA7517":C.red600 }}>{pct}%</div>
+          <div style={{ fontSize:12, color:C.gray400, marginBottom:8 }}>{done} de {total} itens verificados</div>
+          <Prog pct={pct} color={pct===100?C.green600:pct>60?"#BA7517":C.red600}/>
+          {pct<100&&(
+            <div style={{ marginTop:12, padding:"10px 12px", background:C.amber50, borderRadius:8, border:`0.5px solid ${C.amber600}` }}>
+              <div style={{ fontSize:12, color:C.amber800, fontWeight:500 }}>Regra de ouro</div>
+              <div style={{ fontSize:11, color:C.amber800, lineHeight:1.5, marginTop:4 }}>O objetivo da análise não é descobrir <em>como</em> participar — é descobrir <em>se vale a pena</em> participar.</div>
+            </div>
+          )}
+          {pct===100&&(
+            <div style={{ marginTop:12, padding:"10px 12px", background:C.green50, borderRadius:8, border:`0.5px solid ${C.green600}` }}>
+              <div style={{ fontSize:12, color:C.green800, fontWeight:500 }}>✅ Checklist completo</div>
+              <div style={{ fontSize:11, color:C.green600, marginTop:4 }}>Edital totalmente analisado. Você pode enviar a proposta com segurança.</div>
+            </div>
+          )}
+        </div>
+
+        <div style={S.card}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>Itens pendentes</div>
+          {ITEMS.filter(i=>!checks[i.key]).slice(0,5).map(i=>(
+            <div key={i.key} style={{ display:"flex", gap:8, marginBottom:7, alignItems:"flex-start" }}>
+              <span style={{ color:C.red600, fontSize:13, marginTop:1 }}>○</span>
+              <span style={{ fontSize:12, color:"var(--color-text-primary,#111)" }}>{i.label}</span>
+            </div>
+          ))}
+          {ITEMS.filter(i=>!checks[i.key]).length===0&&<div style={{ fontSize:12, color:C.green600 }}>Nenhum item pendente!</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Proposta ─────────────────────────────────────────────────────────────────
+function PropostaTab({ edital }) {
+  const [itens,setItens]=useState([
+    { id:1, desc:"Computador Desktop i5 12ª Gen", qtd:20, custo:2800, margem:15, frete:80 },
+    { id:2, desc:"Monitor 21,5\" Full HD IPS", qtd:20, custo:950, margem:18, frete:40 },
+    { id:3, desc:"Teclado e Mouse USB sem fio", qtd:20, custo:120, margem:25, frete:15 },
+  ]);
+  const [garantia,setGarantia]=useState(5);
+
+  const calcPreco=(item)=>{
+    const base = item.custo + item.frete;
+    const comMargem = base / (1 - item.margem/100);
+    return comMargem;
+  };
+  const totalProposta = itens.reduce((acc,it)=>acc+calcPreco(it)*it.qtd,0);
+  const totalCusto = itens.reduce((acc,it)=>acc+(it.custo+it.frete)*it.qtd,0);
+  const lucro = totalProposta-totalCusto;
+  const custoGarantia = totalProposta*(garantia/100);
+  const lucroLiquido = lucro-custoGarantia;
+  const vr = 380000;
+  const fmt = (v)=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+
+  return (
+    <div>
+      <div style={S.card}>
+        <div style={{ fontSize:13, fontWeight:500, marginBottom:14 }}>Composição de preço — {edital?.nome}</div>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ background:"var(--color-background-secondary,#F7F6F3)" }}>
+              {["Item","Qtd","Custo unit.","Frete unit.","Margem","Preço proposta","Total"].map(h=>(
+                <th key={h} style={{ padding:"8px 10px", fontSize:11, color:C.gray400, textAlign:h==="Item"?"left":"right", fontWeight:500 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {itens.map((it,idx)=>(
+              <tr key={it.id} style={{ borderBottom:"0.5px solid rgba(0,0,0,0.07)" }}>
+                <td style={{ padding:"8px 10px", fontSize:12 }}>{it.desc}</td>
+                <td style={{ padding:"8px 10px", fontSize:12, textAlign:"right" }}>
+                  <input type="number" value={it.qtd} min={1} onChange={e=>setItens(arr=>arr.map((x,i)=>i===idx?{...x,qtd:+e.target.value}:x))} style={{ width:55, textAlign:"right", padding:"3px 6px", borderRadius:6, border:"0.5px solid rgba(0,0,0,0.2)", fontSize:12 }}/>
+                </td>
+                <td style={{ padding:"8px 10px", fontSize:12, textAlign:"right" }}>
+                  <input type="number" value={it.custo} min={0} onChange={e=>setItens(arr=>arr.map((x,i)=>i===idx?{...x,custo:+e.target.value}:x))} style={{ width:80, textAlign:"right", padding:"3px 6px", borderRadius:6, border:"0.5px solid rgba(0,0,0,0.2)", fontSize:12 }}/>
+                </td>
+                <td style={{ padding:"8px 10px", fontSize:12, textAlign:"right", color:C.gray400 }}>{fmt(it.frete)}</td>
+                <td style={{ padding:"8px 10px", textAlign:"right" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, justifyContent:"flex-end" }}>
+                    <input type="range" min={5} max={60} value={it.margem} onChange={e=>setItens(arr=>arr.map((x,i)=>i===idx?{...x,margem:+e.target.value}:x))} style={{ width:70 }}/>
+                    <span style={{ fontSize:12, minWidth:30, textAlign:"right" }}>{it.margem}%</span>
+                  </div>
+                </td>
+                <td style={{ padding:"8px 10px", fontSize:12, textAlign:"right", fontWeight:500 }}>{fmt(calcPreco(it))}</td>
+                <td style={{ padding:"8px 10px", fontSize:12, textAlign:"right", fontWeight:500, color:C.blue800 }}>{fmt(calcPreco(it)*it.qtd)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={S.row}>
+        <div style={{ ...S.card, flex:1 }}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:14 }}>Resumo financeiro</div>
+          {[["Total da proposta",fmt(totalProposta),"#111"],["Custo total",fmt(totalCusto),C.gray400],["Lucro bruto",fmt(lucro),C.teal600],["Garantia contratual ("+garantia+"%)",`-${fmt(custoGarantia)}`,C.amber800],["Lucro líquido estimado",fmt(lucroLiquido),lucroLiquido>0?C.green600:C.red600]].map(([l,v,c],i,arr)=>(
+            <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:i<arr.length-1?"0.5px solid rgba(0,0,0,0.07)":"none" }}>
+              <span style={{ fontSize:12, color:C.gray400 }}>{l}</span>
+              <span style={{ fontSize:12, fontWeight:500, color:c }}>{v}</span>
+            </div>
+          ))}
+          <div style={{ marginTop:12 }}>
+            <div style={{ fontSize:12, color:C.gray400, marginBottom:4 }}>Garantia contratual: {garantia}%</div>
+            <input type="range" min={0} max={10} step={0.5} value={garantia} onChange={e=>setGarantia(+e.target.value)} style={{ width:"100%" }}/>
+          </div>
+        </div>
+
+        <div style={{ ...S.card, flex:1 }}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:14 }}>Comparação com referência</div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, color:C.gray400, marginBottom:4 }}>Valor estimado (PNCP)</div>
+            <div style={{ fontSize:22, fontWeight:500 }}>{fmt(vr)}</div>
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, color:C.gray400, marginBottom:4 }}>Sua proposta</div>
+            <div style={{ fontSize:22, fontWeight:500, color:totalProposta<=vr?C.green600:C.red600 }}>{fmt(totalProposta)}</div>
+          </div>
+          <div style={{ padding:"10px 12px", background:totalProposta<=vr?C.green50:C.red50, borderRadius:8, border:`0.5px solid ${totalProposta<=vr?C.green600:C.red600}` }}>
+            <div style={{ fontSize:12, fontWeight:500, color:totalProposta<=vr?C.green800:C.red600 }}>
+              {totalProposta<=vr?`✅ ${((1-totalProposta/vr)*100).toFixed(1)}% abaixo do valor estimado`:`⚠️ ${((totalProposta/vr-1)*100).toFixed(1)}% acima do valor estimado`}
+            </div>
+            <div style={{ fontSize:11, color:C.gray400, marginTop:3 }}>
+              {totalProposta<=vr?"Proposta elegível para participação":"Revise os custos — proposta acima do teto pode ser desclassificada"}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Chat IA ──────────────────────────────────────────────────────────────────
+function ChatIA({ edital }) {
+  const [msgs,setMsgs]=useState(CHAT_INICIAL);
+  const [input,setInput]=useState("");
+
+  const respostas = {
+    "falta":"No checklist do Pregão 042/2025 faltam: habilitação verificada, documentos específicos, viabilidade financeira e penalidades analisadas. São 4 itens críticos — especialmente habilitação, que é eliminatório.",
+    "prazo":"A sessão pública é em 28/01/2025 às 10h na plataforma Comprasnet. O prazo para envio da proposta é 25/01/2025. Você tem 3 dias para finalizar.",
+    "habilitacao":"Para este edital você precisa de: certidão negativa federal, estadual e municipal; FGTS regular; CNDT (trabalhista); contrato social atualizado; balanço patrimonial; e atestado de capacidade técnica (mín. 30% do objeto).",
+    "atestado":"O edital aceita somatório de atestados para atingir 30% da quantidade licitada. Separe notas fiscais ou ordens de compra que comprovem entregas anteriores para diligência.",
+    "amostra":"Este edital não exige amostras físicas — apenas fichas técnicas e catálogos do fabricante que comprovem atendimento às especificações.",
+    "garantia":"A garantia contratual é de 5% do valor do contrato, a ser apresentada em até 5 dias após a assinatura. Pode ser seguro-garantia ou fiança bancária. Inclua esse custo na sua precificação.",
+    "penalidade":"Multa por atraso: 0,5% ao dia. Multa por inexecução total: 10%. Atenção: 0,5% ao dia é acima da média — 20 dias de atraso já representam 10% de multa. Só aceite se tiver estoque confirmado.",
+    "plataforma":"Este pregão é realizado no Comprasnet (comprasnet.gov.br). Verifique se sua empresa tem cadastro no SICAF ativo — sem SICAF regularizado não é possível participar.",
+  };
+
+  const responder=(q)=>{
+    const lower=q.toLowerCase();
+    const chave=Object.keys(respostas).find(k=>lower.includes(k));
+    return chave?respostas[chave]:`Sobre "${q}" no ${edital?.nome||"edital"}: recomendo verificar a seção correspondente. Posso ajudar com prazo, habilitação, atestados, amostras, garantia, penalidades ou plataforma.`;
+  };
+
+  const enviar=()=>{
+    if(!input.trim())return;
+    const p=input.trim(); setInput("");
+    setMsgs(m=>[...m,{role:"user",text:p}]);
+    setTimeout(()=>setMsgs(m=>[...m,{role:"bot",text:responder(p)}]),700);
+  };
+
+  return (
+    <div style={S.card}>
+      <div style={{ fontSize:13, fontWeight:500, marginBottom:12 }}>Perguntar à IA sobre o edital</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12, maxHeight:220, overflowY:"auto" }}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{ display:"flex", justifyContent:m.role==="user"?"flex-end":"flex-start" }}>
+            <div style={{ fontSize:12, lineHeight:1.6, padding:"8px 12px", borderRadius:10, maxWidth:"90%", background:m.role==="bot"?C.blue50:"var(--color-background-secondary,#F1EFE8)", color:m.role==="bot"?C.blue900:"var(--color-text-primary,#111)" }}>{m.text}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&enviar()} placeholder="Pergunte sobre o edital..." style={{ flex:1, padding:"8px 12px", borderRadius:8, border:"0.5px solid rgba(0,0,0,0.2)", fontSize:12, outline:"none" }}/>
+        <button onClick={enviar} style={{ ...S.btn(true), padding:"8px 14px" }}>→</button>
+      </div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+        {["O que falta?","Prazo e sessão","Habilitação","Atestado técnico","Garantia contratual","Penalidades","Plataforma"].map(q=>(
+          <span key={q} style={S.tag("blue")} onClick={()=>setInput(q)}>{q}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+const TABS=[
+  {key:"painel",label:"Painel",icon:"🏠"},
+  {key:"edital",label:"Edital",icon:"📄"},
+  {key:"checklist",label:"Checklist",icon:"✅"},
+  {key:"proposta",label:"Proposta",icon:"💰"},
+];
+
+const TOP_TITLES={
+  painel:"Painel de licitações",
+  edital:"Leitura do edital por IA",
+  checklist:"Checklist de participação",
+  proposta:"Composição de proposta",
+};
+
+export default function LicitaFlow() {
+  const [activeTab,setActiveTab]=useState("painel");
+  const [editalId,setEditalId]=useState(1);
+  const edital=EDITAIS.find(e=>e.id===editalId)||EDITAIS[0];
+
+  const nav=(tab,id)=>{ if(id)setEditalId(id); setActiveTab(tab); };
+
+  return (
+    <div style={S.app}>
+      <div style={S.sidebar}>
+        <div style={S.logo}>
+          <div style={{ fontSize:15, fontWeight:600, color:C.blue800, letterSpacing:"-0.3px" }}>⚖️ LicitaFlow</div>
+          <div style={{ fontSize:11, color:C.gray400, marginTop:2 }}>Análise inteligente de editais</div>
+        </div>
+
+        <div>
+          <div style={S.navLabel}>Principal</div>
+          {TABS.map(t=>(
+            <div key={t.key} style={S.navItem(activeTab===t.key)} onClick={()=>setActiveTab(t.key)}>
+              <span>{t.icon}</span>{t.label}
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <div style={S.navLabel}>Editais ativos</div>
+          {EDITAIS.map(e=>(
+            <div key={e.id} style={S.navItem(editalId===e.id&&activeTab==="edital")} onClick={()=>nav("edital",e.id)}>
+              <span>{e.progresso===100?"✅":"📋"}</span>
+              <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontSize:12 }}>{e.nome.split(" ").slice(0,3).join(" ")}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ flex:1 }}/>
+        <div style={{ padding:"12px 16px", borderTop:"0.5px solid rgba(0,0,0,0.08)" }}>
+          <span style={S.aiBadge}>✨ IA ativa</span>
+          <div style={{ fontSize:11, color:C.gray400, marginTop:4 }}>Empresa: Comercial Tech Ltda</div>
+        </div>
+      </div>
+
+      <div style={S.main}>
+        <div style={S.topbar}>
+          <div style={{ fontSize:15, fontWeight:500, color:"var(--color-text-primary,#111)" }}>{TOP_TITLES[activeTab]}</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button style={S.btn(false)} onClick={()=>nav("edital")}>+ Novo edital</button>
+            <button style={S.btn(true)} onClick={()=>setActiveTab("proposta")}>💰 Montar proposta</button>
+          </div>
+        </div>
+
+        <div style={S.content}>
+          {activeTab==="painel"&&<PainelTab editais={EDITAIS} nav={nav}/>}
+          {activeTab==="edital"&&<EditalTab edital={edital}/>}
+          {activeTab==="checklist"&&<ChecklistTab edital={edital}/>}
+          {activeTab==="proposta"&&<PropostaTab edital={edital}/>}
+        </div>
+      </div>
+    </div>
+  );
+}
