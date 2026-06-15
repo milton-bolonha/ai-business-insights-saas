@@ -13,7 +13,20 @@ export async function generateMetadata(): Promise<Metadata> {
     try {
       const client = await connect();
       const db = client.db('ai_business_insights');
-      const workspace = await db.collection('workspaces').findOne({ _id: new ObjectId(workspaceId) });
+      let query: any = { id: workspaceId };
+      let objId = null;
+      try {
+          if (ObjectId.isValid(workspaceId)) {
+             objId = new ObjectId(workspaceId);
+          }
+      } catch (err) {}
+
+      if (objId) {
+          query = { $or: [{ _id: objId }, { id: workspaceId }, { sessionId: workspaceId }] };
+      } else {
+          query = { $or: [{ id: workspaceId }, { sessionId: workspaceId }] };
+      }
+      const workspace = await db.collection('workspaces').findOne(query);
       if (workspace && workspace.name) {
         workspaceName = workspace.name;
       }

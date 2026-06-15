@@ -439,10 +439,14 @@ export function AdminContainer() {
       });
 
       // 1. Validate Context
+      const hasPendingEditais = currentDashboard?.tiles?.some(t => t.metadata?.source === "io_editais_upload" && t.status === "pending");
+      
       if (
         !currentWorkspace ||
-        currentWorkspace.promptSettings?.templateId !== "template_love_writers" ||
-        !currentDashboard
+        !currentDashboard ||
+        (currentWorkspace.promptSettings?.templateId !== "template_love_writers" && 
+         currentWorkspace.promptSettings?.templateId !== "template_io_editais" && 
+         !hasPendingEditais)
       ) {
         return;
       }

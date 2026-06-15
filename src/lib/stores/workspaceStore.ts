@@ -963,6 +963,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             dashboard.notes = dashboard.notes.filter((n) => n.id !== noteId);
             dashboard.updatedAt = new Date().toISOString();
             workspace.updatedAt = new Date().toISOString();
+            
+            if (state.currentDashboard?.id === dashboardId && state.currentDashboard.notes) {
+              state.currentDashboard.notes = state.currentDashboard.notes.filter((n) => n.id !== noteId);
+            }
+            if (state.currentWorkspace?.id === workspaceId) {
+              const wd = state.currentWorkspace.dashboards.find(d => d.id === dashboardId);
+              if (wd && wd.notes) wd.notes = wd.notes.filter((n) => n.id !== noteId);
+            }
           });
 
           persistWorkspacesSafely(get().workspaces);
@@ -1086,6 +1094,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             dashboard.tiles = dashboard.tiles.filter((t) => t.id !== tileId);
             dashboard.updatedAt = new Date().toISOString();
             workspace.updatedAt = new Date().toISOString();
+            
+            if (state.currentDashboard?.id === dashboardId && state.currentDashboard.tiles) {
+              state.currentDashboard.tiles = state.currentDashboard.tiles.filter((t) => t.id !== tileId);
+            }
+            if (state.currentWorkspace?.id === workspaceId) {
+              const wd = state.currentWorkspace.dashboards.find(d => d.id === dashboardId);
+              if (wd && wd.tiles) wd.tiles = wd.tiles.filter((t) => t.id !== tileId);
+            }
           });
 
           persistWorkspacesSafely(get().workspaces);

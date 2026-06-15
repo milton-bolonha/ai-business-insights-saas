@@ -421,10 +421,10 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
   },
   {
     id: "subscription_purpose",
-    label: "Propósito da Inscrição",
+    label: "Especialidade / O que deseja vender?",
     labelKey: "attributes.subscription_purpose.label",
     appTagId: "io_editais",
-    placeholder: "Ex: Venda de equipamentos de TI",
+    placeholder: "Ex: Serviços de TI, Mobiliário...",
     placeholderKey: "attributes.subscription_purpose.placeholder",
   },
 ];
