@@ -123,8 +123,8 @@ export function useWMSOrchestrator(
         else if (cmd.action === 'AUTO_PUTAWAY') {
           // Find first spot with space (max 5 products for now)
           let found = false;
-          for (let sec of currentSections) {
-            for (let spot of sec.spots) {
+          for (const sec of currentSections) {
+            for (const spot of sec.spots) {
               if (spot.products.length < 5) {
                 const item = cmd.item || {};
                 spot.products.push({

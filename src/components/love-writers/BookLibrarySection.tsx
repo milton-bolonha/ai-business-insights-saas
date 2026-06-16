@@ -427,7 +427,7 @@ export function BookLibrarySection({
       };
 
       const beginningImg = await getImgTag("beginning");
-      let chapterPrompt = `Romance novelist writing arc ${arcNum} of ${totalArcs}. Language: ${currentLanguage}.\nSynopsis: ${synopsis}\nArcs: ${tile.title} - ${tile.content}\nDialogue uses em-dash (—) and NO quotes. Format: [TITLE] Title [END_TITLE] then plain text paragraphs. No meta. Approx ${wordsPerArc} words.`;
+      const chapterPrompt = `Romance novelist writing arc ${arcNum} of ${totalArcs}. Language: ${currentLanguage}.\nSynopsis: ${synopsis}\nArcs: ${tile.title} - ${tile.content}\nDialogue uses em-dash (—) and NO quotes. Format: [TITLE] Title [END_TITLE] then plain text paragraphs. No meta. Approx ${wordsPerArc} words.`;
 
       await new Promise<void>((resolve) => {
         let buffer = "";

@@ -99,7 +99,7 @@ export function CompanyDirectoryView(props: SmartSurveyBoardViewProps) {
                       const N = company.populationSize;
                       const conf = calculateSamplingStats(n, N).coveragePercent;
 
-                      let globalScore = calculateCompanyGlobalRisk(company, activeResponses);
+                      const globalScore = calculateCompanyGlobalRisk(company, activeResponses);
                       const risk = getRiskLevel(globalScore);
 
                       return (

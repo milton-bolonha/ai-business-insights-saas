@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET() {
     try {
         const users = await db.find("users", {}) as any[];
-        let logs: string[] = [];
+        const logs: string[] = [];
 
         for (const u of users) {
             if (!u.userId) {

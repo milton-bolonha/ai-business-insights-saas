@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => null);
     const { userId } = await getAuth();
-    let usageService: typeof import("@/lib/saas/usage-service") | null = null;
+    const usageService: typeof import("@/lib/saas/usage-service") | null = null;
 
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const content = typeof body?.content === "string" ? body.content.trim() : "";

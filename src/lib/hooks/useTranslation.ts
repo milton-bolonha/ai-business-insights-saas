@@ -96,7 +96,7 @@ export function useTranslation() {
           while (i < pluralOptionsStr.length && /\s/.test(pluralOptionsStr[i])) i++;
           if (i >= pluralOptionsStr.length) break;
 
-          let keyStart = i;
+          const keyStart = i;
           while (i < pluralOptionsStr.length && !/\s/.test(pluralOptionsStr[i]) && pluralOptionsStr[i] !== "{") i++;
           const key = pluralOptionsStr.slice(keyStart, i).trim();
 
@@ -107,7 +107,7 @@ export function useTranslation() {
           }
           i++;
 
-          let valStart = i;
+          const valStart = i;
           let innerBrace = 1;
           while (i < pluralOptionsStr.length && innerBrace > 0) {
             if (pluralOptionsStr[i] === "{") innerBrace++;

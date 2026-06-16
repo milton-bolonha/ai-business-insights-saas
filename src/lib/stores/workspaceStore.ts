@@ -428,7 +428,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           );
           const { currentWorkspace, workspaces } = get();
 
-          let workspace =
+          const workspace =
             currentWorkspace ||
             workspaces.find((w) =>
               w.dashboards.some((d) => d.id === dashboardId)
@@ -656,7 +656,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           console.log("[DEBUG] workspaceStore.updateDashboard called:", { workspaceId, dashboardId, updates });
 
           // Ensure we have the workspace in our list
-          let currentWorkspaces = get().workspaces;
+          const currentWorkspaces = get().workspaces;
           if (!currentWorkspaces.find(w => w.id === workspaceId)) {
             console.warn("[workspaceStore] Workspace not found in store, refreshing...", workspaceId);
             get().refreshWorkspaces();

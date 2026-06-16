@@ -40,7 +40,7 @@ export async function POST(
       // 🟢 MEMBER: buscar contato no Mongo e validar acesso
       const { db } = await import("@/lib/db/mongodb");
       const { contactDocumentToContact } = await import("@/lib/db/models/Contact");
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+       
       type ContactDocument = import("@/lib/db/models/Contact").ContactDocument;
 
       const contactDoc = await db.findOne<ContactDocument>("contacts", {

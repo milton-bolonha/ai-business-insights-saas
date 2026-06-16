@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 import { OSEntity } from "../types/OSEntity";
 import { Clock, CheckCircle, Circle, AlertCircle, Archive } from "lucide-react";

@@ -143,8 +143,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the user to invite
-    let userToInvite = await db.findOne("users", { email });
-    let inviteUserId = userToInvite?.userId || null;
+    const userToInvite = await db.findOne("users", { email });
+    const inviteUserId = userToInvite?.userId || null;
 
     // Prevent adding the owner as a member
     if (inviteUserId === workspace?.userId) {

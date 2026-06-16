@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthWorkspace } from "@/lib/auth/get-auth";
 import { db } from "@/lib/db/mongodb";
 
-export async function PUT(req: NextRequest, { params }: { params: { osId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ osId: string }> }) {
   try {
     const { workspaceId, error, status } = await getAuthWorkspace(req);
     if (error || !workspaceId) {
       return NextResponse.json({ error }, { status: status || 401 });
     }
 
-    const { osId } = params;
+    const { osId } = await params;
     const updates = await req.json().catch(() => null);
 
     if (!updates) {
@@ -29,19 +29,20 @@ export async function PUT(req: NextRequest, { params }: { params: { osId: string
     // return the modified order if possible, or just a success flag
     return NextResponse.json({ success: true, message: "Order updated successfully" });
   } catch (err: any) {
-    console.error(`[PUT /api/os-system/${params.osId}]`, err);
+    const { osId } = await params;
+    console.error(`[PUT /api/os-system/${osId}]`, err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { osId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ osId: string }> }) {
   try {
     const { workspaceId, error, status } = await getAuthWorkspace(req);
     if (error || !workspaceId) {
       return NextResponse.json({ error }, { status: status || 401 });
     }
 
-    const { osId } = params;
+    const { osId } = await params;
 
     const result = await db.deleteOne("os_orders", { id: osId, workspaceId });
     if (!result) {
@@ -50,7 +51,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { osId: str
 
     return NextResponse.json({ success: true, message: "Order deleted successfully" });
   } catch (err: any) {
-    console.error(`[DELETE /api/os-system/${params.osId}]`, err);
+    const { osId } = await params;
+    console.error(`[DELETE /api/os-system/${osId}]`, err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

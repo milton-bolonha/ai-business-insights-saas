@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
       const { contactDocumentToContact } = await import(
         "@/lib/db/models/Contact"
       );
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+       
       type ContactDocument = import("@/lib/db/models/Contact").ContactDocument;
 
       const contacts = await db.find<ContactDocument>("contacts", {

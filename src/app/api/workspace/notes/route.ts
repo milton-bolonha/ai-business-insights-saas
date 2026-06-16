@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
       // Fetch from MongoDB
       const { db } = await import("@/lib/db/mongodb");
       const { noteDocumentToNote } = await import("@/lib/db/models/Note");
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+       
       type NoteDocument = import("@/lib/db/models/Note").NoteDocument;
 
       const notes = await db.find<NoteDocument>("notes", {

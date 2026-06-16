@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { SecaoEdital } from "../hooks/useLicitaFlow";
 

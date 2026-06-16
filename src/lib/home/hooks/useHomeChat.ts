@@ -90,7 +90,7 @@ export function useHomeChat() {
     );
 
     // 2. Determine what we just filled (if any) or infer it
-    let updatedValues = { ...formValues };
+    const updatedValues = { ...formValues };
     if (attrId) {
       const key = attrId as keyof ClassicHeroFormSubmission;
       updatedValues[key] = msg as any;

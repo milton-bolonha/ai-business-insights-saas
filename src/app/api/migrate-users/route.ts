@@ -9,7 +9,7 @@ export async function GET() {
         const users = await db.find("users", {});
         let usersUpdated = 0;
         let purchasesUpdated = 0;
-        let logs: string[] = [];
+        const logs: string[] = [];
 
         for (const u of users as any[]) {
             if (!u.userId) {

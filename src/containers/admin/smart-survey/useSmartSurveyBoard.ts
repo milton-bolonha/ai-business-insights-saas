@@ -1135,7 +1135,7 @@ ${recommendations}
              · Variação IRO: ${trendPdf.delta !== null ? (trendPdf.delta > 0 ? "+" : "") + trendPdf.delta.toFixed(2) : "sem histórico"}`
         : "";
 
-    let sectorsHtml = Object.entries(sectorBreakdowns)
+    const sectorsHtml = Object.entries(sectorBreakdowns)
       .map(([name, data]) => {
         const secRisk = getRiskLevel(data.avg);
         const polAlert = data.isPolarized
@@ -1151,7 +1151,7 @@ ${recommendations}
       })
       .join("");
 
-    let individualsHtml = activeCompany.collaborators
+    const individualsHtml = activeCompany.collaborators
       .map((c) => {
         const score = getCollaboratorGlobalRisk(c.id);
         const cRisk = getRiskLevel(score);

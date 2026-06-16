@@ -106,7 +106,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       ? session.customer
       : session.customer?.id;
 
-  let email = session.customer_details?.email || session.customer_email;
+  const email = session.customer_details?.email || session.customer_email;
 
   if (!userId && email) {
     const existingUser = await db.findOne("users", { email }) as any;

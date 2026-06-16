@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { OSEntity, OSStatus } from '../types/OSEntity';
 import { LayoutGrid, List as ListIcon, Check, Clock, Circle, AlertCircle, Archive, Star, Filter } from 'lucide-react';

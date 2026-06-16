@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const { db } = await import("@/lib/db/mongodb");
     const { workspaceDocumentToSnapshot } = await import("@/lib/db/models/Workspace");
-    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+     
     type WorkspaceDocument = import("@/lib/db/models/Workspace").WorkspaceDocument;
 
     const workspaceDoc = await db.findOne<WorkspaceDocument>("workspaces", {

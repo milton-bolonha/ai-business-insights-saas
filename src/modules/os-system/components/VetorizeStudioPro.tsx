@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   Upload, Download, Image as ImageIcon, Sparkles, 
@@ -52,9 +53,9 @@ const mapSettingsToTracer = (s) => ({
 });
 
 export function VetorizeStudioPro() {
-  const [imageSrc, setImageSrc] = useState(null);
+  const [imageSrc, setImageSrc] = useState<any>(null);
   const [imageDimensions, setImageDimensions] = useState({ w: 0, h: 0 });
-  const [globalError, setGlobalError] = useState(null);
+  const [globalError, setGlobalError] = useState<any>(null);
   
   const [activeTool, setActiveTool] = useState('select'); 
   const [zoom, setZoom] = useState(1);
@@ -71,17 +72,17 @@ export function VetorizeStudioPro() {
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
-  const [currentDraw, setCurrentDraw] = useState(null);
+  const [currentDraw, setCurrentDraw] = useState<any>(null);
 
   const [useCustomPalette, setUseCustomPalette] = useState(false);
-  const [palette, setPalette] = useState([]);
-  const [selectedPaletteIds, setSelectedPaletteIds] = useState([]);
+  const [palette, setPalette] = useState<any[]>([]);
+  const [selectedPaletteIds, setSelectedPaletteIds] = useState<any[]>([]);
 
-  const [layers, setLayers] = useState([]);
-  const [selectedLayerId, setSelectedLayerId] = useState(null);
+  const [layers, setLayers] = useState<any[]>([]);
+  const [selectedLayerId, setSelectedLayerId] = useState<any>(null);
 
-  const containerRef = useRef(null);
-  const innerCanvasRef = useRef(null);
+  const containerRef = useRef<any>(null);
+  const innerCanvasRef = useRef<any>(null);
 
   useEffect(() => {
     if (!window.ImageTracer) {

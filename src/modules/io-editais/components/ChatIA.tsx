@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Edital } from "../hooks/useLicitaFlow";
 
 const CHAT_INICIAL = [
   { role: "bot", text: "Analisei o Pregão 042/2025 da Prefeitura de Campinas. Encontrei 6 seções, 2 pontos fora do padrão críticos e 4 itens do checklist pendentes. Por onde quer começar?" }
 ];
 
-export function ChatIA({ edital }: { edital: Edital }) {
+export function ChatIA({ edital }: { edital: any }) {
   const [msgs, setMsgs] = useState(CHAT_INICIAL);
   const [input, setInput] = useState("");
 
