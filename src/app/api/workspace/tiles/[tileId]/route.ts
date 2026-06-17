@@ -17,7 +17,7 @@ export async function PATCH(
     const { tileId } = await params;
     const { userId } = await getAuth();
     const body = await request.json();
-    const { dashboardId, workspaceId, content, status, title, metadata } = body;
+    const { dashboardId, workspaceId, content, status, title, metadata, model, createdAt } = body;
 
     if (!dashboardId || !workspaceId) {
       return NextResponse.json(
@@ -57,13 +57,20 @@ export async function PATCH(
     if (status !== undefined) updates.status = status;
     if (title !== undefined) updates.title = title;
     if (metadata !== undefined) updates.metadata = metadata;
+    if (model !== undefined) updates.model = model;
+    if (createdAt !== undefined) updates.createdAt = createdAt;
 
     if (userId) {
       // 🟢 MEMBER: Update in MongoDB
       const success = await db.updateOne(
         "tiles",
         { id: tileId, userId, workspaceId, dashboardId },
-        { $set: updates },
+        { 
+          $set: updates,
+          $setOnInsert: {
+            createdAt: new Date()
+          }
+        },
         { upsert: true }
       );
 

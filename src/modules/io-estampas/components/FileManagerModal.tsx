@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Folder, Image as ImageIcon, FileText, Upload, Loader2, Calendar, Trash2, AlertTriangle } from 'lucide-react';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { useContent } from '@/lib/stores/contentHooks';
 
 interface Props {
   isOpen: boolean;
@@ -21,11 +22,19 @@ export function FileManagerModal({ isOpen, onClose, title, setTitle, onLoadArtwo
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const removeTileFromDashboard = useWorkspaceStore(state => state.removeTileFromDashboard);
+  const content = useContent();
 
-  const handleDelete = (e: React.MouseEvent, fileId: string) => {
+  const handleDelete = async (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
     if (!currentWorkspace || !currentDashboard) return;
-    removeTileFromDashboard(currentWorkspace.id, currentDashboard.id, fileId);
+    
+    try {
+      await content.deleteTile(fileId);
+      // Fallback local update in case it's not reacting immediately
+      removeTileFromDashboard(currentWorkspace.id, currentDashboard.id, fileId);
+    } catch (err) {
+      console.error("Failed to delete tile", err);
+    }
     setDeletingId(null);
   };
 

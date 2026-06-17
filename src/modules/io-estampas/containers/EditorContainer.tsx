@@ -7,6 +7,7 @@ import { AiMockupGenerator } from '../components/AiMockupGenerator';
 import { FileManagerModal } from '../components/FileManagerModal';
 import { generateId, ALL_FONTS, openPrintWindow, renderHtmlElement, PRINT_TYPES } from '../libs/editor-utils';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { useContent } from '@/lib/stores/contentHooks';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
@@ -27,6 +28,7 @@ export function EditorContainer({ storeName, onExit, isInsideAdmin = false }: Pr
   const currentWorkspace = useWorkspaceStore(state => state.currentWorkspace);
   const currentDashboard = useWorkspaceStore(state => state.currentDashboard);
   const updateTileInDashboard = useWorkspaceStore(state => state.updateTileInDashboard);
+  const content = useContent();
   
   const [elements, setElements] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -89,13 +91,14 @@ export function EditorContainer({ storeName, onExit, isInsideAdmin = false }: Pr
     
     const saveTimeout = setTimeout(() => {
       console.log("[Auto-Save] Gravando estampa:", title, elements.length, "elementos.", "printType:", printType);
-      updateTileInDashboard(currentWorkspace.id, currentDashboard.id, activeEstampaId, { 
+      content.updateTile(activeEstampaId, { 
         title, 
+        model: "io_estampas", // Just in case it's an upsert and it needs the model
         metadata: { elements, canvasW, canvasH, pageBgColor, printType } 
       });
     }, 1000);
     return () => clearTimeout(saveTimeout);
-  }, [elements, title, canvasW, canvasH, pageBgColor, printType, currentDashboard, currentWorkspace, updateTileInDashboard, activeEstampaId]);
+  }, [elements, title, canvasW, canvasH, pageBgColor, printType, currentDashboard, currentWorkspace, activeEstampaId, content]);
 
   // If no active estampa, open file manager instead of auto-creating
   useEffect(() => {
