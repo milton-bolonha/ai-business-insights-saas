@@ -30,7 +30,7 @@ export function AdminOnboardingHandler() {
 
                 // Duplicate guard: if we already have a workspace with this name, skip
                 const existingWorkspaces = useWorkspaceStore.getState().workspaces;
-                const workspaceName = data.edital_name || data.os_company_name || data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
+                const workspaceName = data.estampas_store_name || data.edital_name || data.os_company_name || data.blog_name || data.coupleName || data.company || (data.mentor_name ? `${data.mentor_name} & ${data.student_name}` : "") || data.survey_company || "";
                 if (workspaceName && existingWorkspaces.some(w => w.name === workspaceName)) {
                     console.log(`[Onboarding] Workspace "${workspaceName}" already exists, skipping duplicate creation.`);
                     setIsProcessing(false);
@@ -61,6 +61,8 @@ export function AdminOnboardingHandler() {
                     await handleOsSystemCreation(data);
                 } else if (type === "io_editais") {
                     await handleIoEditaisCreation(data);
+                } else if (type === "io_estampas") {
+                    await handleIoEstampasCreation(data);
                 }
 
                 push({
@@ -531,6 +533,53 @@ export function AdminOnboardingHandler() {
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             throw new Error(err.error || "Failed to generate IoEditais workspace");
+        }
+
+        const resData = await response.json();
+        if (resData.workspace) {
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
+    };
+
+    const handleIoEstampasCreation = async (data: any) => {
+        const targetUrl = "/api/generate";
+        
+        const safeString = (val: string | undefined, fallback: string) => {
+            const v = (val || "").trim();
+            return v.length >= 2 ? v : fallback;
+        };
+
+        const storeName = safeString(data.estampas_store_name, "Minha Loja de Estampas");
+        const storeNiche = safeString(data.estampas_niche, "Estampas Variadas");
+        
+        const payload = {
+            salesRepCompany: storeName,
+            salesRepWebsite: "https://io.estampas",
+            solution: "Editor e Gestão de Estampas",
+            targetCompany: storeName,
+            targetWebsite: "https://io.estampas",
+            templateId: "template_io_estampas",
+            model: "gpt-4o-mini",
+            promptAgent: "ade_research_analyst",
+            responseLength: "long",
+            promptVariables: [
+                `estampas_store_name:${storeName}`,
+                `estampas_niche:${storeNiche}`
+            ],
+            bulkPrompts: [],
+        };
+
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to generate Estampas workspace");
         }
 
         const resData = await response.json();

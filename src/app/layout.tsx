@@ -10,8 +10,8 @@ import "@fontsource-variable/oswald";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "I/O App",
-  description: "Advanced AI Platform for your business",
+  title: "I/O Labs",
+  description: "Advanced B2B SaaS Application",
   icons: {
     icon: "/images/favicon-16x16.png",
     shortcut: "/images/favicon-16x16.png",

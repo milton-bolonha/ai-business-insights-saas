@@ -121,6 +121,10 @@ const IoEditaisBoard = dynamic(
   () => import("@/modules/io-editais/components/IoEditaisBoard").then(m => ({ default: m.IoEditaisBoard })),
   { ssr: false, loading: () => <BoardSkeleton /> }
 );
+const IoEstampasBoard = dynamic(
+  () => import("@/modules/io-estampas/containers/EstampasApp").then(m => ({ default: m.default })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
 
 
 // Zustand stores
@@ -270,6 +274,10 @@ export function AdminContainer() {
         setActiveTab("blog" as any);
       } else if (templateId === "template_os_system") {
         setActiveTab("os_system" as any);
+      } else if (templateId === "template_io_editais") {
+        setActiveTab("io_editais" as any);
+      } else if (templateId === "template_io_estampas") {
+        setActiveTab("io_estampas" as any);
       } else {
         setActiveTab("arcs");
       }
@@ -401,6 +409,7 @@ export function AdminContainer() {
           if (tid === "template_ai_blog") return "blog" as any;
           if (tid === "template_os_system") return "os_system" as any;
           if (tid === "template_io_editais") return "io_editais" as any;
+          if (tid === "template_io_estampas") return "io_estampas" as any;
           return "arcs";
       };
 
@@ -421,6 +430,7 @@ export function AdminContainer() {
       if (templateId === "template_ai_blog" && activeTab === "arcs") setActiveTab("blog" as any);
       if (templateId === "template_os_system" && activeTab === "arcs") setActiveTab("os_system" as any);
       if (templateId === "template_io_editais" && activeTab === "arcs") setActiveTab("io_editais" as any);
+      if (templateId === "template_io_estampas" && activeTab === "arcs") setActiveTab("io_estampas" as any);
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -958,6 +968,7 @@ export function AdminContainer() {
         });
       }}
       onSetSpecificColor={handleSetBackground}
+      fullScreenContent={activeTab === "io_estampas"}
     >
       {!hasWorkspace ? (
         <EmptyStateAde
@@ -983,7 +994,7 @@ export function AdminContainer() {
       ) : (
         <>
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-h-0 py-4">
+          <div className={`flex-1 flex flex-col min-h-0 ${activeTab === "io_estampas" ? "" : "py-4"}`}>
               {/* Conditional Tab Rendering */}
               {activeTab === "library" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1308,6 +1319,12 @@ export function AdminContainer() {
               {(activeTab as any) === "io_editais" && currentWorkspace && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
                   <IoEditaisBoard />
+                </div>
+              )}
+
+              {(activeTab as any) === "io_estampas" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1 flex flex-col min-h-0 w-full">
+                  <IoEstampasBoard storeName={currentWorkspace.name} isInsideAdmin={true} onExit={() => {}} />
                 </div>
               )}
 

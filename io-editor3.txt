@@ -1,0 +1,947 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Type, Layers, Scissors, Droplets, Wand2, Download, Trash2, Sparkles, 
+  ImagePlus, BoxSelect, Printer, Undo, Redo, ZoomIn, ZoomOut, Maximize, Grid3X3,
+  X, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Strikethrough,
+  CaseUpper, CaseLower, Baseline, MoveHorizontal, TypeOutline, GripVertical, Settings
+} from 'lucide-react';
+
+const apiKey = ""; // Sua chave API IA
+
+// ─── CONFIGURAÇÃO DE FONTES E TIPOS ──────────────────────────────────────────
+const FONTS_BY_CATEGORY = {
+  "Universitário & Academia": ['Georgia', 'Cambria', 'Times New Roman'],
+  "Direito & Advocacia": ['Century Schoolbook', 'Garamond', 'Calibri'],
+  "Medicina & Saúde": ['Arial', 'Helvetica', 'Garamond'],
+  "Design, Arte & Moda": ['Playfair Display', 'Montserrat', 'Syne', 'Cinzel'],
+  "Tech & Engenharia": ['JetBrains Mono', 'Fira Code', 'Space Grotesk', 'Inter'],
+  "Finanças & Negócios": ['Prata', 'Source Sans 3', 'PT Serif'],
+  "Esportes & Fitness": ['Oswald', 'Bebas Neue', 'Rubik'],
+  "Arquitetura & Construção": ['Architects Daughter', 'Josefin Sans', 'Urbanist'],
+  "Pedagogia & Infantil": ['Fredoka', 'Quicksand', 'Comfortaa'],
+  "Geek, Pop & Streetwear": ['Press Start 2P', 'Permanent Marker', 'Creepster']
+};
+const ALL_FONTS = Array.from(new Set(Object.values(FONTS_BY_CATEGORY).flat()));
+
+const FONT_WEIGHTS = [
+  { value: '100', label: 'Thin' },
+  { value: '300', label: 'Light' },
+  { value: '400', label: 'Regular' },
+  { value: '500', label: 'Medium' },
+  { value: '600', label: 'Semi Bold' },
+  { value: '700', label: 'Bold' },
+  { value: '800', label: 'Extra Bold' },
+  { value: '900', label: 'Black' }
+];
+
+const PRINT_TYPES = [
+  { id: 'silk', name: 'Silk', icon: PaintBucketIcon, color: 'text-blue-600', bg: 'bg-blue-600' },
+  { id: 'dtf', name: 'DTF', icon: Layers, color: 'text-fuchsia-600', bg: 'bg-fuchsia-600' },
+  { id: 'sublimacao', name: 'Sublimação', icon: Droplets, color: 'text-cyan-600', bg: 'bg-cyan-600' },
+  { id: 'plotter', name: 'Plotter', icon: Scissors, color: 'text-orange-600', bg: 'bg-orange-600' },
+  { id: 'custom', name: 'Customizado', icon: Sparkles, color: 'text-slate-800', bg: 'bg-slate-800' }
+];
+
+function PaintBucketIcon(props) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/>
+    </svg>
+  );
+}
+
+const SHAPES = {
+  heart: (color, w, h, sColor, sWidth, sDash) => `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="${color}" stroke="${sColor||'none'}" stroke-width="${sWidth||0}" stroke-dasharray="${sDash||'none'}" preserveAspectRatio="none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+  star: (color, w, h, sColor, sWidth, sDash) => `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="${color}" stroke="${sColor||'none'}" stroke-width="${sWidth||0}" stroke-dasharray="${sDash||'none'}" preserveAspectRatio="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  circle: (color, w, h, sColor, sWidth, sDash) => `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="${color}" stroke="${sColor||'none'}" stroke-width="${sWidth||0}" stroke-dasharray="${sDash||'none'}" preserveAspectRatio="none"><circle cx="12" cy="12" r="10"/></svg>`,
+  rect: (color, w, h, sColor, sWidth, sDash) => `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="${color}" stroke="${sColor||'none'}" stroke-width="${sWidth||0}" stroke-dasharray="${sDash||'none'}" preserveAspectRatio="none"><rect x="2" y="2" width="20" height="20" rx="3"/></svg>`,
+  triangle: (color, w, h, sColor, sWidth, sDash) => `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="${color}" stroke="${sColor||'none'}" stroke-width="${sWidth||0}" stroke-dasharray="${sDash||'none'}" preserveAspectRatio="none"><polygon points="12,2 22,22 2,22"/></svg>`,
+  diamond: (color, w, h, sColor, sWidth, sDash) => `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="${color}" stroke="${sColor||'none'}" stroke-width="${sWidth||0}" stroke-dasharray="${sDash||'none'}" preserveAspectRatio="none"><polygon points="12,2 22,12 12,22 2,12"/></svg>`,
+};
+
+// ─── COMPONENTE: GABARITO TÉCNICO VETORIAL ────────────────────────────────────
+function GabaritoOverlay({ w, h, visible }) {
+  if (!visible) return null;
+  const cx = w / 2, cy = h / 2;
+  const step = w / 14;
+  const letters = ["A","B","C","D","E","F","G","H","I","J","L","M","N","O","P","Q","R","S"];
+  const refLines = [0.25, 0.5, 0.75];
+  return (
+    <svg style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:2, opacity:0.65 }} width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <defs>
+        <pattern id="grd" width={step} height={step} patternUnits="userSpaceOnUse">
+          <path d={`M ${step} 0 L 0 0 0 ${step}`} fill="none" stroke="#94a3b8" strokeWidth="0.5"/>
+        </pattern>
+      </defs>
+      <rect width={w} height={h} fill="url(#grd)"/>
+      <line x1={cx} y1={0} x2={cx} y2={h} stroke="#475569" strokeWidth="1.2"/>
+      {refLines.map(f => (
+        <g key={f}>
+          <line x1={0} y1={h*f} x2={w} y2={h*f} stroke="#475569" strokeWidth="1.2"/>
+          {[1,2,3,4,5,6,7].map(n => {
+            const lx = cx - n*step, rx = cx + n*step;
+            return (
+              <g key={n}>
+                <text x={lx} y={h*f-3} textAnchor="middle" fontSize="7" fontFamily="monospace" fill="#64748b">{n}</text>
+                <text x={rx} y={h*f-3} textAnchor="middle" fontSize="7" fontFamily="monospace" fill="#64748b">{n}</text>
+                <line x1={lx} y1={h*f-5} x2={lx} y2={h*f} stroke="#94a3b8" strokeWidth="0.8"/>
+                <line x1={rx} y1={h*f-5} x2={rx} y2={h*f} stroke="#94a3b8" strokeWidth="0.8"/>
+              </g>
+            );
+          })}
+        </g>
+      ))}
+      {letters.map((l, i) => {
+        const y = (i+1)/(letters.length+1)*h;
+        return (
+          <g key={l}>
+            <text x={cx+4} y={y+3} fontSize="8" fontFamily="monospace" fill="#64748b" fontWeight="700">{l}</text>
+            <line x1={cx-5} y1={y} x2={cx} y2={y} stroke="#94a3b8" strokeWidth="0.8"/>
+          </g>
+        );
+      })}
+      {[...Array(15)].map((_, i) => {
+        const deg = Math.abs(i-7);
+        const x = i*w/14 + w/28;
+        return <text key={i} x={x} y={h-4} textAnchor="middle" fontSize="6" fontFamily="monospace" fill="#94a3b8">{deg}°</text>;
+      })}
+      <circle cx={cx} cy={cy} r={7} stroke="#ef4444" strokeWidth="1.5" fill="none"/>
+      <line x1={cx-12} y1={cy} x2={cx+12} y2={cy} stroke="#ef4444" strokeWidth="1.5"/>
+      <line x1={cx} y1={cy-12} x2={cx} y2={cy+12} stroke="#ef4444" strokeWidth="1.5"/>
+    </svg>
+  );
+}
+
+// ─── COMPONENTE: CANVAS NATIVO (DRAG & RESIZE PRECISO) ───────────────────────
+function CanvasEl({ el, selected, zoom, onSelect, onUpdate, onPushHistory, isFotolito, editingId, setEditingId }) {
+  const ref = useRef(null);
+  const drag = useRef(null);
+  const resize = useRef(null);
+  const isEditing = editingId === el.id;
+
+  const startDrag = (e) => {
+    if (e.target.dataset.resize || isFotolito || isEditing) return;
+    e.preventDefault(); e.stopPropagation();
+    onSelect(el.id);
+    drag.current = { startX: e.clientX/zoom, startY: e.clientY/zoom, ox: el.x, oy: el.y };
+    const move = (ev) => {
+      if (!drag.current) return;
+      onUpdate(el.id, { x: drag.current.ox + (ev.clientX/zoom - drag.current.startX), y: drag.current.oy + (ev.clientY/zoom - drag.current.startY) }, false);
+    };
+    const up = () => { drag.current = null; onPushHistory(); window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+
+  const startResize = (e) => {
+    if (isFotolito) return;
+    e.preventDefault(); e.stopPropagation();
+    resize.current = { startX: e.clientX/zoom, startY: e.clientY/zoom, ow: el.w, oh: el.h };
+    const move = (ev) => {
+      if (!resize.current) return;
+      const dw = ev.clientX/zoom - resize.current.startX;
+      const dh = ev.clientY/zoom - resize.current.startY;
+      const newW = Math.max(20, resize.current.ow+dw);
+      const newH = Math.max(20, resize.current.oh+dh);
+      onUpdate(el.id, { w: newW, h: newH }, false);
+    };
+    const up = () => { resize.current = null; onPushHistory(); window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+
+  const displayColor = isFotolito && el.type !== 'image' ? '#000000' : el.color;
+  const strokeColor = isFotolito ? '#000000' : (el.strokeColor || 'transparent');
+
+  return (
+    <div ref={ref} style={{
+        position: "absolute", left: el.x, top: el.y, width: el.w, height: el.h,
+        opacity: el.opacity ?? 1, cursor: (isFotolito || isEditing) ? "default" : "move", userSelect: "none",
+        outline: selected && !isFotolito ? "2px solid #6366f1" : "none", outlineOffset: selected ? 2 : 0, zIndex: selected ? 50 : 10,
+      }} onMouseDown={startDrag}>
+      
+      {el.type === "text" && (
+        <div 
+          onDoubleClick={() => { if(!isFotolito) setEditingId(el.id); }} 
+          style={{ width:"100%", height:"100%" }}
+        >
+          {isEditing ? (
+            <textarea
+              autoFocus
+              value={el.content}
+              onChange={(e) => onUpdate(el.id, { content: e.target.value }, false)}
+              onBlur={() => { setEditingId(null); onPushHistory(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                width: "100%", height: "100%", background: "rgba(255,255,255,0.8)", border: "none",
+                outline: "none", resize: "none", color: displayColor, fontSize: el.fontSize,
+                fontFamily: el.fontFamily, fontWeight: el.fontWeight || "800", fontStyle: el.fontStyle || 'normal',
+                textDecoration: el.textDecoration || 'none', textTransform: el.textTransform || 'none',
+                letterSpacing: `${el.letterSpacing || 0}px`, lineHeight: el.lineHeight || 1.2,
+                textUnderlineOffset: `${el.underlineOffset || 0}px`,
+                textAlign: el.textAlign || "center", overflow: "hidden", padding: 0, margin: 0,
+                WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${strokeColor}` : undefined
+              }}
+            />
+          ) : (el.curve && el.curve !== 0) ? (
+            // Texto Curvado via SVG textPath (Arco Elíptico) - Fixado para curva ovalada e sem cortar texto
+            <svg width="100%" height="100%" viewBox={`0 0 ${el.w} ${el.h}`} style={{overflow: 'visible'}}>
+               {(() => {
+                 const pathId = `curve_${el.id}`;
+                 const curveVal = el.curve; // -100 to 100
+                 const safeCurve = Math.max(-99.9, Math.min(99.9, curveVal));
+                 
+                 // Expande o caminho do arco além da largura para que textos longos não sumam nas pontas
+                 const pad = el.w; 
+                 const totalW = el.w + pad * 2;
+                 const dy = (safeCurve / 100) * (el.h / 2);
+                 const absDy = Math.max(0.1, Math.abs(dy)); // Previne Math Errors
+                 
+                 // Raio do círculo
+                 const r = Math.max(((totalW/2)*(totalW/2) + absDy*absDy) / (2 * absDy), totalW/2);
+                 const startY = el.h/2;
+                 const sweep = safeCurve > 0 ? 1 : 0;
+                 
+                 // Arco expandido: vai de -pad até el.w + pad
+                 const d = `M -${pad},${startY} A ${r} ${r} 0 0 ${sweep} ${el.w + pad},${startY}`;
+                 
+                 let textAnchor = "middle"; let startOffset = "50%";
+                 if (el.textAlign === "left") { textAnchor = "start"; startOffset = "0%"; }
+                 if (el.textAlign === "right") { textAnchor = "end"; startOffset = "100%"; }
+
+                 return (
+                   <>
+                     <path id={pathId} d={d} fill="transparent" stroke="none" />
+                     <text 
+                       style={{
+                         fill: displayColor,
+                         stroke: strokeColor,
+                         strokeWidth: el.strokeWidth || 0,
+                         strokeDasharray: el.strokeDasharray || 'none',
+                         fontSize: `${el.fontSize}px`,
+                         fontFamily: `"${el.fontFamily}", sans-serif`,
+                         fontWeight: el.fontWeight || '800',
+                         fontStyle: el.fontStyle || 'normal',
+                         textDecoration: el.textDecoration || 'none',
+                         textTransform: el.textTransform || 'none',
+                         letterSpacing: `${el.letterSpacing || 0}px`
+                       }}
+                       textAnchor={textAnchor}
+                     >
+                       <textPath href={`#${pathId}`} startOffset={startOffset}>{el.content}</textPath>
+                     </text>
+                   </>
+                 )
+               })()}
+            </svg>
+          ) : (
+            // Texto Reto Padrão
+            <div style={{ 
+              width: "100%", height: "100%", color: displayColor, fontSize: el.fontSize,
+              fontFamily: `"${el.fontFamily}", sans-serif`, fontWeight: el.fontWeight || "800", fontStyle: el.fontStyle || 'normal',
+              textDecoration: el.textDecoration || 'none', textTransform: el.textTransform || 'none',
+              letterSpacing: `${el.letterSpacing || 0}px`, lineHeight: el.lineHeight || 1.2,
+              textUnderlineOffset: `${el.underlineOffset || 0}px`,
+              textAlign: el.textAlign || "center", wordBreak: "break-word", whiteSpace: "pre-wrap",
+              WebkitTextStroke: el.strokeWidth ? `${el.strokeWidth}px ${strokeColor}` : undefined
+            }}>
+              {el.content}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {el.type === "shape" && (
+        <div style={{ width:"100%", height:"100%" }} dangerouslySetInnerHTML={{ __html: SHAPES[el.content]?.(displayColor, el.w, el.h, strokeColor, el.strokeWidth, el.strokeDasharray) || "" }}/>
+      )}
+      
+      {el.type === "image" && (
+        <img src={el.content} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", pointerEvents:"none" }}/>
+      )}
+      
+      {selected && !isFotolito && !isEditing && (
+        <div data-resize="br" onMouseDown={startResize} style={{ position:"absolute", bottom:-6, right:-6, width:14, height:14, background:"#6366f1", border:"2px solid #fff", borderRadius:"50%", cursor:"se-resize", zIndex:60, boxShadow:"0 2px 4px rgba(0,0,0,0.2)" }}/>
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  const [printType, setPrintType] = useState("silk");
+  const [showPrintMenu, setShowPrintMenu] = useState(false);
+  
+  const [elements, setElements] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  
+  // Drag & Drop Layers States
+  const [draggedLayerId, setDraggedLayerId] = useState(null);
+  const [dragOverLayerId, setDragOverLayerId] = useState(null);
+  const [dropSide, setDropSide] = useState(null);
+  
+  const [history, setHistory] = useState([[]]);
+  const [histIdx, setHistIdx] = useState(0);
+
+  // Document Properties
+  const [canvasW, setCanvasW] = useState(420);
+  const [canvasH, setCanvasH] = useState(594);
+  const [canvasFormat, setCanvasFormat] = useState("A3");
+  const [pageBgColor, setPageBgColor] = useState('#ffffff');
+  const [exportPageBg, setExportPageBg] = useState(true);
+
+  const [showGabarito, setShowGabarito] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  
+  const [activeRightPanel, setActiveRightPanel] = useState('properties');
+  const fileRef = useRef(null);
+
+  // IA States
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiImagePrompt, setAiImagePrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMockupResult, setAiMockupResult] = useState(null);
+
+  useEffect(() => {
+    const fontsUrl = `https://fonts.googleapis.com/css2?${ALL_FONTS.map(f => `family=${f.replace(/ /g, '+')}`).join('&')}&display=swap`;
+    const link = document.createElement('link'); link.href = fontsUrl; link.id = "google-fonts"; link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
+
+  const fitZoom = useCallback(() => {
+    const area = document.getElementById("canvas-area");
+    if (!area) return;
+    const zw = (area.clientWidth - 100) / canvasW;
+    const zh = (area.clientHeight - 100) / canvasH;
+    setZoom(Math.min(zw, zh, 2));
+  }, [canvasW, canvasH]);
+  
+  useEffect(() => { setTimeout(fitZoom, 100); }, [fitZoom]);
+
+  const pushHistory = useCallback((els) => {
+    setHistory(h => { const newH = [...h.slice(0, histIdx+1), els ?? elements]; setHistIdx(newH.length-1); return newH; });
+  }, [elements, histIdx]);
+
+  const undo = () => { if (histIdx > 0) { setElements(history[histIdx-1]); setHistIdx(h => h-1); setSelectedId(null); setEditingId(null); } };
+  const redo = () => { if (histIdx < history.length-1) { setElements(history[histIdx+1]); setHistIdx(h => h+1); setSelectedId(null); setEditingId(null); } };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (editingId) return;
+      if ((e.ctrlKey||e.metaKey) && e.key==="z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.ctrlKey||e.metaKey) && (e.key==="y"||(e.key==="z"&&e.shiftKey))) { e.preventDefault(); redo(); }
+      if ((e.key==="Delete"||e.key==="Backspace") && selectedId && document.activeElement===document.body) removeEl(selectedId);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
+  const generateId = () => "el_" + Date.now() + Math.random().toString(36).substr(2, 5);
+  const addEl = (el) => { const newEls = [...elements, el]; setElements(newEls); setSelectedId(el.id); setActiveRightPanel('properties'); pushHistory(newEls); };
+  const updateEl = (id, changes, saveHist=true) => {
+    setElements(prev => {
+      const next = prev.map(e => e.id===id ? {...e,...changes} : e);
+      if (saveHist) { setHistory(h => { const nh = [...h.slice(0, histIdx+1), next]; setHistIdx(nh.length-1); return nh; }); }
+      return next;
+    });
+  };
+  const removeEl = (id) => { const next = elements.filter(e=>e.id!==id); setElements(next); if (selectedId===id) setSelectedId(null); setEditingId(null); pushHistory(next); };
+
+  const handleDropLayer = () => {
+    if (!draggedLayerId || !dragOverLayerId || draggedLayerId === dragOverLayerId) {
+      setDraggedLayerId(null); setDragOverLayerId(null); return;
+    }
+    const arr = [...elements];
+    const fromIndex = arr.findIndex(e => e.id === draggedLayerId);
+    const toIndex = arr.findIndex(e => e.id === dragOverLayerId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    
+    const [movedEl] = arr.splice(fromIndex, 1);
+    let finalIndex = toIndex;
+    if (dropSide === 'top') finalIndex = fromIndex < toIndex ? toIndex : toIndex + 1;
+    else finalIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+
+    arr.splice(finalIndex, 0, movedEl);
+    setElements(arr);
+    pushHistory(arr);
+    setDraggedLayerId(null); setDragOverLayerId(null);
+  };
+
+  const addText = () => addEl({ id:generateId(), type:"text", content:"NOVO TEXTO", x:canvasW/2-100, y:canvasH/2-25, w:200, h:50, color:"#1e293b", fontSize:40, fontFamily:"Inter", fontWeight:"800", fontStyle:"normal", textDecoration:"none", letterSpacing:0, lineHeight:1.2, underlineOffset:0, textTransform:"none", textAlign:"center", curve: 0, strokeColor:"transparent", strokeWidth:0, strokeDasharray:"none", layerName: "Texto" });
+  const addShape = (shape) => addEl({ id:generateId(), type:"shape", content:shape, x:canvasW/2-50, y:canvasH/2-50, w:100, h:100, color:"#1e293b", strokeColor:"transparent", strokeWidth:0, strokeDasharray:"none", layerName: "Forma" });
+  
+  const handleImage = (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.width/img.height; const mw = Math.min(200, canvasW*0.4);
+        addEl({ id:generateId(), type:"image", content:ev.target.result, x:canvasW/2-mw/2, y:canvasH/2-(mw/ratio)/2, w:mw, h:mw/ratio, layerName: "Imagem" });
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file); e.target.value="";
+  };
+
+  const changeFormat = (f) => {
+    setCanvasFormat(f);
+    if (f === 'A4') { setCanvasW(297); setCanvasH(420); }
+    else if (f === 'A3') { setCanvasW(420); setCanvasH(594); }
+  };
+
+  const alignGrid = (col, row) => {
+    const el = elements.find(e=>e.id===selectedId);
+    if (!el) return;
+    const posXs = [canvasW * 0.25, canvasW * 0.5, canvasW * 0.75];
+    const nx = posXs[col] - el.w/2;
+    const rowH = canvasH / 4;
+    const ny = (row * rowH) + (rowH - el.h) / 2;
+    updateEl(selectedId, { x: nx, y: ny });
+  };
+  
+  const alignCenterAbs = () => {
+    const el = elements.find(e=>e.id===selectedId);
+    if (!el) return;
+    updateEl(selectedId, { x: (canvasW - el.w)/2, y: (canvasH - el.h)/2 });
+  }
+
+  const uniqueColorsCount = new Set(elements.filter(e => e.type !== 'image' && e.color).map(e => e.color)).size;
+
+  const handleExportPDF = (mode) => {
+    setIsExportMenuOpen(false);
+    
+    // Cor de Fundo no Export
+    let finalCanvasBgColor = 'transparent';
+    if (mode === 'fotolito' || mode === 'silk-colors') {
+       finalCanvasBgColor = '#ffffff'; // Fotolito obriga fundo branco
+    } else if (exportPageBg) {
+       finalCanvasBgColor = pageBgColor;
+    }
+
+    if (mode === 'silk-colors') {
+      const colors = [...new Set(elements.map(e => e.color).filter(c => c))];
+      if (colors.length === 0) return alert("Nenhuma cor para separar.");
+      let htmlPages = colors.map(color => {
+        const filteredHtml = elements.map(el => {
+          if (el.color !== color && el.type !== 'image') return '';
+          return renderHtmlElement(el, '#000000');
+        }).join('');
+        return `<div class="page-container">${filteredHtml}<div class="color-label">SEPARAÇÃO: ${color}</div></div>`;
+      }).join('<div style="page-break-after: always;"></div>');
+      openPrintWindow(htmlPages, 'Separação Silk', finalCanvasBgColor);
+    } else {
+      const isFotolito = mode === 'fotolito';
+      const elementsHtml = elements.map(el => renderHtmlElement(el, isFotolito ? '#000000' : el.color)).join('');
+      openPrintWindow(`<div class="page-container">${elementsHtml}</div>`, isFotolito ? 'Fotolito' : 'Arte PDF', finalCanvasBgColor);
+    }
+  };
+
+  const renderHtmlElement = (el, forceColor) => {
+    const sColor = forceColor === '#000000' ? '#000000' : (el.strokeColor || 'transparent');
+    const sWidth = el.strokeWidth || 0;
+
+    if (el.type === "text") {
+      const align = el.textAlign || 'center';
+      if (el.curve && el.curve !== 0) {
+        const pathId = `curve_exp_${el.id}`;
+        const curveVal = el.curve;
+        const safeCurve = Math.max(-99.9, Math.min(99.9, curveVal));
+        const pad = el.w; 
+        const totalW = el.w + pad * 2;
+        const dy = (safeCurve / 100) * (el.h / 2);
+        const absDy = Math.max(0.1, Math.abs(dy)); 
+        const r = Math.max(((totalW/2)*(totalW/2) + absDy*absDy) / (2 * absDy), totalW/2);
+        const startY = el.h/2;
+        const sweep = safeCurve > 0 ? 1 : 0;
+        const d = `M -${pad},${startY} A ${r} ${r} 0 0 ${sweep} ${el.w + pad},${startY}`;
+        
+        let textAnchor = "middle"; let startOffset = "50%";
+        if (align === "left") { textAnchor = "start"; startOffset = "0%"; }
+        if (align === "right") { textAnchor = "end"; startOffset = "100%"; }
+
+        return `<div style="position:absolute; top:${el.y}px; left:${el.x}px; width:${el.w}px; height:${el.h}px;">
+          <svg width="100%" height="100%" viewBox="0 0 ${el.w} ${el.h}" style="overflow: visible;">
+            <path id="${pathId}" d="${d}" fill="transparent" stroke="none" />
+            <text style="fill:${forceColor}; stroke:${sColor}; stroke-width:${sWidth}px; stroke-dasharray:${el.strokeDasharray||'none'}; font-size:${el.fontSize}px; font-family:'${el.fontFamily}', sans-serif; font-weight:${el.fontWeight||800}; font-style:${el.fontStyle||'normal'}; text-decoration:${el.textDecoration||'none'}; text-transform:${el.textTransform||'none'}; letter-spacing:${el.letterSpacing||0}px;" text-anchor="${textAnchor}">
+              <textPath href="#${pathId}" startOffset="${startOffset}">${el.content}</textPath>
+            </text>
+          </svg>
+        </div>`;
+      }
+      return `<div style="position:absolute; top:${el.y}px; left:${el.x}px; width:${el.w}px; height:${el.h}px; color:${forceColor}; font-size:${el.fontSize}px; font-family:'${el.fontFamily}', sans-serif; font-weight:${el.fontWeight||800}; font-style:${el.fontStyle||'normal'}; text-decoration:${el.textDecoration||'none'}; text-transform:${el.textTransform||'none'}; letter-spacing:${el.letterSpacing||0}px; text-underline-offset:${el.underlineOffset||0}px; text-align:${align}; line-height:${el.lineHeight||1.2}; word-break:break-word; white-space:pre-wrap; -webkit-text-stroke:${sWidth}px ${sColor};">${el.content}</div>`;
+    }
+    if (el.type === "shape") return `<div style="position:absolute; top:${el.y}px; left:${el.x}px; width:${el.w}px; height:${el.h}px;">${SHAPES[el.content]?.(forceColor, el.w, el.h, sColor, sWidth, el.strokeDasharray) || ""}</div>`;
+    if (el.type === "image") return `<div style="position:absolute; top:${el.y}px; left:${el.x}px; width:${el.w}px; height:${el.h}px;"><img src="${el.content}" style="width:100%; height:100%; object-fit:contain;"></div>`;
+    return "";
+  };
+
+  const openPrintWindow = (content, title, bgCSSColor) => {
+    const printWindow = window.open('', '', 'width=900,height=700');
+    const fontsUrl = `https://fonts.googleapis.com/css2?${ALL_FONTS.map(f => `family=${f.replace(/ /g, '+')}`).join('&')}&display=swap`;
+    printWindow.document.write(`
+      <!DOCTYPE html><html><head><title>${title}</title><link href="${fontsUrl}" rel="stylesheet">
+      <style>@page { size: ${canvasW}px ${canvasH}px; margin: 0; } body { margin: 0; background: ${bgCSSColor}; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: sans-serif; } .page-container { position: relative; width: ${canvasW}px; height: ${canvasH}px; overflow: hidden; background: ${bgCSSColor}; margin: 0 auto; } .color-label { position: absolute; bottom: 10px; left: 10px; font-family: monospace; font-size: 12px; font-weight: bold; color: black; z-index: 100; }</style>
+      </head><body>${content}<script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 800); };</script></body></html>
+    `);
+    printWindow.document.close();
+  };
+
+  const runAiMockup = () => {
+    if(!aiPrompt) return; setAiLoading(true);
+    setTimeout(() => { setAiMockupResult("https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=800"); setAiLoading(false); }, 2000);
+  }
+
+  const runAiImage = () => {
+    if(!aiImagePrompt) return; setAiLoading(true);
+    setTimeout(() => {
+      const generatedVector = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs><path d="M100 20 L130 80 L190 90 L145 135 L160 195 L100 160 L40 195 L55 135 L10 90 L70 80 Z" fill="url(#grad)" stroke="#1e1b4b" stroke-width="4" stroke-linejoin="round"/><circle cx="100" cy="100" r="30" fill="#10b981" opacity="0.9"/></svg>`;
+      const transparentImageUri = `data:image/svg+xml;utf8,${encodeURIComponent(generatedVector)}`;
+      addEl({ id:generateId(), type:"image", content:transparentImageUri, x:canvasW/2-75, y:canvasH/2-75, w:150, h:150, layerName: "Ilustração IA" });
+      setAiLoading(false); setAiImagePrompt("");
+    }, 2000);
+  }
+
+  return (
+    <div className="flex h-screen bg-[#f8fafc] text-slate-800 font-sans overflow-hidden">
+      
+      {/* ─── SIDEBAR ESQUERDA (CAMADAS APENAS) ─── */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm shrink-0">
+         <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1" onClick={(e) => { if(e.target===e.currentTarget) setSelectedId(null); }}>
+            <div className="px-3 py-3 flex items-center justify-between bg-slate-50 rounded-lg border border-slate-100 mb-2 pointer-events-none">
+               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Camadas ({elements.length})</div>
+               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cores ({uniqueColorsCount})</div>
+            </div>
+            
+            {[...elements].reverse().map((el) => (
+              <div 
+                key={el.id} 
+                draggable
+                onDragStart={() => setDraggedLayerId(el.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const y = e.clientY - rect.top;
+                  setDropSide(y < rect.height / 2 ? 'top' : 'bottom');
+                  setDragOverLayerId(el.id);
+                }}
+                onDragLeave={() => setDragOverLayerId(null)}
+                onDrop={handleDropLayer}
+                onClick={() => {
+                  if (selectedId === el.id) { setSelectedId(null); setEditingId(null); } 
+                  else { setSelectedId(el.id); setActiveRightPanel('properties'); }
+                }}
+                className={`relative group flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs transition-colors border
+                  ${selectedId === el.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold shadow-sm' : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50'}`}
+              >
+                {/* Visual Snap Indicator */}
+                {dragOverLayerId === el.id && (
+                  <div className={`absolute left-0 right-0 h-0.5 bg-indigo-500 rounded z-10 ${dropSide === 'top' ? '-top-0.5' : '-bottom-0.5'}`} />
+                )}
+
+                <div className="flex items-center gap-2 truncate flex-1">
+                  <GripVertical size={12} className="text-slate-300 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing" />
+                  {el.type !== 'image' && <div className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0 border border-slate-200" style={{backgroundColor: el.color}} />}
+                  <span className="truncate select-none">{el.layerName || (el.type === 'text' ? el.content.substring(0,15) : el.type)}</span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); removeEl(el.id); }} 
+                    className={`p-1.5 hover:bg-red-100 rounded text-red-500 transition-opacity ${selectedId === el.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                    title="Excluir Camada"
+                  >
+                    <Trash2 size={14}/>
+                  </button>
+                </div>
+              </div>
+            ))}
+            {elements.length === 0 && <p className="text-xs text-slate-400 text-center p-4">Nenhuma camada</p>}
+         </div>
+      </aside>
+
+      {/* ─── ÁREA CENTRAL (WORKSPACE) ─── */}
+      <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-100">
+        
+        {/* ÁREA DO CANVAS */}
+        <div id="canvas-area" className="flex-1 overflow-auto relative flex items-center justify-center p-8" onClick={(e) => { if(e.target === e.currentTarget) { setSelectedId(null); setEditingId(null); } }}>
+          <div style={{ transform:`scale(${zoom})`, transformOrigin:"center center", flexShrink:0, position:"relative", transition: 'transform 0.1s ease-out' }}>
+            <div style={{ width:canvasW, height:canvasH, background: pageBgColor, boxShadow:"0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)", position:"relative", overflow:"hidden", borderRadius: '4px' }}>
+              <GabaritoOverlay w={canvasW} h={canvasH} visible={showGabarito} />
+              
+              <div className="absolute top-4 left-4 z-0 pointer-events-none flex flex-col items-start gap-1">
+                 <span className={`px-2 py-1 text-[10px] uppercase font-black text-white rounded shadow-sm ${PRINT_TYPES.find(t=>t.id===printType)?.bg}`}>{PRINT_TYPES.find(t=>t.id===printType)?.name}</span>
+              </div>
+
+              <div style={{position:"absolute",inset:0,zIndex:5}}>
+                {elements.map(el => <CanvasEl key={el.id} el={el} selected={el.id===selectedId} zoom={zoom} onSelect={setSelectedId} onUpdate={updateEl} onPushHistory={()=>pushHistory(elements)} isFotolito={false} editingId={editingId} setEditingId={setEditingId} />)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ILHA INFERIOR FLUTUANTE (Tudo Unificado Aqui) */}
+        <div className="absolute bottom-6 right-8 bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-lg flex items-center p-1.5 z-50">
+          <button onClick={undo} className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-xl text-slate-600 transition-colors" title="Desfazer"><Undo size={16}/></button>
+          <button onClick={redo} className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-xl text-slate-600 transition-colors" title="Refazer"><Redo size={16}/></button>
+          
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+          <button onClick={()=>setShowGabarito(!showGabarito)} className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${showGabarito ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`} title="Alternar Gabarito"><Grid3X3 size={16}/></button>
+          
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+          <button onClick={()=>setZoom(Math.max(0.2, zoom-0.1))} className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"><ZoomOut size={16}/></button>
+          <span className="text-[11px] font-bold text-slate-500 w-12 text-center">{Math.round(zoom*100)}%</span>
+          <button onClick={()=>setZoom(Math.min(3, zoom+0.1))} className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"><ZoomIn size={16}/></button>
+          <button onClick={fitZoom} className="px-3 h-9 flex items-center justify-center hover:bg-slate-100 rounded-xl text-[10px] font-bold text-slate-600 uppercase ml-1 transition-colors">Fit</button>
+          
+          <div className="w-px h-6 bg-slate-200 mx-2" />
+          
+          {/* Menu de Impressão Drop-up */}
+          <div className="relative">
+            <button onClick={() => setShowPrintMenu(!showPrintMenu)} className="px-4 h-9 flex items-center gap-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors">
+              {(() => { const pt = PRINT_TYPES.find(t=>t.id===printType); return <><pt.icon size={14} className={pt.color} /> {pt.name}</>; })()}
+            </button>
+            <AnimatePresence>
+              {showPrintMenu && (
+                <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:10 }} className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden flex flex-col p-1.5 z-50">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Técnica de Impressão</div>
+                  {PRINT_TYPES.map(type => (
+                    <button key={type.id} onClick={() => { setPrintType(type.id); setShowPrintMenu(false); }} className={`flex items-center gap-3 px-3 py-2.5 text-xs font-bold rounded-lg transition-colors ${printType === type.id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}>
+                      <type.icon size={16} className={type.color} /> {type.name}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="w-px h-6 bg-slate-200 mx-2" />
+          
+          {/* Exportar Icon Drop-up */}
+          <div className="relative">
+             <button onClick={() => setIsExportMenuOpen(!isExportMenuOpen)} className="flex items-center justify-center w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all shadow-md">
+                <Download size={16} />
+             </button>
+             <AnimatePresence>
+              {isExportMenuOpen && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 right-0 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50">
+                  <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Exportar Final</div>
+                  <button onClick={() => handleExportPDF('pdf')} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-3"><Download size={16} className="text-slate-400"/> Arte PDF (Cores)</button>
+                  <button onClick={() => handleExportPDF('fotolito')} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-900 bg-slate-50 hover:bg-slate-100 flex items-center gap-3"><Printer size={16} className="text-slate-900"/> Fotolito (Preto Absoluto)</button>
+                  {printType === 'silk' && (
+                    <button onClick={() => handleExportPDF('silk-colors')} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 flex items-center gap-3"><Layers size={16} className="text-blue-500"/> Separação Silk (Cores)</button>
+                  )}
+                  <div className="h-px bg-slate-100 my-2" />
+                  <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Apresentação</div>
+                  <button onClick={() => {setIsExportMenuOpen(false); setActiveRightPanel('ai'); setSelectedId(null);}} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-50 flex items-center gap-3"><Sparkles size={16} className="text-violet-500"/> Gerar Mockup IA</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+        </div>
+
+        {/* MODAL MOCKUP IA */}
+        <AnimatePresence>
+          {aiMockupResult && (
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-8">
+              <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-2xl w-full flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-xl flex items-center gap-2 text-slate-800"><Sparkles className="text-violet-500"/> Mockup Realista</h3>
+                  <button onClick={() => setAiMockupResult(null)} className="p-2 hover:bg-slate-100 text-slate-500 rounded-xl transition-colors"><X size={20}/></button>
+                </div>
+                <div className="flex-1 bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-200">
+                  <img src={aiMockupResult} className="max-h-[50vh] object-contain rounded-xl drop-shadow-lg" alt="Mockup Gerado" />
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button onClick={() => setAiMockupResult(null)} className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Fechar</button>
+                  <a href={aiMockupResult} download="mockup_ia.png" className="px-6 py-3 font-bold bg-violet-600 text-white rounded-xl shadow-md hover:bg-violet-700 transition-colors flex items-center gap-2">
+                     <Download size={18}/> Salvar Mockup
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* ─── SIDEBAR DIREITA (INSERÇÃO E PROPRIEDADES / IA / SETUP) ─── */}
+      <aside className="w-80 bg-white border-l border-slate-200 flex flex-col overflow-y-auto z-20 shadow-sm shrink-0">
+        
+        {/* ADD TOOLS */}
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Inserir Elementos</h3>
+          <div className="grid grid-cols-4 gap-2">
+            <button onClick={addText} className="flex flex-col items-center gap-2 py-3 border border-slate-200 bg-white rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-colors text-slate-600 shadow-sm"><Type size={16}/><span className="text-[9px] font-bold uppercase">Texto</span></button>
+            <button onClick={() => addShape('star')} className="flex flex-col items-center gap-2 py-3 border border-slate-200 bg-white rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-colors text-slate-600 shadow-sm"><BoxSelect size={16}/><span className="text-[9px] font-bold uppercase">Forma</span></button>
+            <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center gap-2 py-3 border border-slate-200 bg-white rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-colors text-slate-600 shadow-sm"><ImagePlus size={16}/><span className="text-[9px] font-bold uppercase">Upload</span></button>
+            <button onClick={() => { setActiveRightPanel('ai'); setSelectedId(null); setEditingId(null); }} className="flex flex-col items-center gap-2 py-3 border border-violet-200 bg-violet-50 rounded-xl hover:border-violet-500 hover:text-violet-700 transition-colors text-violet-600 shadow-sm"><Wand2 size={16}/><span className="text-[9px] font-bold uppercase">IA Tools</span></button>
+            <input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleImage} />
+          </div>
+        </div>
+
+        {/* PAINEL DINÂMICO: PROPRIEDADES, IA TOOLS, OU SETUP DA PÁGINA */}
+        {activeRightPanel === 'ai' && !selectedId ? (
+           <div className="p-5 flex-1 space-y-6">
+             <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">Ferramentas de IA</h3>
+                <button onClick={() => setActiveRightPanel('properties')} className="p-1 hover:bg-slate-100 rounded text-slate-400"><X size={16}/></button>
+             </div>
+             <div className="border border-indigo-100 bg-indigo-50/40 rounded-2xl p-4 shadow-sm">
+                <h4 className="text-xs font-bold text-indigo-700 mb-2 flex items-center gap-2"><ImagePlus size={16}/> Gerar Ilustração</h4>
+                <p className="text-[10px] text-indigo-900/60 font-medium mb-3">Cria desenhos com fundo transparente diretos pro canvas.</p>
+                <textarea value={aiImagePrompt} onChange={e=>setAiImagePrompt(e.target.value)} placeholder="Ex: Um tigre em traços neon..." className="w-full bg-white border border-indigo-100 rounded-xl p-3 text-xs mb-3 outline-none focus:border-indigo-400 resize-none h-20" />
+                <button onClick={runAiImage} disabled={aiLoading} className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                  {aiLoading ? <Loader2 size={14} className="animate-spin"/> : 'Criar e Adicionar'}
+                </button>
+             </div>
+             <div className="border border-violet-100 bg-violet-50/40 rounded-2xl p-4 shadow-sm">
+                <h4 className="text-xs font-bold text-violet-700 mb-2 flex items-center gap-2"><Sparkles size={16}/> Mockup Realista</h4>
+                <p className="text-[10px] text-violet-900/60 font-medium mb-3">Gere fotos de modelo vestindo sua estampa atual.</p>
+                <textarea value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} placeholder="Ex: Modelo vestindo camisa preta num estúdio..." className="w-full bg-white border border-violet-100 rounded-xl p-3 text-xs mb-3 outline-none focus:border-violet-400 resize-none h-20" />
+                <button onClick={runAiMockup} disabled={aiLoading} className="w-full py-2.5 bg-violet-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors disabled:opacity-50">
+                  {aiLoading ? <Loader2 size={14} className="animate-spin"/> : 'Gerar Mockup'}
+                </button>
+             </div>
+           </div>
+        ) : !selectedId ? (
+           /* SETUP DA PÁGINA (Quando nada está selecionado) */
+           <div className="p-5 flex-1 space-y-6">
+             <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2"><Settings size={18} className="text-slate-400"/> Propriedades da Página</h3>
+             </div>
+
+             <div>
+               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tamanho do Documento</h3>
+               <select value={canvasFormat} onChange={(e) => changeFormat(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 font-medium mb-2">
+                  <option value="A4">A4 (297x420 px)</option>
+                  <option value="A3">A3 (420x594 px)</option>
+                  <option value="custom">Personalizado</option>
+               </select>
+               {canvasFormat === 'custom' && (
+                 <div className="grid grid-cols-2 gap-2">
+                   <div className="flex flex-col"><span className="text-[10px] font-bold text-slate-400 uppercase">Largura</span><input type="number" value={canvasW} onChange={e=>setCanvasW(+e.target.value)} className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-mono" /></div>
+                   <div className="flex flex-col"><span className="text-[10px] font-bold text-slate-400 uppercase">Altura</span><input type="number" value={canvasH} onChange={e=>setCanvasH(+e.target.value)} className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-mono" /></div>
+                 </div>
+               )}
+             </div>
+
+             <div className="pt-4 border-t border-slate-100">
+               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cor de Fundo da Página</h3>
+               <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100 mb-3">
+                 <div className="relative w-10 h-10 rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                   <input type="color" value={pageBgColor} onChange={e => setPageBgColor(e.target.value)} className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" />
+                 </div>
+                 <input type="text" value={pageBgColor} onChange={e => setPageBgColor(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm font-mono outline-none uppercase font-bold text-slate-700" />
+               </div>
+               
+               <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                 <input type="checkbox" checked={exportPageBg} onChange={e => setExportPageBg(e.target.checked)} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
+                 <span className="text-xs font-bold text-slate-600">Incluir Fundo na Arte Final</span>
+               </label>
+             </div>
+           </div>
+        ) : (
+          <div className="p-5 flex-1 space-y-6">
+             <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">Propriedades</h3>
+                <button onClick={() => removeEl(selectedId)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16}/></button>
+             </div>
+
+             {/* Dimensões Manuais (Movido para o topo) */}
+             <div>
+               <div className="flex items-center justify-between mb-3">
+                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Coordenadas e Tamanho</h3>
+                 <span className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">px</span>
+               </div>
+               <div className="grid grid-cols-2 gap-3">
+                 <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-slate-50 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                   <span className="bg-slate-100 px-3 py-2 text-xs font-bold border-r border-slate-200 text-slate-500">X</span>
+                   <input type="number" value={Math.round(elements.find(e=>e.id===selectedId)?.x || 0)} onChange={e => updateEl(selectedId, { x: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono bg-transparent" />
+                 </div>
+                 <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-slate-50 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                   <span className="bg-slate-100 px-3 py-2 text-xs font-bold border-r border-slate-200 text-slate-500">Y</span>
+                   <input type="number" value={Math.round(elements.find(e=>e.id===selectedId)?.y || 0)} onChange={e => updateEl(selectedId, { y: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono bg-transparent" />
+                 </div>
+                 <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-slate-50 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                   <span className="bg-slate-100 px-3 py-2 text-xs font-bold border-r border-slate-200 text-slate-500">W</span>
+                   <input type="number" value={Math.round(elements.find(e=>e.id===selectedId)?.w || 0)} onChange={e => updateEl(selectedId, { w: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono bg-transparent" />
+                 </div>
+                 <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-slate-50 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+                   <span className="bg-slate-100 px-3 py-2 text-xs font-bold border-r border-slate-200 text-slate-500">H</span>
+                   <input type="number" value={Math.round(elements.find(e=>e.id===selectedId)?.h || 0)} onChange={e => updateEl(selectedId, { h: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono bg-transparent" />
+                 </div>
+               </div>
+             </div>
+
+             {/* Snap Zonas */}
+             <div className="pt-4 border-t border-slate-100">
+               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Posicionamento Rápido</h3>
+               <div className="grid grid-cols-3 gap-1 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                 {/* Row 0: Nuca */}
+                 <button onClick={()=>alignGrid(0,0)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Nuca Esq</button>
+                 <button onClick={()=>alignGrid(1,0)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Nuca Cen</button>
+                 <button onClick={()=>alignGrid(2,0)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Nuca Dir</button>
+                 
+                 {/* Row 1: Peito */}
+                 <button onClick={()=>alignGrid(0,1)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Peit Esq</button>
+                 <button onClick={()=>alignGrid(1,1)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Peit Cen</button>
+                 <button onClick={()=>alignGrid(2,1)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Peit Dir</button>
+                 
+                 {/* Row 2: Barriga */}
+                 <button onClick={()=>alignGrid(0,2)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Barr Esq</button>
+                 <button onClick={()=>alignGrid(1,2)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Barr Cen</button>
+                 <button onClick={()=>alignGrid(2,2)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Barr Dir</button>
+                 
+                 {/* Row 3: Barra */}
+                 <button onClick={()=>alignGrid(0,3)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Barra Esq</button>
+                 <button onClick={()=>alignGrid(1,3)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Barra Cen</button>
+                 <button onClick={()=>alignGrid(2,3)} className="py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-indigo-600 hover:text-white text-[9px] uppercase font-bold transition-colors shadow-sm">Barra Dir</button>
+               </div>
+               <button onClick={alignCenterAbs} className="w-full mt-2 py-2 bg-slate-900 text-white rounded-lg text-[10px] uppercase tracking-wider font-bold shadow-md hover:bg-slate-800 transition-colors">Centro Absoluto</button>
+             </div>
+
+             {/* Typografia Avançada */}
+             {elements.find(e=>e.id===selectedId)?.type === 'text' && (
+               <div className="space-y-4 pt-4 border-t border-slate-100">
+                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Edição de Texto</h3>
+                 
+                 {/* Double-click hint */}
+                 <div className="text-[10px] text-slate-400 italic mb-2">Dê dois cliques no texto no canvas para digitar.</div>
+                 
+                 <div className="grid grid-cols-2 gap-3">
+                   {/* Fonte */}
+                   <div className="col-span-2">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Família da Fonte</label>
+                     <select value={elements.find(e=>e.id===selectedId)?.fontFamily} onChange={e => updateEl(selectedId, { fontFamily: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-medium">
+                       {Object.entries(FONTS_BY_CATEGORY).map(([category, fonts]) => (
+                         <optgroup key={category} label={category}>
+                           {fonts.map(font => <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>)}
+                         </optgroup>
+                       ))}
+                     </select>
+                   </div>
+                   
+                   {/* Weight */}
+                   <div className="col-span-1">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Estilo (Weight)</label>
+                     <select value={elements.find(e=>e.id===selectedId)?.fontWeight || '800'} onChange={e => updateEl(selectedId, { fontWeight: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-medium">
+                        {FONT_WEIGHTS.map(fw => <option key={fw.value} value={fw.value}>{fw.label}</option>)}
+                     </select>
+                   </div>
+
+                   {/* Size */}
+                   <div className="col-span-1">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tamanho (Size)</label>
+                     <input type="number" value={elements.find(e=>e.id===selectedId)?.fontSize || 40} onChange={e => updateEl(selectedId, { fontSize: parseInt(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-medium" />
+                   </div>
+
+                   {/* Line Height & Letter Spacing */}
+                   <div className="col-span-1">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Altura da Linha</label>
+                     <input type="number" step="0.1" value={elements.find(e=>e.id===selectedId)?.lineHeight || 1.2} onChange={e => updateEl(selectedId, { lineHeight: parseFloat(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-medium" />
+                   </div>
+                   <div className="col-span-1">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Espaçamento Letras</label>
+                     <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg pr-2 focus-within:border-indigo-500">
+                        <input type="number" value={elements.find(e=>e.id===selectedId)?.letterSpacing || 0} onChange={e => updateEl(selectedId, { letterSpacing: parseInt(e.target.value) })} className="w-full px-3 py-2 bg-transparent text-sm outline-none font-medium" />
+                        <span className="text-[10px] text-slate-400 font-bold">px</span>
+                     </div>
+                   </div>
+
+                   {/* Formatação (Underline, Bold, Italic) */}
+                   <div className="col-span-2">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Formatação</label>
+                     <div className="flex gap-1 bg-slate-50 p-1 border border-slate-200 rounded-lg">
+                       <button onClick={() => updateEl(selectedId, { fontStyle: elements.find(e=>e.id===selectedId)?.fontStyle === 'italic' ? 'normal' : 'italic' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.fontStyle === 'italic' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><Italic size={14}/></button>
+                       <button onClick={() => updateEl(selectedId, { textDecoration: elements.find(e=>e.id===selectedId)?.textDecoration === 'underline' ? 'none' : 'underline' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textDecoration === 'underline' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><Underline size={14}/></button>
+                       <button onClick={() => updateEl(selectedId, { textDecoration: elements.find(e=>e.id===selectedId)?.textDecoration === 'line-through' ? 'none' : 'line-through' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textDecoration === 'line-through' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><Strikethrough size={14}/></button>
+                       <div className="w-px bg-slate-200 mx-1 my-1" />
+                       <button onClick={() => updateEl(selectedId, { textTransform: 'uppercase' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textTransform === 'uppercase' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><CaseUpper size={14}/></button>
+                       <button onClick={() => updateEl(selectedId, { textTransform: 'lowercase' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textTransform === 'lowercase' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><CaseLower size={14}/></button>
+                     </div>
+                   </div>
+
+                   {/* Underline Offset */}
+                   {elements.find(e=>e.id===selectedId)?.textDecoration === 'underline' && (
+                     <div className="col-span-2">
+                       <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Distância do Sublinhado</label>
+                       <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg pr-2 focus-within:border-indigo-500">
+                          <input type="number" value={elements.find(e=>e.id===selectedId)?.underlineOffset || 0} onChange={e => updateEl(selectedId, { underlineOffset: parseInt(e.target.value) })} className="w-full px-3 py-2 bg-transparent text-sm outline-none font-medium" />
+                          <span className="text-[10px] text-slate-400 font-bold">px</span>
+                       </div>
+                     </div>
+                   )}
+
+                   {/* Alinhamento */}
+                   <div className="col-span-2">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Alinhamento do Texto</label>
+                     <div className="flex gap-1 bg-slate-50 p-1 border border-slate-200 rounded-lg">
+                       <button onClick={() => updateEl(selectedId, { textAlign: 'left' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textAlign === 'left' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><AlignLeft size={14}/></button>
+                       <button onClick={() => updateEl(selectedId, { textAlign: 'center' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textAlign === 'center' || !elements.find(e=>e.id===selectedId)?.textAlign ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><AlignCenter size={14}/></button>
+                       <button onClick={() => updateEl(selectedId, { textAlign: 'right' })} className={`flex-1 rounded py-1.5 flex items-center justify-center transition-colors ${elements.find(e=>e.id===selectedId)?.textAlign === 'right' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}><AlignRight size={14}/></button>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Curvatura Vetorial Elíptica Perfeita */}
+                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                   <label className="text-[10px] font-bold text-indigo-700 uppercase flex justify-between mb-2">
+                      <span className="flex items-center gap-1.5"><Baseline size={12}/> Curvatura (Arco Redondo)</span>
+                      <span>{elements.find(e=>e.id===selectedId)?.curve || 0}°</span>
+                   </label>
+                   <div className="flex items-center gap-3">
+                     <span className="text-xs font-black text-indigo-300">∩</span>
+                     <input type="range" min="-100" max="100" value={elements.find(e=>e.id===selectedId)?.curve || 0} onChange={e => updateEl(selectedId, { curve: parseInt(e.target.value) }, false)} onMouseUp={()=>pushHistory(elements)} className="flex-1 accent-indigo-600" />
+                     <span className="text-xs font-black text-indigo-300">∪</span>
+                   </div>
+                 </div>
+               </div>
+             )}
+
+             {/* Cores (Preenchimento e Contorno Avançado) */}
+             {elements.find(e=>e.id===selectedId)?.type !== 'image' && (
+               <div className="pt-4 border-t border-slate-100 space-y-4">
+                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cores e Contorno</h3>
+                 
+                 <div>
+                   <label className="text-[10px] font-bold text-slate-500 block mb-1">Preenchimento (Fill)</label>
+                   <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                     <div className="relative w-8 h-8 rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                       <input type="color" value={elements.find(e=>e.id===selectedId)?.color || '#000000'} onChange={e => updateEl(selectedId, { color: e.target.value })} className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" />
+                     </div>
+                     <input type="text" value={elements.find(e=>e.id===selectedId)?.color || '#000000'} onChange={e => updateEl(selectedId, { color: e.target.value })} className="flex-1 px-2 py-1.5 bg-transparent text-sm font-mono outline-none uppercase font-bold text-slate-700" />
+                   </div>
+                 </div>
+
+                 <div>
+                   <label className="text-[10px] font-bold text-slate-500 block mb-1">Contorno (Stroke)</label>
+                   <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 mb-2">
+                     <div className="relative w-8 h-8 rounded-lg border border-slate-200 overflow-hidden shadow-sm bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')]">
+                       <input type="color" value={elements.find(e=>e.id===selectedId)?.strokeColor || '#000000'} onChange={e => updateEl(selectedId, { strokeColor: e.target.value })} className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" />
+                     </div>
+                     <div className="flex items-center bg-white border border-slate-200 rounded-lg pr-2 flex-1">
+                       <input type="number" min="0" max="50" value={elements.find(e=>e.id===selectedId)?.strokeWidth || 0} onChange={e => updateEl(selectedId, { strokeWidth: parseInt(e.target.value) })} className="w-full px-2 py-1.5 bg-transparent text-sm font-bold outline-none text-slate-700" />
+                       <span className="text-[10px] text-slate-400 font-bold">px</span>
+                     </div>
+                   </div>
+                   
+                   {/* Estilo do Contorno (Tracejado/Sólido) - Apenas para formas e curvos no fotolito */}
+                   <label className="text-[10px] font-bold text-slate-500 block mb-1">Estilo do Contorno</label>
+                   <select value={elements.find(e=>e.id===selectedId)?.strokeDasharray || 'none'} onChange={e => updateEl(selectedId, { strokeDasharray: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none font-medium text-slate-700">
+                     <option value="none">Sólido</option>
+                     <option value="8 4">Tracejado (Largo)</option>
+                     <option value="4 2">Tracejado (Curto)</option>
+                     <option value="2 4">Pontilhado</option>
+                   </select>
+                 </div>
+               </div>
+             )}
+
+          </div>
+        )}
+      </aside>
+
+    </div>
+  );
+}

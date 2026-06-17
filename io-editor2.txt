@@ -1,0 +1,633 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Type, Image as ImageIcon, Layers, Scissors, Droplets, 
+  Wand2, Download, Plus, Trash2, Sparkles, 
+  AlignLeft, AlignCenter, AlignRight, MoveUp, MoveDown, Undo, Redo,
+  ZoomIn, ZoomOut, Maximize, Printer, ChevronUp, ImagePlus, BoxSelect
+} from 'lucide-react';
+
+const apiKey = ""; // Sua chave API para IA 
+
+const FONTS_BY_CATEGORY = {
+  "Universitário & Academia": ['Georgia', 'Cambria', 'Times New Roman'],
+  "Direito & Advocacia": ['Century Schoolbook', 'Garamond', 'Calibri'],
+  "Medicina & Saúde": ['Arial', 'Helvetica', 'Garamond'],
+  "Design, Arte & Moda": ['Playfair Display', 'Montserrat', 'Syne', 'Cinzel'],
+  "Tech & Engenharia": ['JetBrains Mono', 'Fira Code', 'Space Grotesk', 'Inter'],
+  "Finanças & Negócios": ['Prata', 'Source Sans 3', 'PT Serif'],
+  "Esportes & Fitness": ['Oswald', 'Bebas Neue', 'Rubik'],
+  "Arquitetura & Construção": ['Architects Daughter', 'Josefin Sans', 'Urbanist'],
+  "Pedagogia & Infantil": ['Fredoka', 'Quicksand', 'Comfortaa'],
+  "Geek, Pop & Streetwear": ['Press Start 2P', 'Permanent Marker', 'Creepster']
+};
+
+// Flatten fonts for loading
+const ALL_FONTS = Array.from(new Set(Object.values(FONTS_BY_CATEGORY).flat()));
+
+const PRINT_TYPES = [
+  { id: 'dtf', name: 'DTF', icon: Layers, color: 'bg-fuchsia-500', desc: 'Impressão digital' },
+  { id: 'sublimacao', name: 'Sublimação', icon: Droplets, color: 'bg-cyan-500', desc: 'Poliéster claro' },
+  { id: 'plotter', name: 'Plotter', icon: Scissors, color: 'bg-orange-500', desc: 'Recorte vinil' },
+  { id: 'silk', name: 'Silk', icon: PaintBucketIcon, color: 'bg-blue-500', desc: 'Serigrafia' }
+];
+
+function PaintBucketIcon(props) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/>
+    </svg>
+  );
+}
+
+const SHAPES = {
+  heart: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+  star: `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  shield: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  circle: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>`
+};
+
+const DigitalGabarito = () => {
+  const letters = ['A','B','C','D','E','F','G','H','I','J','L','M','N','O','P','Q','R','S'];
+  const numbersLeft = [7,6,5,4,3,2,1];
+  const numbersRight = [1,2,3,4,5,6,7];
+  return (
+    <svg width="100%" height="100%" className="absolute inset-0 pointer-events-none opacity-[0.35] select-none" preserveAspectRatio="none">
+      <defs>
+        <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#94a3b8" strokeWidth="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#smallGrid)" />
+      <line x1="50%" y1="0" x2="50%" y2="100%" stroke="#334155" strokeWidth="1.5" />
+      <line x1="0" y1="25%" x2="100%" y2="25%" stroke="#334155" strokeWidth="1.5" />
+      <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#334155" strokeWidth="1.5" />
+      <line x1="0" y1="75%" x2="100%" y2="75%" stroke="#334155" strokeWidth="1.5" />
+      <circle cx="50%" cy="50%" r="8" stroke="#ef4444" strokeWidth="2" fill="none" />
+      <line x1="calc(50% - 12px)" y1="50%" x2="calc(50% + 12px)" y2="50%" stroke="#ef4444" strokeWidth="2" />
+      <line x1="50%" y1="calc(50% - 12px)" x2="50%" y2="calc(50% + 12px)" stroke="#ef4444" strokeWidth="2" />
+      {letters.map((l, i) => (
+        <text key={l} x="calc(50% + 8px)" y={`${((i+1) / (letters.length + 1)) * 100}%`} fill="#334155" fontSize="10" fontFamily="monospace" dominantBaseline="middle">{l}</text>
+      ))}
+      {[25, 50, 75].map(yPos => (
+        <g key={yPos}>
+          {numbersLeft.map((n, i) => (
+             <text key={`L${n}`} x={`${10 + (i * 6)}%`} y={`calc(${yPos}% - 5px)`} fill="#475569" fontSize="9" fontFamily="monospace">{n}</text>
+          ))}
+          {numbersRight.map((n, i) => (
+             <text key={`R${n}`} x={`${55 + (i * 6)}%`} y={`calc(${yPos}% - 5px)`} fill="#475569" fontSize="9" fontFamily="monospace">{n}</text>
+          ))}
+        </g>
+      ))}
+      <g transform="translate(0, 100%)">
+        {[7,6,5,4,3,2,1,0,1,2,3,4,5,6,7].map((deg, i) => (
+          <text key={`deg${i}`} x={`${10 + (i * 5.7)}%`} y="-10" fill="#64748b" fontSize="8" fontFamily="monospace">{deg}°</text>
+        ))}
+        <line x1="10%" y1="-5" x2="90%" y2="-5" stroke="#94a3b8" strokeDasharray="4 4" strokeWidth="1" />
+      </g>
+    </svg>
+  );
+};
+
+export default function App() {
+  // App State
+  const [printType, setPrintType] = useState('dtf');
+  const [isPrintTypeMenuOpen, setIsPrintTypeMenuOpen] = useState(false);
+  
+  // Canvas State
+  const [canvasDimensions] = useState({ w: 420, h: 594 }); // A3 Default
+  const [zoom, setZoom] = useState(1);
+  const [showGabarito, setShowGabarito] = useState(true);
+  
+  // Elements & History State
+  const [history, setHistory] = useState([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const elements = history[historyIndex];
+  const [selectedElement, setSelectedElement] = useState(null);
+
+  // Modals/Export
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // AI Mockup State
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiImage, setAiImage] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Injetar Fontes do Google na inicialização
+  useEffect(() => {
+    const fontsUrl = `https://fonts.googleapis.com/css2?${ALL_FONTS.map(f => `family=${f.replace(/ /g, '+')}`).join('&')}&display=swap`;
+    const link = document.createElement('link');
+    link.href = fontsUrl;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
+
+  const saveHistory = (newElements) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newElements);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const updateElement = (id, changes) => {
+    saveHistory(elements.map(e => e.id === id ? { ...e, ...changes } : e));
+  };
+
+  const removeElement = (id) => {
+    saveHistory(elements.filter(e => e.id !== id));
+    if (selectedElement === id) setSelectedElement(null);
+  };
+
+  const addText = () => {
+    saveHistory([...elements, {
+      id: Date.now().toString(), type: 'text', content: 'NOVO TEXTO',
+      x: 100, y: 150, width: 200, color: '#1e293b', fontSize: 40, 
+      fontFamily: 'Inter', textShape: 'normal', layerName: 'Texto'
+    }]);
+  };
+
+  const addShape = (shapeName) => {
+    saveHistory([...elements, {
+      id: Date.now().toString(), type: 'shape', content: shapeName,
+      x: 150, y: 200, width: 100, height: 100, color: '#1e293b', layerName: 'Forma'
+    }]);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        saveHistory([...elements, {
+          id: Date.now().toString(), type: 'image', content: event.target.result,
+          x: 100, y: 100, width: 200, height: 200, layerName: 'Imagem Upload'
+        }]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Composições Pré-moldadas
+  const addPremade = (type) => {
+    const now = Date.now();
+    if (type === 'jogador') {
+      saveHistory([...elements, 
+        { id: `${now}-1`, type: 'text', content: 'RONALDO', x: 110, y: 100, width: 200, color: '#0f172a', fontSize: 45, fontFamily: 'Oswald', textShape: 'curve-up', layerName: 'Nome Jogador' },
+        { id: `${now}-2`, type: 'text', content: '09', x: 130, y: 180, width: 160, color: '#0f172a', fontSize: 160, fontFamily: 'Bebas Neue', textShape: 'normal', layerName: 'Número' }
+      ]);
+    } else if (type === 'bolso') {
+      saveHistory([...elements, 
+        { id: `${now}-1`, type: 'shape', content: 'shield', x: 300, y: 180, width: 60, height: 60, color: '#3b82f6', layerName: 'Logo Bolso' },
+        { id: `${now}-2`, type: 'text', content: 'STAFF', x: 305, y: 245, width: 50, color: '#0f172a', fontSize: 16, fontFamily: 'Inter', textShape: 'normal', layerName: 'Texto Bolso' }
+      ]);
+    }
+  };
+
+  const moveLayer = (id, direction) => {
+    const index = elements.findIndex(e => e.id === id);
+    if (index < 0) return;
+    if (direction === 'up' && index === elements.length - 1) return;
+    if (direction === 'down' && index === 0) return;
+
+    const newElements = [...elements];
+    const targetIndex = direction === 'up' ? index + 1 : index - 1;
+    [newElements[index], newElements[targetIndex]] = [newElements[targetIndex], newElements[index]];
+    saveHistory(newElements);
+  };
+
+  const exportPDF = (mode) => {
+    setExportMenuOpen(false);
+    
+    if (mode === 'silk-colors') {
+      // Identificar cores únicas para Separação
+      const colors = [...new Set(elements.map(e => e.color).filter(c => c))];
+      if (colors.length === 0) return alert("Nenhuma cor encontrada para separar.");
+      
+      let htmlPages = colors.map(color => {
+        const filteredElementsHtml = elements.map(el => {
+          // Se não for a cor atual, não renderiza nesta página de separação
+          if (el.color !== color && el.type !== 'image') return '';
+          return renderElementToHtml(el, '#000000'); // Força preto puro
+        }).join('');
+        return `<div class="page-container">${filteredElementsHtml}<div class="color-label">C100 M100 Y100 K100 - COR: ${color}</div></div>`;
+      }).join('<div style="page-break-after: always;"></div>');
+
+      openPrintWindow(htmlPages, 'Separação Silk');
+    } else {
+      const isFotolito = mode === 'fotolito';
+      const elementsHtml = elements.map(el => renderElementToHtml(el, isFotolito ? '#000000' : el.color)).join('');
+      openPrintWindow(`<div class="page-container">${elementsHtml}</div>`, isFotolito ? 'Fotolito' : 'Arte PDF');
+    }
+  };
+
+  const renderElementToHtml = (el, forceColor) => {
+    const baseStyle = `position: absolute; top: ${el.y}px; left: ${el.x}px; width: ${el.width}px; height: ${el.height || 'auto'};`;
+    
+    if (el.type === 'image') {
+      // Imagens não recebem forceColor
+      return `<img src="${el.content}" style="${baseStyle} object-fit: contain;" />`;
+    } 
+    
+    if (el.type === 'shape') {
+      const svg = SHAPES[el.content].replace('fill="currentColor"', `fill="${forceColor}"`);
+      return `<div style="${baseStyle}">${svg}</div>`;
+    }
+
+    if (el.type === 'text') {
+      if (el.textShape === 'curve-up') {
+        return `
+          <div style="${baseStyle}">
+            <svg width="100%" height="100%" viewBox="0 0 200 100">
+              <path id="curve-${el.id}" d="M 10 90 Q 100 10 190 90" fill="transparent" />
+              <text fill="${forceColor}" font-size="${el.fontSize}" font-family="${el.fontFamily}" font-weight="bold">
+                <textPath href="#curve-${el.id}" startOffset="50%" text-anchor="middle">${el.content}</textPath>
+              </text>
+            </svg>
+          </div>`;
+      } else if (el.textShape === 'curve-down') {
+         return `
+          <div style="${baseStyle}">
+            <svg width="100%" height="100%" viewBox="0 0 200 100">
+              <path id="curve-${el.id}" d="M 10 10 Q 100 90 190 10" fill="transparent" />
+              <text fill="${forceColor}" font-size="${el.fontSize}" font-family="${el.fontFamily}" font-weight="bold">
+                <textPath href="#curve-${el.id}" startOffset="50%" text-anchor="middle">${el.content}</textPath>
+              </text>
+            </svg>
+          </div>`;
+      } else {
+        return `<div style="${baseStyle} color: ${forceColor}; font-size: ${el.fontSize}px; font-family: ${el.fontFamily}; font-weight: bold; white-space: nowrap; line-height: 1;">${el.content}</div>`;
+      }
+    }
+    return '';
+  };
+
+  const openPrintWindow = (content, title) => {
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            @page { size: ${canvasDimensions.w}px ${canvasDimensions.h}px; margin: 0; }
+            body { margin: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden; }
+            .page-container { position: relative; width: ${canvasDimensions.w}px; height: ${canvasDimensions.h}px; overflow: hidden; background: white; }
+            .color-label { position: absolute; bottom: 10px; left: 10px; font-family: monospace; font-size: 12px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          ${content}
+          <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const generateAiImage = async () => {
+    if (!aiPrompt) return;
+    setIsGenerating(true);
+    try {
+       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instances: [{ prompt: aiPrompt }], parameters: { sampleCount: 1 } })
+        });
+        const data = await response.json();
+        if (data.predictions) {
+          const imgBase64 = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+          setAiImage(imgBase64);
+        }
+    } catch (e) {
+      alert("Falha na geração IA.");
+    }
+    setIsGenerating(false);
+  };
+
+  return (
+    <div className="flex h-screen bg-[#f1f5f9] text-slate-800 font-sans overflow-hidden">
+      
+      {/* LEFT SIDEBAR: LAYERS */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm shrink-0">
+        <div className="h-14 border-b border-slate-200 flex items-center px-4 font-bold text-slate-700 gap-2">
+          <Layers size={18} /> Camadas
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {[...elements].reverse().map((el) => (
+            <div 
+              key={el.id} 
+              onClick={() => setSelectedElement(el.id)}
+              className={`flex items-center justify-between p-2 rounded-md cursor-pointer text-sm transition-colors border
+                ${selectedElement === el.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-medium' : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50'}`}
+            >
+              <span className="truncate w-32">{el.layerName || el.type}</span>
+              {selectedElement === el.id && (
+                <div className="flex items-center gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); moveLayer(el.id, 'up'); }} className="p-1 hover:bg-indigo-100 rounded text-indigo-500"><MoveUp size={14}/></button>
+                  <button onClick={(e) => { e.stopPropagation(); moveLayer(el.id, 'down'); }} className="p-1 hover:bg-indigo-100 rounded text-indigo-500"><MoveDown size={14}/></button>
+                </div>
+              )}
+            </div>
+          ))}
+          {elements.length === 0 && <p className="text-xs text-slate-400 text-center p-4">Nenhuma camada</p>}
+        </div>
+      </aside>
+
+      {/* CENTER: WORKSPACE */}
+      <main className="flex-1 flex flex-col relative overflow-hidden">
+        {/* Top Toolbar */}
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-10 shrink-0">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setHistoryIndex(Math.max(0, historyIndex - 1))} disabled={historyIndex === 0} className="p-2 text-slate-600 disabled:opacity-30 hover:bg-slate-100 rounded"><Undo size={18}/></button>
+            <button onClick={() => setHistoryIndex(Math.min(history.length - 1, historyIndex + 1))} disabled={historyIndex === history.length - 1} className="p-2 text-slate-600 disabled:opacity-30 hover:bg-slate-100 rounded"><Redo size={18}/></button>
+            <div className="h-6 w-px bg-slate-200 mx-2" />
+            <button onClick={() => setZoom(Math.max(0.5, zoom - 0.1))} className="p-2 text-slate-600 hover:bg-slate-100 rounded"><ZoomOut size={18}/></button>
+            <span className="text-xs font-bold text-slate-500 w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom(Math.min(2, zoom + 0.1))} className="p-2 text-slate-600 hover:bg-slate-100 rounded"><ZoomIn size={18}/></button>
+            <button onClick={() => setZoom(1)} className="p-2 text-slate-600 hover:bg-slate-100 rounded" title="Ajustar 100%"><Maximize size={18}/></button>
+            <label className="flex items-center gap-2 ml-4 text-xs font-medium text-slate-600 cursor-pointer">
+              <input type="checkbox" checked={showGabarito} onChange={(e) => setShowGabarito(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500"/> Gabarito
+            </label>
+          </div>
+
+          <div className="relative">
+            <button 
+              onClick={() => setExportMenuOpen(!exportMenuOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-colors"
+            >
+               Exportar <ChevronUp size={16} className={`transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {exportMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50">
+                <button onClick={() => exportPDF('pdf')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Download size={16}/> Arte Original (Cores)</button>
+                <button onClick={() => exportPDF('fotolito')} className="w-full text-left px-4 py-2 text-sm text-slate-900 bg-slate-50 hover:bg-slate-100 font-medium flex items-center gap-2"><Printer size={16}/> Fotolito Unificado (Preto)</button>
+                {printType === 'silk' && (
+                  <button onClick={() => exportPDF('silk-colors')} className="w-full text-left px-4 py-2 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium flex items-center gap-2"><Layers size={16}/> Separação Silk (Cores)</button>
+                )}
+                <div className="h-px bg-slate-100 my-1" />
+                <button onClick={() => {setExportMenuOpen(false); setShowAiModal(true);}} className="w-full text-left px-4 py-2 text-sm text-violet-700 hover:bg-violet-50 font-medium flex items-center gap-2"><Wand2 size={16}/> Gerar Mockup (IA)</button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Canvas Area with Rulers */}
+        <div className="flex-1 overflow-auto relative flex items-center justify-center p-8 bg-[#e2e8f0]"
+             onClick={(e) => { if(e.target === e.currentTarget) setSelectedElement(null); }}>
+          
+          <div 
+            className="bg-white shadow-2xl relative transition-transform duration-200"
+            style={{
+              width: canvasDimensions.w, height: canvasDimensions.h,
+              transform: `scale(${zoom})`, transformOrigin: 'center center'
+            }}
+          >
+            {/* O Gabarito no fundo (Visível por padrão ou se ativado) */}
+            {showGabarito && <DigitalGabarito />}
+            
+            {/* O Badge flutuante do tipo de impressão */}
+            <div className="absolute top-4 left-4 z-0 opacity-80 pointer-events-none flex flex-col items-start gap-1">
+               <span className={`px-2 py-1 text-[10px] uppercase font-bold text-white rounded shadow-sm ${PRINT_TYPES.find(t=>t.id===printType)?.color}`}>
+                 {PRINT_TYPES.find(t=>t.id===printType)?.name}
+               </span>
+            </div>
+
+            {/* Render Elements */}
+            {elements.map(el => (
+              <motion.div
+                key={el.id}
+                drag
+                dragMomentum={false}
+                onMouseDown={() => setSelectedElement(el.id)}
+                onDragEnd={(e, info) => updateElement(el.id, { x: el.x + info.offset.x, y: el.y + info.offset.y })}
+                className={`absolute inline-block cursor-move ${selectedElement === el.id ? 'ring-2 ring-blue-500 ring-offset-2 z-50' : 'z-10'}`}
+                style={{ top: el.y, left: el.x, width: el.width, height: el.height || 'auto' }}
+                initial={{ x: el.x, y: el.y }}
+                animate={{ x: el.x, y: el.y }}
+              >
+                {el.type === 'image' && <img src={el.content} alt="Upload" className="w-full h-full object-contain pointer-events-none" />}
+                
+                {el.type === 'shape' && (
+                  <div dangerouslySetInnerHTML={{ __html: SHAPES[el.content].replace('fill="currentColor"', `fill="${el.color}"`) }} className="w-full h-full pointer-events-none" />
+                )}
+
+                {el.type === 'text' && el.textShape === 'normal' && (
+                  <div style={{ color: el.color, fontSize: el.fontSize, fontFamily: el.fontFamily, fontWeight: 800, whiteSpace: 'nowrap', lineHeight: 1 }} className="pointer-events-none">
+                    {el.content}
+                  </div>
+                )}
+
+                {el.type === 'text' && el.textShape === 'curve-up' && (
+                  <svg width="100%" height="100%" viewBox="0 0 200 100" className="pointer-events-none" style={{overflow: 'visible'}}>
+                    <path id={`curve-ui-${el.id}`} d="M 10 90 Q 100 10 190 90" fill="transparent" />
+                    <text fill={el.color} fontSize={el.fontSize} fontFamily={el.fontFamily} fontWeight="800">
+                      <textPath href={`#curve-ui-${el.id}`} startOffset="50%" textAnchor="middle">{el.content}</textPath>
+                    </text>
+                  </svg>
+                )}
+                
+                {el.type === 'text' && el.textShape === 'curve-down' && (
+                  <svg width="100%" height="100%" viewBox="0 0 200 100" className="pointer-events-none" style={{overflow: 'visible'}}>
+                    <path id={`curve-ui-down-${el.id}`} d="M 10 10 Q 100 90 190 10" fill="transparent" />
+                    <text fill={el.color} fontSize={el.fontSize} fontFamily={el.fontFamily} fontWeight="800">
+                      <textPath href={`#curve-ui-down-${el.id}`} startOffset="50%" textAnchor="middle">{el.content}</textPath>
+                    </text>
+                  </svg>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Minimalist Print Type Bottom Center Selector */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+          <div className="relative">
+             <button 
+                onClick={() => setIsPrintTypeMenuOpen(!isPrintTypeMenuOpen)}
+                className={`flex items-center gap-3 px-6 py-3 rounded-full text-white font-bold shadow-xl transition-all ${PRINT_TYPES.find(t=>t.id===printType)?.color}`}
+             >
+                <span className="flex items-center gap-2">
+                  {React.createElement(PRINT_TYPES.find(t=>t.id===printType)?.icon, {size: 18})} 
+                  {PRINT_TYPES.find(t=>t.id===printType)?.name}
+                </span>
+                <ChevronUp size={16} className={`transition-transform ${isPrintTypeMenuOpen ? 'rotate-180' : ''}`} />
+             </button>
+
+             {isPrintTypeMenuOpen && (
+               <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 bg-white rounded-2xl shadow-2xl overflow-hidden py-2 border border-slate-100">
+                 {PRINT_TYPES.map(type => (
+                   <button 
+                     key={type.id}
+                     onClick={() => { setPrintType(type.id); setIsPrintTypeMenuOpen(false); }}
+                     className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors hover:bg-slate-50
+                      ${printType === type.id ? 'text-slate-900' : 'text-slate-500'}`}
+                   >
+                     <type.icon size={16} className={type.color.replace('bg-', 'text-')} /> {type.name}
+                   </button>
+                 ))}
+               </div>
+             )}
+          </div>
+        </div>
+      </main>
+
+      {/* RIGHT SIDEBAR: PROPERTIES / TOOLS (Figma Style) */}
+      <aside className="w-80 bg-white border-l border-slate-200 flex flex-col overflow-y-auto z-20 shadow-sm shrink-0">
+        
+        {/* ADD TOOLS */}
+        <div className="p-4 border-b border-slate-100">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Inserir Elementos</h3>
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <button onClick={addText} className="flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-100 text-slate-600"><Type size={20}/><span className="text-[10px] font-medium">Texto</span></button>
+            <button onClick={() => addShape('star')} className="flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-100 text-slate-600"><BoxSelect size={20}/><span className="text-[10px] font-medium">Forma</span></button>
+            <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-100 text-slate-600"><ImagePlus size={20}/><span className="text-[10px] font-medium">Upload</span></button>
+            <button onClick={() => {setShowAiModal(true)}} className="flex flex-col items-center gap-1 p-2 rounded hover:bg-violet-50 text-violet-600"><Sparkles size={20}/><span className="text-[10px] font-medium">IA</span></button>
+            <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+          </div>
+
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Pré-Moldados</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => addPremade('jogador')} className="py-2 px-3 bg-slate-50 border border-slate-200 rounded text-xs font-semibold text-slate-700 hover:bg-slate-100">Camisa Jogador</button>
+            <button onClick={() => addPremade('bolso')} className="py-2 px-3 bg-slate-50 border border-slate-200 rounded text-xs font-semibold text-slate-700 hover:bg-slate-100">Logo no Bolso</button>
+          </div>
+        </div>
+
+        {/* SELECTED PROPERTIES */}
+        {selectedElement ? (
+          <div className="p-4 flex-1">
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-bold text-slate-800">Propriedades</h3>
+                <button onClick={() => removeElement(selectedElement)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+             </div>
+
+             {/* Dimensões X/Y/W/H (Estilo Figma) */}
+             <div className="grid grid-cols-2 gap-4 mb-6">
+               <div className="flex border border-slate-200 rounded overflow-hidden focus-within:border-indigo-500">
+                 <span className="bg-slate-50 px-2 py-1 text-xs text-slate-400 font-mono border-r border-slate-200 flex items-center">X</span>
+                 <input type="number" value={Math.round(elements.find(e=>e.id===selectedElement)?.x || 0)} onChange={e => updateElement(selectedElement, { x: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono" />
+               </div>
+               <div className="flex border border-slate-200 rounded overflow-hidden focus-within:border-indigo-500">
+                 <span className="bg-slate-50 px-2 py-1 text-xs text-slate-400 font-mono border-r border-slate-200 flex items-center">Y</span>
+                 <input type="number" value={Math.round(elements.find(e=>e.id===selectedElement)?.y || 0)} onChange={e => updateElement(selectedElement, { y: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono" />
+               </div>
+               <div className="flex border border-slate-200 rounded overflow-hidden focus-within:border-indigo-500">
+                 <span className="bg-slate-50 px-2 py-1 text-xs text-slate-400 font-mono border-r border-slate-200 flex items-center">W</span>
+                 <input type="number" value={Math.round(elements.find(e=>e.id===selectedElement)?.width || 0)} onChange={e => updateElement(selectedElement, { width: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono" />
+               </div>
+               {elements.find(e=>e.id===selectedElement)?.type !== 'text' && (
+                 <div className="flex border border-slate-200 rounded overflow-hidden focus-within:border-indigo-500">
+                   <span className="bg-slate-50 px-2 py-1 text-xs text-slate-400 font-mono border-r border-slate-200 flex items-center">H</span>
+                   <input type="number" value={Math.round(elements.find(e=>e.id===selectedElement)?.height || 0)} onChange={e => updateElement(selectedElement, { height: parseInt(e.target.value) })} className="w-full px-2 text-sm outline-none font-mono" />
+                 </div>
+               )}
+             </div>
+
+             {/* Cor */}
+             {elements.find(e=>e.id===selectedElement)?.type !== 'image' && (
+               <div className="mb-6 border-t border-slate-100 pt-4">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Preenchimento</h3>
+                 <div className="flex items-center gap-3">
+                   <div className="relative w-8 h-8 rounded border border-slate-200 overflow-hidden shadow-sm">
+                     <input type="color" value={elements.find(e=>e.id===selectedElement)?.color || '#000000'} onChange={e => updateElement(selectedElement, { color: e.target.value })} className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer" />
+                   </div>
+                   <input type="text" value={elements.find(e=>e.id===selectedElement)?.color || '#000000'} onChange={e => updateElement(selectedElement, { color: e.target.value })} className="flex-1 px-3 py-1.5 border border-slate-200 rounded text-sm font-mono outline-none focus:border-indigo-500 uppercase" />
+                 </div>
+               </div>
+             )}
+
+             {/* Typografia */}
+             {elements.find(e=>e.id===selectedElement)?.type === 'text' && (
+               <div className="mb-6 border-t border-slate-100 pt-4 space-y-4">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipografia</h3>
+                 
+                 <textarea 
+                   value={elements.find(e=>e.id===selectedElement)?.content || ''}
+                   onChange={e => updateElement(selectedElement, { content: e.target.value })}
+                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded text-sm outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                   rows={2}
+                 />
+
+                 <select 
+                   value={elements.find(e=>e.id===selectedElement)?.fontFamily}
+                   onChange={e => updateElement(selectedElement, { fontFamily: e.target.value })}
+                   className="w-full px-3 py-2 border border-slate-200 rounded text-sm outline-none"
+                   style={{ fontFamily: elements.find(e=>e.id===selectedElement)?.fontFamily }}
+                 >
+                   {Object.entries(FONTS_BY_CATEGORY).map(([category, fonts]) => (
+                     <optgroup key={category} label={category}>
+                       {fonts.map(font => <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>)}
+                     </optgroup>
+                   ))}
+                 </select>
+
+                 <div className="flex items-center gap-3">
+                   <span className="text-xs text-slate-500 font-medium w-16">Tamanho</span>
+                   <input type="range" min="10" max="300" value={elements.find(e=>e.id===selectedElement)?.fontSize || 40} onChange={e => updateElement(selectedElement, { fontSize: parseInt(e.target.value) })} className="flex-1" />
+                   <span className="text-xs font-mono text-slate-600">{elements.find(e=>e.id===selectedElement)?.fontSize}</span>
+                 </div>
+
+                 <div className="pt-2">
+                   <span className="text-xs text-slate-500 font-medium block mb-2">Efeito de Curva</span>
+                   <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-lg">
+                     <button onClick={()=>updateElement(selectedElement, {textShape:'normal'})} className={`py-1.5 rounded text-xs font-semibold ${elements.find(e=>e.id===selectedElement)?.textShape==='normal'?'bg-white shadow text-slate-900':'text-slate-500'}`}>Reto</button>
+                     <button onClick={()=>updateElement(selectedElement, {textShape:'curve-up'})} className={`py-1.5 rounded text-xs font-semibold ${elements.find(e=>e.id===selectedElement)?.textShape==='curve-up'?'bg-white shadow text-slate-900':'text-slate-500'}`}>Arco Cima</button>
+                     <button onClick={()=>updateElement(selectedElement, {textShape:'curve-down'})} className={`py-1.5 rounded text-xs font-semibold ${elements.find(e=>e.id===selectedElement)?.textShape==='curve-down'?'bg-white shadow text-slate-900':'text-slate-500'}`}>Arco Baixo</button>
+                   </div>
+                 </div>
+               </div>
+             )}
+
+             {/* Formas */}
+             {elements.find(e=>e.id===selectedElement)?.type === 'shape' && (
+               <div className="mb-6 border-t border-slate-100 pt-4">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Ícone</h3>
+                 <div className="grid grid-cols-4 gap-2">
+                   {Object.keys(SHAPES).map(shape => (
+                     <button key={shape} onClick={()=>updateElement(selectedElement, {content: shape})} className={`p-2 border rounded hover:bg-slate-50 ${elements.find(e=>e.id===selectedElement)?.content===shape?'border-indigo-500 text-indigo-500':'border-slate-200 text-slate-600'}`}>
+                       <div dangerouslySetInnerHTML={{__html: SHAPES[shape]}} className="w-6 h-6 mx-auto" />
+                     </button>
+                   ))}
+                 </div>
+               </div>
+             )}
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+            <BoxSelect size={48} strokeWidth={1} className="mb-4" />
+            <p className="text-sm">Selecione um elemento na tela ou nas camadas para editar suas propriedades.</p>
+          </div>
+        )}
+      </aside>
+
+      {/* MODAL IA */}
+      <AnimatePresence>
+        {showAiModal && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div initial={{scale:0.95}} animate={{scale:1}} className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col">
+              <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
+                <div className="flex items-center gap-2 font-bold text-lg"><Wand2 className="text-indigo-400"/> Gerador de Mockup IA</div>
+                <button onClick={()=>setShowAiModal(false)} className="text-slate-400 hover:text-white">Fechar</button>
+              </div>
+              <div className="p-6 flex flex-col gap-4 bg-slate-50">
+                <textarea value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} placeholder="Ex: Camiseta preta com estampa de um lobo em neon num modelo de estúdio..." className="w-full p-4 border border-slate-300 rounded-xl outline-none focus:border-indigo-500 h-24 text-sm" />
+                <button onClick={generateAiImage} disabled={isGenerating||!aiPrompt} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold transition-colors">
+                  {isGenerating ? 'Renderizando na Nuvem...' : 'Gerar Fotografia'}
+                </button>
+                {aiImage && (
+                  <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <img src={aiImage} alt="IA Gerada" className="w-full h-auto" />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
+}

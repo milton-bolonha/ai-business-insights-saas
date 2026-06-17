@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   return {
-    title: `${workspaceName} - I/O App`,
+    title: `${workspaceName} - I/O Labs`,
     icons: {
       icon: "/images/favicon-16x16-admin.png",
       shortcut: "/images/favicon-16x16-admin.png",

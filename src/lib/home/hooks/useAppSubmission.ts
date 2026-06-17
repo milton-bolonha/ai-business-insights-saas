@@ -27,6 +27,7 @@ export function useAppSubmission() {
       case "io_mentoring":
       case "smart_survey":
       case "ai_blog":
+      case "io_estampas":
         return { title: t("home.toasts.loadingPanel") };
       case "business_insights":
       default:

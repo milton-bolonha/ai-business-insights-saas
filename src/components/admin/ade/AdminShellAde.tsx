@@ -23,6 +23,7 @@ interface AdminShellAdeProps {
   onOpenWorkspaceDetail?: () => void;
   onDeleteWorkspace?: (workspaceId: string) => void;
   onSetSpecificColor?: (color: string) => void;
+  fullScreenContent?: boolean;
 }
 
 export function AdminShellAde({
@@ -35,7 +36,8 @@ export function AdminShellAde({
   viewMode = "menu",
   onOpenWorkspaceDetail,
   onDeleteWorkspace,
-  onSetSpecificColor
+  onSetSpecificColor,
+  fullScreenContent
 }: AdminShellAdeProps) {
   // Use lazy initialization to avoid self-reference or hydration issues
   const [mounted, setMounted] = useState(false);
@@ -67,7 +69,7 @@ export function AdminShellAde({
       <div className="flex-1 flex flex-col min-w-0 h-screen relative z-10">
         {/* Main Content containing both header and body, so they scroll together */}
         <main
-          className="flex-1 overflow-y-auto"
+          className="flex-1 flex flex-col overflow-y-auto"
           style={{ backgroundColor: "transparent" }}
         >
           {/* Top Header */}
@@ -80,7 +82,7 @@ export function AdminShellAde({
             hideWorkspaceSwitcher={false}
           />
           <div
-            className={cn(
+            className={fullScreenContent ? "flex-1 flex flex-col w-full min-h-0" : cn(
               "container mx-auto min-h-full px-2",
               chatOverlay ? "pb-8" : "pb-8 md:pb-8"
             )}

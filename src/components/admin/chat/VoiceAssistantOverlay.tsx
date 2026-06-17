@@ -221,6 +221,33 @@ export function VoiceAssistantOverlay({ workspace, dashboard, onTabChange }: {
       };
     }
 
+    // 4. ESTAMPAS Pattern
+    if ((window as any).estampasEditorAI) {
+      const eai = (window as any).estampasEditorAI;
+      if (t.includes("zoom in") || t.includes("aumentar zoom") || t.includes("aproximar")) {
+         return { action: 'ESTAMPA_CMD', fn: eai.zoomIn, reply: "Ampliando a visão da estampa." };
+      }
+      if (t.includes("zoom out") || t.includes("diminuir zoom") || t.includes("afastar")) {
+         return { action: 'ESTAMPA_CMD', fn: eai.zoomOut, reply: "Afastando a visão." };
+      }
+      if (t.includes("fit zoom") || t.includes("encaixar") || t.includes("centralizar") || t.includes("ajustar zoom")) {
+         return { action: 'ESTAMPA_CMD', fn: eai.fitZoom, reply: "Zoom ajustado para caber na tela." };
+      }
+      if (t.includes("desfazer") || t.includes("undo")) {
+         return { action: 'ESTAMPA_CMD', fn: eai.undo, reply: "Ação desfeita." };
+      }
+      if (t.includes("refazer") || t.includes("redo")) {
+         return { action: 'ESTAMPA_CMD', fn: eai.redo, reply: "Ação refeita." };
+      }
+      if (t.includes("adicionar texto") || t.includes("novo texto")) {
+         return { action: 'ESTAMPA_CMD', fn: eai.addText, reply: "Texto adicionado. Você pode editá-lo na lateral." };
+      }
+      const aiGenerateMatch = t.match(/(?:criar|gerar|fazer|desenhar)\s+(?:com\s+a\s+ia\s+)?uma\s+(?:imagem\s+)?(?:de\s+)?(.*)/i);
+      if (aiGenerateMatch && t.includes("ia")) {
+         return { action: 'ESTAMPA_CMD', fn: () => eai.createWithAI(aiGenerateMatch[1]), reply: `Gerando imagem: ${aiGenerateMatch[1]}` };
+      }
+    }
+
     return null;
   };
 
@@ -264,6 +291,8 @@ export function VoiceAssistantOverlay({ workspace, dashboard, onTabChange }: {
       // Handle special commands from result (Local or AI)
       if (result.commands || result.action) {
         const commands = result.commands || [result];
+        
+        // Product Logic
         const createProductCmd = commands.find((c: any) => c.action === 'CREATE_PRODUCT');
         if (createProductCmd && (window as any).handleProductSubmitAI) {
           await (window as any).handleProductSubmitAI(createProductCmd.item);
@@ -281,6 +310,12 @@ export function VoiceAssistantOverlay({ workspace, dashboard, onTabChange }: {
             });
           }, 1000);
         }
+
+        // Estampas Logic
+        const estampaCmd = commands.find((c: any) => c.action === 'ESTAMPA_CMD');
+        if (estampaCmd && estampaCmd.fn) {
+           estampaCmd.fn();
+        }
       }
 
       await addMessage({
@@ -293,8 +328,9 @@ export function VoiceAssistantOverlay({ workspace, dashboard, onTabChange }: {
 
       setAiResponse(result.reply);
 
-      // Auto-switch to chat history if tab change is available
-      if (onTabChange) {
+      // Auto-switch to chat history if tab change is available and it's not an editor command
+      const isEstampaCmd = result.commands?.some((c: any) => c.action === 'ESTAMPA_CMD') || result.action === 'ESTAMPA_CMD';
+      if (onTabChange && !isEstampaCmd) {
         onTabChange('chat_history');
       }
 

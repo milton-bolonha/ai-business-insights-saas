@@ -1,0 +1,796 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const FONTS = ["Arial Black", "Impact", "Georgia", "Courier New", "Verdana", "Trebuchet MS"];
+const PRINT_TYPES = [
+  { id: "silk", label: "🖌️ Silk" },
+  { id: "dtf", label: "🎞️ DTF" },
+  { id: "sublimacao", label: "💧 Subli" },
+  { id: "plotter", label: "✂️ Plotter" },
+  { id: "layout", label: "📐 Layout" },
+];
+const FORMATS = [
+  { id: "A4", label: "A4", w: 297, h: 420 },
+  { id: "A3", label: "A3", w: 420, h: 594 },
+];
+const CATEGORIES = [
+  { name: "Profissões", items: ["Medicina", "Direito", "Engenharia", "TI/Dev", "Arquitetura", "Odontologia"] },
+  { name: "Universitário", items: ["Atléticas", "Trote", "Formatura", "Cursos", "Repúblicas"] },
+  { name: "Mais Procurados", items: ["Pets", "Academia", "Frases Engraçadas", "Gospel", "Geek/Nerd"] },
+  { name: "Diversos", items: ["Bride Team", "Despedida Solteiro", "Natal", "Carnaval", "Copa", "Retrô"] },
+];
+const SHAPES = {
+  heart: (color, w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 24 24" fill="${color}"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+  star: (color, w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 24 24" fill="${color}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  circle: (color, w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 24 24" fill="${color}"><circle cx="12" cy="12" r="10"/></svg>`,
+  rect: (color, w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 24 24" fill="${color}"><rect x="2" y="2" width="20" height="20" rx="3"/></svg>`,
+  triangle: (color, w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 24 24" fill="${color}"><polygon points="12,2 22,22 2,22"/></svg>`,
+  diamond: (color, w, h) => `<svg width="${w}" height="${h}" viewBox="0 0 24 24" fill="${color}"><polygon points="12,2 22,12 12,22 2,12"/></svg>`,
+};
+
+let _id = 1;
+const uid = () => "el_" + (_id++);
+
+// ─── GABARITO SVG ─────────────────────────────────────────────────────────────
+function GabaritoOverlay({ w, h }) {
+  const cx = w / 2, cy = h / 2;
+  const step = w / 14;
+  const letters = ["A","B","C","D","E","F","G","H","I","J","L","M","N","O","P","Q","R","S"];
+  const refLines = [0.25, 0.5, 0.75];
+  return (
+    <svg style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:2, opacity:0.45 }}
+      width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <defs>
+        <pattern id="grd" width={step} height={step} patternUnits="userSpaceOnUse">
+          <path d={`M ${step} 0 L 0 0 0 ${step}`} fill="none" stroke="#94a3b8" strokeWidth="0.4"/>
+        </pattern>
+      </defs>
+      <rect width={w} height={h} fill="url(#grd)"/>
+      <line x1={cx} y1={0} x2={cx} y2={h} stroke="#1e293b" strokeWidth="1.2"/>
+      {refLines.map(f => (
+        <g key={f}>
+          <line x1={0} y1={h*f} x2={w} y2={h*f} stroke="#1e293b" strokeWidth="1.2"/>
+          {[1,2,3,4,5,6,7].map(n => {
+            const lx = cx - n*step, rx = cx + n*step;
+            return (
+              <g key={n}>
+                <text x={lx} y={h*f-3} textAnchor="middle" fontSize="7" fontFamily="monospace" fill="#475569">{n}</text>
+                <text x={rx} y={h*f-3} textAnchor="middle" fontSize="7" fontFamily="monospace" fill="#475569">{n}</text>
+                <line x1={lx} y1={h*f-5} x2={lx} y2={h*f} stroke="#64748b" strokeWidth="0.8"/>
+                <line x1={rx} y1={h*f-5} x2={rx} y2={h*f} stroke="#64748b" strokeWidth="0.8"/>
+              </g>
+            );
+          })}
+        </g>
+      ))}
+      {letters.map((l, i) => {
+        const y = (i+1)/(letters.length+1)*h;
+        return (
+          <g key={l}>
+            <text x={cx+4} y={y+3} fontSize="7" fontFamily="monospace" fill="#475569" fontWeight="700">{l}</text>
+            <line x1={cx-5} y1={y} x2={cx} y2={y} stroke="#64748b" strokeWidth="0.8"/>
+          </g>
+        );
+      })}
+      {[...Array(15)].map((_, i) => {
+        const deg = Math.abs(i-7);
+        const x = i*w/14 + w/28;
+        return <text key={i} x={x} y={h-4} textAnchor="middle" fontSize="6" fontFamily="monospace" fill="#94a3b8">{deg}°</text>;
+      })}
+      <circle cx={cx} cy={cy} r={7} stroke="red" strokeWidth="1.5" fill="none"/>
+      <line x1={cx-12} y1={cy} x2={cx+12} y2={cy} stroke="red" strokeWidth="1.5"/>
+      <line x1={cx} y1={cy-12} x2={cx} y2={cy+12} stroke="red" strokeWidth="1.5"/>
+    </svg>
+  );
+}
+
+// ─── CANVAS ELEMENT ───────────────────────────────────────────────────────────
+function CanvasEl({ el, selected, zoom, onSelect, onUpdate, onPushHistory }) {
+  const ref = useRef(null);
+  const drag = useRef(null);
+  const resize = useRef(null);
+
+  const startDrag = (e) => {
+    if (e.target.dataset.resize) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(el.id);
+    drag.current = { startX: e.clientX/zoom, startY: e.clientY/zoom, ox: el.x, oy: el.y };
+    const move = (e) => {
+      if (!drag.current) return;
+      const dx = e.clientX/zoom - drag.current.startX;
+      const dy = e.clientY/zoom - drag.current.startY;
+      onUpdate(el.id, { x: drag.current.ox+dx, y: drag.current.oy+dy }, false);
+    };
+    const up = () => {
+      drag.current = null;
+      onPushHistory();
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const startResize = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resize.current = { startX: e.clientX/zoom, startY: e.clientY/zoom, ow: el.w, oh: el.h };
+    const move = (e) => {
+      if (!resize.current) return;
+      const dw = e.clientX/zoom - resize.current.startX;
+      const dh = e.clientY/zoom - resize.current.startY;
+      onUpdate(el.id, { w: Math.max(20, resize.current.ow+dw), h: Math.max(20, resize.current.oh+dh) }, false);
+    };
+    const up = () => {
+      resize.current = null;
+      onPushHistory();
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const style = {
+    position:"absolute", left: el.x, top: el.y,
+    width: el.w, height: el.h,
+    opacity: el.opacity ?? 1,
+    cursor:"move", userSelect:"none",
+    outline: selected ? "2px solid #6c63ff" : "none",
+    outlineOffset: selected ? 2 : 0,
+    zIndex: selected ? 20 : 10,
+  };
+
+  return (
+    <div ref={ref} style={style} onMouseDown={startDrag}>
+      {el.type === "text" && (
+        <div style={{ width:"100%", height:"100%", color: el.color, fontSize: el.fontSize,
+          fontFamily: el.fontFamily, fontWeight: el.fontWeight||"800",
+          lineHeight:1.1, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>
+          {el.content}
+        </div>
+      )}
+      {el.type === "shape" && (
+        <div style={{ width:"100%", height:"100%" }}
+          dangerouslySetInnerHTML={{ __html: SHAPES[el.content]?.(el.color, el.w, el.h) || "" }}/>
+      )}
+      {el.type === "image" && (
+        <img src={el.content} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block" }}/>
+      )}
+      {selected && (
+        <div data-resize="br" onMouseDown={startResize}
+          style={{ position:"absolute", bottom:-5, right:-5, width:10, height:10,
+            background:"#6c63ff", border:"2px solid #fff", borderRadius:2, cursor:"se-resize", zIndex:30 }}/>
+      )}
+    </div>
+  );
+}
+
+// ─── AI MOCKUP PANEL ──────────────────────────────────────────────────────────
+function AiPanel({ elements, canvasW, canvasH }) {
+  const [prompt, setPrompt] = useState("");
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [aiShapePrompt, setAiShapePrompt] = useState("");
+  const [aiShapeLoading, setAiShapeLoading] = useState(false);
+  const [aiShapeResult, setAiShapeResult] = useState("");
+
+  const buildAutoPrompt = () => {
+    if (!elements.length) return "";
+    let desc = "Estampa com: ";
+    elements.forEach((el, i) => {
+      const content = el.type==="text" ? `texto '${el.content}'` : el.type==="shape" ? `forma ${el.content}` : "imagem";
+      desc += `${content} na cor ${el.color}`;
+      if (i < elements.length-1) desc += ", ";
+    });
+    return desc;
+  };
+
+  const generate = async () => {
+    if (!prompt.trim()) return;
+    setLoading(true); setError(""); setImage(null);
+    const finalPrompt = `High quality photorealistic mockup of a t-shirt. Design: ${prompt}. Professional studio lighting, neutral background, 8k.`;
+    // Simula geração (API key não configurada — placeholder visual)
+    await new Promise(r => setTimeout(r, 2000));
+    setError("Configure sua API key do Google Imagen para gerar imagens reais. Por enquanto, use o prompt gerado abaixo para testar em outras ferramentas.");
+    setLoading(false);
+  };
+
+  const generateShape = async () => {
+    if (!aiShapePrompt.trim()) return;
+    setAiShapeLoading(true); setAiShapeResult("");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          messages: [{
+            role:"user",
+            content: `Crie um SVG simples e criativo (viewBox="0 0 100 100", width="100", height="100") representando: "${aiShapePrompt}". 
+Retorne APENAS o código SVG, sem markdown, sem explicação. Use formas básicas (circle, rect, polygon, path, text). Máximo 20 elementos. Fill com cores vibrantes.`
+          }]
+        })
+      });
+      const data = await res.json();
+      const svg = data.content?.[0]?.text?.trim() || "";
+      setAiShapeResult(svg);
+    } catch(e) {
+      setAiShapeResult('<svg width="100" height="100" viewBox="0 0 100 100"><text x="10" y="50" fill="red" font-size="12">Erro ao gerar</text></svg>');
+    }
+    setAiShapeLoading(false);
+  };
+
+  return (
+    <div style={{ display:"flex", gap:16, height:"100%", padding:16, overflow:"auto" }}>
+      {/* Mockup Column */}
+      <div style={{ flex:1, minWidth:260, display:"flex", flexDirection:"column", gap:12,
+        background:"#1a1a1c", borderRadius:12, padding:16, border:"1px solid #2a2a2e" }}>
+        <div style={{ fontWeight:700, color:"#fff", fontSize:14 }}>🎨 Mockup IA</div>
+        <div style={{ fontSize:11, color:"#888" }}>Descreva a foto do mockup desejado</div>
+        <button onClick={() => setPrompt(buildAutoPrompt())}
+          style={{ ...btnStyle("#2a2a2e","#aaa"), fontSize:11 }}>
+          ✨ Usar design atual como base
+        </button>
+        <textarea value={prompt} onChange={e=>setPrompt(e.target.value)}
+          placeholder="Ex: Camiseta preta com modelo em estúdio, estampa neon laranja..."
+          style={{ ...inputStyle, height:100, resize:"none", padding:8, fontSize:12 }}/>
+        <button onClick={generate} disabled={loading||!prompt.trim()}
+          style={{ ...btnStyle("#6c63ff","#fff"), fontWeight:700, opacity:loading||!prompt.trim()?0.5:1 }}>
+          {loading ? "⏳ Gerando..." : "🚀 Gerar Mockup"}
+        </button>
+        {error && <div style={{ fontSize:11, color:"#f59e0b", background:"#1c1700", padding:8, borderRadius:6, lineHeight:1.5 }}>{error}</div>}
+        {image && <img src={image} alt="mockup" style={{ borderRadius:8, width:"100%", objectFit:"contain" }}/>}
+        {!image && !loading && (
+          <div style={{ flex:1, background:"#111", borderRadius:8, display:"flex", alignItems:"center",
+            justifyContent:"center", color:"#444", fontSize:12, minHeight:120 }}>
+            Visualização aparece aqui
+          </div>
+        )}
+      </div>
+
+      {/* AI Shape Column */}
+      <div style={{ flex:1, minWidth:260, display:"flex", flexDirection:"column", gap:12,
+        background:"#1a1a1c", borderRadius:12, padding:16, border:"1px solid #2a2a2e" }}>
+        <div style={{ fontWeight:700, color:"#fff", fontSize:14 }}>🤖 Gerar Forma com IA</div>
+        <div style={{ fontSize:11, color:"#888" }}>Descreva uma ilustração e a IA cria um SVG para você</div>
+        <input value={aiShapePrompt} onChange={e=>setAiShapePrompt(e.target.value)}
+          placeholder="Ex: Sol radiante, caveira estilizada, flor geométrica..."
+          style={{ ...inputStyle }}/>
+        <button onClick={generateShape} disabled={aiShapeLoading||!aiShapePrompt.trim()}
+          style={{ ...btnStyle("#6c63ff","#fff"), fontWeight:700, opacity:aiShapeLoading||!aiShapePrompt.trim()?0.5:1 }}>
+          {aiShapeLoading ? "⏳ Criando forma..." : "✏️ Gerar Forma SVG"}
+        </button>
+        {aiShapeResult && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ fontSize:11, color:"#4ade80" }}>✅ Forma gerada!</div>
+            <div style={{ background:"#fff", borderRadius:8, padding:8, display:"flex", justifyContent:"center" }}
+              dangerouslySetInnerHTML={{ __html: aiShapeResult }}/>
+            <div style={{ fontSize:10, color:"#666", wordBreak:"break-all", background:"#111",
+              padding:6, borderRadius:4, maxHeight:80, overflow:"auto" }}>
+              {aiShapeResult.substring(0,200)}...
+            </div>
+            <button onClick={() => {
+              // copy SVG to clipboard
+              navigator.clipboard?.writeText(aiShapeResult);
+            }} style={{ ...btnStyle("#2a2a2e","#aaa"), fontSize:11 }}>
+              📋 Copiar SVG
+            </button>
+          </div>
+        )}
+        {!aiShapeResult && !aiShapeLoading && (
+          <div style={{ flex:1, background:"#111", borderRadius:8, display:"flex", alignItems:"center",
+            justifyContent:"center", color:"#444", fontSize:12, minHeight:120, textAlign:"center", padding:16 }}>
+            A forma SVG gerada pela IA aparece aqui
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── STYLE HELPERS ────────────────────────────────────────────────────────────
+const inputStyle = {
+  width:"100%", height:28, padding:"0 8px", background:"#111",
+  border:"1px solid #2a2a2e", borderRadius:6, color:"#e8e8e8",
+  fontSize:12, outline:"none", boxSizing:"border-box"
+};
+const btnStyle = (bg, color) => ({
+  width:"100%", height:30, background:bg, border:`1px solid ${bg}`,
+  borderRadius:6, color, fontSize:12, cursor:"pointer", display:"flex",
+  alignItems:"center", justifyContent:"center", gap:6
+});
+const smallBtn = (bg="#2a2a2e", color="#aaa") => ({
+  height:24, padding:"0 8px", background:bg, border:`1px solid ${bg}`,
+  borderRadius:5, color, fontSize:11, fontWeight:600, cursor:"pointer",
+  display:"flex", alignItems:"center", gap:4
+});
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+export default function App() {
+  const [tab, setTab] = useState("editor"); // editor | templates | ai
+  const [elements, setElements] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [zoom, setZoom] = useState(0.9);
+  const [showGabarito, setShowGabarito] = useState(true);
+  const [printType, setPrintType] = useState("silk");
+  const [canvasW, setCanvasW] = useState(420);
+  const [canvasH, setCanvasH] = useState(594);
+  const [silkColors, setSilkColors] = useState(["#000000", "#ffffff", "#ff0000"]);
+  const [activeSilkColor, setActiveSilkColor] = useState(null);
+  const [history, setHistory] = useState([[]]);
+  const [histIdx, setHistIdx] = useState(0);
+  const [toast, setToast] = useState("");
+  const [format, setFormat] = useState("A3");
+  const [customW, setCustomW] = useState(420);
+  const [customH, setCustomH] = useState(594);
+  const fileRef = useRef(null);
+  const toastTimer = useRef(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2200);
+  };
+
+  const pushHistory = useCallback((els) => {
+    setHistory(h => {
+      const newH = [...h.slice(0, histIdx+1), els ?? elements];
+      setHistIdx(newH.length-1);
+      return newH;
+    });
+  }, [elements, histIdx]);
+
+  const undo = () => {
+    if (histIdx <= 0) return;
+    const prev = history[histIdx-1];
+    setElements(prev); setHistIdx(h => h-1); setSelectedId(null); showToast("Desfeito");
+  };
+  const redo = () => {
+    if (histIdx >= history.length-1) return;
+    const next = history[histIdx+1];
+    setElements(next); setHistIdx(h => h+1); setSelectedId(null); showToast("Refeito");
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey||e.metaKey) && e.key==="z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.ctrlKey||e.metaKey) && (e.key==="y"||(e.key==="z"&&e.shiftKey))) { e.preventDefault(); redo(); }
+      if ((e.key==="Delete"||e.key==="Backspace") && selectedId && document.activeElement===document.body) {
+        removeEl(selectedId);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
+  const addEl = (el) => {
+    const newEls = [...elements, el];
+    setElements(newEls);
+    setSelectedId(el.id);
+    pushHistory(newEls);
+  };
+
+  const updateEl = (id, changes, hist=true) => {
+    setElements(prev => {
+      const next = prev.map(e => e.id===id ? {...e,...changes} : e);
+      if (hist) {
+        setHistory(h => {
+          const nh = [...h.slice(0, histIdx+1), next];
+          setHistIdx(nh.length-1);
+          return nh;
+        });
+      }
+      return next;
+    });
+  };
+
+  const removeEl = (id) => {
+    const next = elements.filter(e=>e.id!==id);
+    setElements(next);
+    if (selectedId===id) setSelectedId(null);
+    pushHistory(next);
+    showToast("Elemento removido");
+  };
+
+  const moveLayer = (id, dir) => {
+    const idx = elements.findIndex(e=>e.id===id);
+    if (idx<0) return;
+    const arr = [...elements];
+    const ni = dir==="up" ? idx+1 : idx-1;
+    if (ni<0||ni>=arr.length) return;
+    [arr[idx],arr[ni]] = [arr[ni],arr[idx]];
+    setElements(arr);
+    pushHistory(arr);
+  };
+
+  const addText = () => addEl({ id:uid(), type:"text", content:"NOVO TEXTO", x:canvasW/2-80, y:canvasH/2-20, w:180, h:50, color:"#1a1a1c", fontSize:36, fontFamily:"Arial Black", fontWeight:"800", opacity:1, silkColorIdx:0 });
+  const addShape = (shape) => addEl({ id:uid(), type:"shape", content:shape, x:canvasW/2-50, y:canvasH/2-50, w:100, h:100, color:"#1a1a1c", opacity:1, silkColorIdx:0 });
+  const addFromTemplate = (text) => {
+    setElements([]);
+    addEl({ id:uid(), type:"text", content:text.toUpperCase(), x:canvasW/2-100, y:canvasH/2-25, w:220, h:60, color:"#1a1a1c", fontSize:40, fontFamily:"Arial Black", fontWeight:"800", opacity:1, silkColorIdx:0 });
+    setTab("editor");
+  };
+
+  const handleImage = (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.width/img.height;
+        const mw = Math.min(200, canvasW*0.4);
+        addEl({ id:uid(), type:"image", content:ev.target.result, x:canvasW/2-mw/2, y:canvasH/2-(mw/ratio)/2, w:mw, h:mw/ratio, opacity:1, silkColorIdx:0 });
+        showToast("Imagem adicionada");
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value="";
+  };
+
+  const changeFormat = (f) => {
+    setFormat(f);
+    const fmt = FORMATS.find(x=>x.id===f);
+    if (fmt) { setCanvasW(fmt.w); setCanvasH(fmt.h); }
+  };
+
+  const fitZoom = () => {
+    const area = document.getElementById("canvas-area");
+    if (!area) return;
+    const zw = (area.clientWidth - 64) / canvasW;
+    const zh = (area.clientHeight - 64) / canvasH;
+    setZoom(Math.min(zw, zh, 2));
+  };
+
+  useEffect(() => { setTimeout(fitZoom, 100); }, []);
+
+  const selectedEl = elements.find(e=>e.id===selectedId);
+  const visibleEls = printType==="silk" && activeSilkColor!==null
+    ? elements.filter(e=>e.silkColorIdx===activeSilkColor)
+    : elements;
+
+  const exportPDF = (fotolito=false) => {
+    const win = window.open("","","width=900,height=700");
+    const elHtml = elements.map(el => {
+      const color = fotolito ? "#000000" : el.color;
+      if (el.type==="text") return `<div style="position:absolute;top:0;left:0;transform:translate(${el.x}px,${el.y}px);color:${color};font-size:${el.fontSize}px;font-family:${el.fontFamily};font-weight:800;width:${el.w}px;height:${el.h}px;line-height:1.1;word-break:break-word;white-space:pre-wrap">${el.content}</div>`;
+      if (el.type==="shape") return `<div style="position:absolute;top:0;left:0;transform:translate(${el.x}px,${el.y}px);width:${el.w}px;height:${el.h}px">${SHAPES[el.content]?.(color,el.w,el.h)||""}</div>`;
+      if (el.type==="image") return `<div style="position:absolute;top:0;left:0;transform:translate(${el.x}px,${el.y}px);width:${el.w}px;height:${el.h}px"><img src="${el.content}" style="width:100%;height:100%;object-fit:contain"></div>`;
+      return "";
+    }).join("");
+    win.document.write(`<!DOCTYPE html><html><head><style>@page{size:${canvasW}px ${canvasH}px;margin:0}body{margin:0;background:white;-webkit-print-color-adjust:exact}.c{position:relative;width:${canvasW}px;height:${canvasH}px;background:white;overflow:hidden}</style></head><body><div class="c">${elHtml}</div><script>window.onload=()=>setTimeout(()=>{window.print();window.close()},500)<\/script></body></html>`);
+    win.document.close();
+    showToast(fotolito ? "Fotolito gerado!" : "PDF exportado!");
+  };
+
+  const saveProject = () => {
+    localStorage.setItem("silkce", JSON.stringify({ elements, canvasW, canvasH, silkColors, printType }));
+    showToast("Projeto salvo!");
+  };
+  const loadProject = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem("silkce"));
+      if (!d) return;
+      setElements(d.elements||[]);
+      setSilkColors(d.silkColors||["#000000","#ffffff"]);
+      setPrintType(d.printType||"silk");
+      if (d.canvasW) { setCanvasW(d.canvasW); setCanvasH(d.canvasH); }
+      showToast("Projeto carregado!");
+    } catch(e) {}
+  };
+
+  const alignEl = (pos) => {
+    if (!selectedEl) return;
+    let nx=selectedEl.x, ny=selectedEl.y;
+    if (pos.includes("l")) nx=0; else if (pos.includes("r")) nx=canvasW-selectedEl.w; else nx=(canvasW-selectedEl.w)/2;
+    if (pos.includes("t")) ny=0; else if (pos.includes("b")) ny=canvasH-selectedEl.h; else ny=(canvasH-selectedEl.h)/2;
+    updateEl(selectedId, {x:nx,y:ny});
+  };
+
+  // ── Styles ──
+  const S = {
+    root: { display:"flex", flexDirection:"column", height:"100vh", background:"#0f0f10", color:"#e8e8e8", fontFamily:"system-ui,sans-serif", fontSize:13, overflow:"hidden" },
+    topbar: { height:44, background:"#1a1a1c", borderBottom:"1px solid #2a2a2e", display:"flex", alignItems:"center", padding:"0 12px", gap:8, flexShrink:0, zIndex:100 },
+    logo: { fontWeight:900, fontSize:14, color:"#fff", letterSpacing:"-0.5px", marginRight:4 },
+    sep: { width:1, height:20, background:"#2a2a2e", margin:"0 4px" },
+    tbBtn: (active=false, danger=false) => ({
+      height:28, padding:"0 10px", borderRadius:6,
+      border:`1px solid ${active?"#6c63ff":danger?"#ff4444":"#2a2a2e"}`,
+      background: active?"#6c63ff":danger?"transparent":"transparent",
+      color: active?"#fff":danger?"#ff4444":"#aaa",
+      fontSize:11, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap"
+    }),
+    tbBtnPrimary: { height:28, padding:"0 12px", borderRadius:6, border:"1px solid #6c63ff", background:"#6c63ff", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 },
+    workspace: { flex:1, display:"flex", overflow:"hidden" },
+    panelL: { width:210, background:"#1a1a1c", borderRight:"1px solid #2a2a2e", display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" },
+    panelR: { width:196, background:"#1a1a1c", borderLeft:"1px solid #2a2a2e", overflowY:"auto", flexShrink:0 },
+    sec: { padding:"10px 12px", borderBottom:"1px solid #2a2a2e" },
+    secTitle: { fontSize:10, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", color:"#555", marginBottom:8 },
+    canvasArea: { flex:1, position:"relative", overflow:"hidden", background:"#0f0f10", display:"flex", alignItems:"center", justifyContent:"center" },
+    zoomBar: { position:"absolute", bottom:12, left:"50%", transform:"translateX(-50%)", background:"#1a1a1c", border:"1px solid #2a2a2e", borderRadius:20, display:"flex", alignItems:"center", gap:4, padding:"4px 10px", zIndex:50 },
+  };
+
+  const TabBtn = ({ id, label }) => (
+    <button onClick={()=>setTab(id)} style={{ ...S.tbBtn(tab===id), padding:"0 12px" }}>{label}</button>
+  );
+
+  const PropRow = ({ label, children }) => (
+    <div style={{ marginBottom:10 }}>
+      <div style={{ fontSize:10, fontWeight:700, letterSpacing:".06em", textTransform:"uppercase", color:"#555", marginBottom:4 }}>{label}</div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={S.root}>
+      {/* TOP BAR */}
+      <div style={S.topbar}>
+        <div style={S.logo}>SILK<span style={{color:"#6c63ff"}}>CE</span></div>
+        <div style={S.sep}/>
+        <TabBtn id="editor" label="✏️ Editor"/>
+        <TabBtn id="templates" label="📁 Templates"/>
+        <TabBtn id="ai" label="🤖 IA"/>
+        <div style={S.sep}/>
+        <button style={S.tbBtn()} onClick={undo} title="Ctrl+Z">↩ Desfazer</button>
+        <button style={S.tbBtn()} onClick={redo} title="Ctrl+Y">↪ Refazer</button>
+        <div style={S.sep}/>
+        <button style={S.tbBtn(showGabarito)} onClick={()=>setShowGabarito(v=>!v)}>⊕ Gabarito</button>
+        <div style={S.sep}/>
+        <select value={printType} onChange={e=>{ setPrintType(e.target.value); setActiveSilkColor(null); }}
+          style={{ ...inputStyle, width:"auto", height:28 }}>
+          {PRINT_TYPES.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <select value={format} onChange={e=>changeFormat(e.target.value)}
+          style={{ ...inputStyle, width:"auto", height:28 }}>
+          {FORMATS.map(f=><option key={f.id} value={f.id}>{f.label} ({f.w}×{f.h}px)</option>)}
+          <option value="custom">Personalizado</option>
+        </select>
+        {format==="custom" && <>
+          <input type="number" value={customW} onChange={e=>{setCustomW(+e.target.value);setCanvasW(+e.target.value);}} style={{...inputStyle,width:64,height:28}}/>
+          <span style={{color:"#555"}}>×</span>
+          <input type="number" value={customH} onChange={e=>{setCustomH(+e.target.value);setCanvasH(+e.target.value);}} style={{...inputStyle,width:64,height:28}}/>
+        </>}
+        <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+          <button style={S.tbBtn()} onClick={loadProject}>📂 Carregar</button>
+          <button style={S.tbBtn()} onClick={saveProject}>💾 Salvar</button>
+          <button style={S.tbBtn()} onClick={()=>exportPDF(false)}>⬇ PDF</button>
+          <button style={S.tbBtnPrimary} onClick={()=>exportPDF(true)}>🖨 Fotolito</button>
+        </div>
+      </div>
+
+      {/* WORKSPACE */}
+      <div style={S.workspace}>
+        {/* LEFT PANEL */}
+        {(tab==="editor"||tab==="templates") && (
+          <div style={S.panelL}>
+            {tab==="editor" && <>
+              <div style={S.sec}>
+                <div style={S.secTitle}>Ferramentas</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                  {[
+                    {label:"T Texto", fn:addText},
+                    {label:"📷 Imagem", fn:()=>fileRef.current?.click()},
+                    {label:"♥ Coração", fn:()=>addShape("heart")},
+                    {label:"★ Estrela", fn:()=>addShape("star")},
+                    {label:"● Círculo", fn:()=>addShape("circle")},
+                    {label:"■ Retângulo", fn:()=>addShape("rect")},
+                    {label:"▲ Triângulo", fn:()=>addShape("triangle")},
+                    {label:"◆ Diamante", fn:()=>addShape("diamond")},
+                  ].map(t=>(
+                    <button key={t.label} onClick={t.fn}
+                      style={{padding:"7px 4px",borderRadius:6,border:"1px solid #2a2a2e",background:"#111",color:"#aaa",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"center"}}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <input type="file" ref={fileRef} accept="image/*" style={{display:"none"}} onChange={handleImage}/>
+              </div>
+
+              {printType==="silk" && (
+                <div style={S.sec}>
+                  <div style={S.secTitle}>Separação de Cores Silk</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
+                    <button onClick={()=>setActiveSilkColor(null)}
+                      style={{...smallBtn(activeSilkColor===null?"#6c63ff":"#2a2a2e",activeSilkColor===null?"#fff":"#888"),height:22,fontSize:10}}>
+                      Todas
+                    </button>
+                    {silkColors.map((c,i)=>(
+                      <button key={i} onClick={()=>setActiveSilkColor(activeSilkColor===i?null:i)}
+                        style={{width:22,height:22,borderRadius:4,border:`2px solid ${activeSilkColor===i?"#6c63ff":c}`,background:c,cursor:"pointer"}}
+                        title={`Cor ${i+1}`}/>
+                    ))}
+                    <input type="color" id="new-silk-c" defaultValue="#ff6600" style={{width:22,height:22,borderRadius:4,border:"1px dashed #444",background:"#111",cursor:"pointer",padding:1}}/>
+                    <button onClick={()=>{const c=document.getElementById("new-silk-c").value;setSilkColors(p=>[...p,c]);showToast("Cor adicionada");}}
+                      style={{...smallBtn(),width:22,height:22,padding:0,justifyContent:"center",fontSize:14}}>+</button>
+                  </div>
+                  <div style={{fontSize:10,color:"#555"}}>Clique numa cor para filtrar o canvas</div>
+                </div>
+              )}
+
+              <div style={{...S.sec,paddingBottom:4,flexShrink:0}}>
+                <div style={S.secTitle}>Camadas ({elements.length})</div>
+              </div>
+              <div style={{flex:1,overflowY:"auto",padding:6}}>
+                {elements.length===0 && <div style={{padding:16,textAlign:"center",color:"#555",fontSize:11,lineHeight:1.7}}>Adicione elementos para começar</div>}
+                {[...elements].reverse().map(el=>(
+                  <div key={el.id} onClick={()=>setSelectedId(el.id)}
+                    style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${el.id===selectedId?"#6c63ff":"transparent"}`,background:el.id===selectedId?"#1a1a2e":"transparent",display:"flex",alignItems:"center",gap:6,cursor:"pointer",marginBottom:2}}>
+                    <div style={{width:18,height:18,borderRadius:3,background:el.color||"#2a2a2e",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:700}}>
+                      {el.type==="text"?"T":el.type==="image"?"I":"S"}
+                    </div>
+                    <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:11,color:"#ccc"}}>
+                      {el.type==="text"?el.content.substring(0,14):el.type==="image"?"Imagem":el.content}
+                    </span>
+                    <button onClick={e=>{e.stopPropagation();moveLayer(el.id,"up");}} style={{...smallBtn(),padding:"0 3px",height:18,fontSize:10}}>↑</button>
+                    <button onClick={e=>{e.stopPropagation();moveLayer(el.id,"down");}} style={{...smallBtn(),padding:"0 3px",height:18,fontSize:10}}>↓</button>
+                    <button onClick={e=>{e.stopPropagation();removeEl(el.id);}} style={{...smallBtn("#0d0d0d","#ff4444"),padding:"0 3px",height:18,fontSize:12}}>×</button>
+                  </div>
+                ))}
+              </div>
+            </>}
+
+            {tab==="templates" && (
+              <div style={{flex:1,overflowY:"auto",padding:12}}>
+                {CATEGORIES.map(cat=>(
+                  <div key={cat.name} style={{marginBottom:16}}>
+                    <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",color:"#555",marginBottom:6,letterSpacing:".08em"}}>{cat.name}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                      {cat.items.map(item=>(
+                        <button key={item} onClick={()=>addFromTemplate(item)}
+                          style={{padding:"7px 6px",background:"#111",border:"1px solid #2a2a2e",borderRadius:8,color:"#bbb",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left"}}>
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CANVAS / AI */}
+        <div id="canvas-area" style={S.canvasArea}>
+          {tab==="ai" ? (
+            <div style={{width:"100%",height:"100%",overflow:"auto"}}>
+              <AiPanel elements={elements} canvasW={canvasW} canvasH={canvasH}/>
+            </div>
+          ) : (
+            <>
+              <div style={{ transform:`scale(${zoom})`, transformOrigin:"center center", flexShrink:0, position:"relative" }}>
+                <div style={{ width:canvasW, height:canvasH, background:"#fff", boxShadow:"0 0 0 1px #3a3a3e, 0 8px 40px rgba(0,0,0,.7)", position:"relative", overflow:"hidden" }}
+                  onMouseDown={e=>{ if(e.target===e.currentTarget) setSelectedId(null); }}>
+                  {showGabarito && <GabaritoOverlay w={canvasW} h={canvasH}/>}
+                  <div style={{position:"absolute",inset:0,zIndex:5}}>
+                    {visibleEls.map(el=>(
+                      <CanvasEl key={el.id} el={el} selected={el.id===selectedId} zoom={zoom}
+                        onSelect={setSelectedId}
+                        onUpdate={updateEl}
+                        onPushHistory={()=>pushHistory(elements)}/>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={S.zoomBar}>
+                <button style={{...smallBtn(),width:22,height:22,padding:0,justifyContent:"center",fontSize:16,borderRadius:"50%"}} onClick={()=>setZoom(z=>Math.max(0.1,z-0.1))}>−</button>
+                <span style={{fontSize:11,fontWeight:700,color:"#888",minWidth:36,textAlign:"center"}}>{Math.round(zoom*100)}%</span>
+                <button style={{...smallBtn(),width:22,height:22,padding:0,justifyContent:"center",fontSize:16,borderRadius:"50%"}} onClick={()=>setZoom(z=>Math.min(4,z+0.1))}>+</button>
+                <button style={{...smallBtn(),height:22,padding:"0 8px",fontSize:10,fontWeight:700,borderRadius:6}} onClick={fitZoom}>FIT</button>
+              </div>
+
+              {elements.length===0 && (
+                <div style={{position:"absolute",bottom:60,left:"50%",transform:"translateX(-50%)",background:"rgba(26,26,28,.95)",border:"1px solid #2a2a2e",borderRadius:20,padding:"8px 16px",fontSize:12,color:"#888",pointerEvents:"none",whiteSpace:"nowrap"}}>
+                  ← Use as ferramentas para adicionar elementos
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* RIGHT PANEL - Properties */}
+        {tab==="editor" && (
+          <div style={S.panelR}>
+            <div style={{padding:"10px 12px",borderBottom:"1px solid #2a2a2e",fontSize:10,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:"#555"}}>Propriedades</div>
+            {!selectedEl ? (
+              <div style={{padding:16,textAlign:"center",color:"#555",fontSize:11,lineHeight:1.8}}>Selecione um<br/>elemento para editar</div>
+            ) : (
+              <div style={{padding:"10px 12px"}}>
+                {selectedEl.type==="text" && <>
+                  <PropRow label="Texto">
+                    <textarea value={selectedEl.content} onChange={e=>updateEl(selectedId,{content:e.target.value})}
+                      style={{...inputStyle,height:56,padding:"4px 8px",resize:"none"}}/>
+                  </PropRow>
+                  <PropRow label="Tamanho fonte">
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <input type="range" min={6} max={300} value={selectedEl.fontSize}
+                        onChange={e=>updateEl(selectedId,{fontSize:+e.target.value},false)}
+                        onMouseUp={()=>pushHistory(elements)}
+                        style={{flex:1,accentColor:"#6c63ff"}}/>
+                      <input type="number" value={selectedEl.fontSize}
+                        onChange={e=>updateEl(selectedId,{fontSize:+e.target.value})}
+                        style={{...inputStyle,width:48,textAlign:"center"}}/>
+                    </div>
+                  </PropRow>
+                  <PropRow label="Fonte">
+                    <select value={selectedEl.fontFamily} onChange={e=>updateEl(selectedId,{fontFamily:e.target.value})} style={{...inputStyle,width:"100%"}}>
+                      {FONTS.map(f=><option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </PropRow>
+                </>}
+
+                <PropRow label="Cor">
+                  <input type="color" value={selectedEl.color} onChange={e=>updateEl(selectedId,{color:e.target.value})}
+                    style={{...inputStyle,height:32,padding:2,cursor:"pointer"}}/>
+                </PropRow>
+
+                <PropRow label="Opacidade">
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input type="range" min={0} max={1} step={0.01} value={selectedEl.opacity??1}
+                      onChange={e=>updateEl(selectedId,{opacity:+e.target.value},false)}
+                      onMouseUp={()=>pushHistory(elements)}
+                      style={{flex:1,accentColor:"#6c63ff"}}/>
+                    <span style={{fontSize:11,color:"#888",minWidth:28}}>{Math.round((selectedEl.opacity??1)*100)}%</span>
+                  </div>
+                </PropRow>
+
+                <PropRow label="Posição X / Y">
+                  <div style={{display:"flex",gap:6}}>
+                    <input type="number" value={Math.round(selectedEl.x)} onChange={e=>updateEl(selectedId,{x:+e.target.value})} style={{...inputStyle,flex:1}} placeholder="X"/>
+                    <input type="number" value={Math.round(selectedEl.y)} onChange={e=>updateEl(selectedId,{y:+e.target.value})} style={{...inputStyle,flex:1}} placeholder="Y"/>
+                  </div>
+                </PropRow>
+
+                <PropRow label="Largura / Altura">
+                  <div style={{display:"flex",gap:6}}>
+                    <input type="number" value={Math.round(selectedEl.w)} onChange={e=>updateEl(selectedId,{w:+e.target.value})} style={{...inputStyle,flex:1}} placeholder="W"/>
+                    <input type="number" value={Math.round(selectedEl.h)} onChange={e=>updateEl(selectedId,{h:+e.target.value})} style={{...inputStyle,flex:1}} placeholder="H"/>
+                  </div>
+                </PropRow>
+
+                {printType==="silk" && (
+                  <PropRow label="Cor Silk (separação)">
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {silkColors.map((c,i)=>(
+                        <div key={i} onClick={()=>updateEl(selectedId,{silkColorIdx:i})}
+                          style={{width:24,height:24,borderRadius:4,background:c,border:`2px solid ${selectedEl.silkColorIdx===i?"#6c63ff":c}`,cursor:"pointer"}}
+                          title={`Cor ${i+1}`}/>
+                      ))}
+                    </div>
+                  </PropRow>
+                )}
+
+                <PropRow label="Alinhar no canvas">
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:3}}>
+                    {[["tl","↖"],["tc","↑"],["tr","↗"],["ml","←"],["mc","⊙"],["mr","→"],["bl","↙"],["bc","↓"],["br","↘"]].map(([pos,icon])=>(
+                      <button key={pos} onClick={()=>alignEl(pos)}
+                        style={{height:24,background:"#111",border:"1px solid #2a2a2e",borderRadius:4,color:"#888",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                </PropRow>
+
+                <button onClick={()=>removeEl(selectedId)}
+                  style={{...btnStyle("#1a0000","#ff4444"),border:"1px solid #ff3333",marginTop:4,width:"100%",height:28}}>
+                  🗑 Remover elemento
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{position:"fixed",bottom:60,left:"50%",transform:"translateX(-50%)",background:"#1a1a1c",border:"1px solid #2a2a2e",borderRadius:8,padding:"8px 16px",fontSize:12,color:"#ccc",zIndex:9999,pointerEvents:"none",boxShadow:"0 4px 20px rgba(0,0,0,.4)"}}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}

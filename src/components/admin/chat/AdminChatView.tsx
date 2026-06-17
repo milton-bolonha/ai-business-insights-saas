@@ -612,7 +612,7 @@ export function AdminChatView({
                         exit={{ scale: 0, opacity: 0, y: 20 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => onSwitchToChat?.()}
+                        onClick={() => window.dispatchEvent(new CustomEvent('start-voice-chat'))}
                         className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-500/30 hover:bg-blue-500 transition-colors cursor-pointer"
                     >
                         <Mic className="h-6 w-6" />

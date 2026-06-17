@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { useTranslation } from "@/lib/hooks/useTranslation";
 
-export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey" | "blog" | "os_system";
+export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey" | "blog" | "os_system" | "io_editais" | "io_estampas";
 
 interface AdminNavigationProps {
     activeTab: NavTab;
@@ -89,19 +89,20 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
     const isBlog = templateId === "template_ai_blog";
     const isOSSystem = templateId === "template_os_system";
     const isEditais = templateId === "template_io_editais";
+    const isEstampas = templateId === "template_io_estampas";
 
     // Theme Colors
     const theme = {
-        primary: isEditais ? "slate" : isOSSystem ? "amber" : isTrade || isSurvey ? "emerald" : isWriters ? "pink" : isFurniture ? "sky" : isBlog ? "violet" : "blue",
-        colorCode: isEditais ? "#475569" : isOSSystem ? "#f59e0b" : isTrade || isSurvey ? "#10b981" : isWriters ? "#e11d48" : isFurniture ? "#0ea5e9" : isBlog ? "#8b5cf6" : "#2563eb",
-        bgLight: isEditais ? "bg-slate-50" : isOSSystem ? "bg-amber-50" : isTrade || isSurvey ? "bg-emerald-50" : isWriters ? "bg-pink-50" : isFurniture ? "bg-sky-50" : isBlog ? "bg-violet-50" : "bg-blue-50",
-        textPrimary: isEditais ? "text-slate-600" : isOSSystem ? "text-amber-600" : isTrade || isSurvey ? "text-emerald-600" : isWriters ? "text-pink-600" : isFurniture ? "text-sky-600" : isBlog ? "text-violet-600" : "text-blue-600",
-        textHover: isEditais ? "hover:text-slate-400" : isOSSystem ? "hover:text-amber-400" : isTrade || isSurvey ? "hover:text-emerald-400" : isWriters ? "hover:text-pink-400" : isFurniture ? "hover:text-sky-400" : isBlog ? "hover:text-violet-400" : "hover:text-blue-400",
-        borderActive: isEditais ? "bg-slate-600" : isOSSystem ? "bg-amber-600" : isTrade || isSurvey ? "bg-emerald-600" : isWriters ? "bg-pink-600" : isFurniture ? "bg-sky-600" : isBlog ? "bg-violet-600" : "bg-blue-600",
-        shadow: isEditais ? "shadow-slate-200" : isOSSystem ? "shadow-amber-200" : isTrade || isSurvey ? "shadow-emerald-200" : isWriters ? "shadow-pink-200" : isFurniture ? "shadow-sky-200" : isBlog ? "shadow-violet-200" : "shadow-blue-200",
+        primary: isEstampas ? "rose" : isEditais ? "slate" : isOSSystem ? "amber" : isTrade || isSurvey ? "emerald" : isWriters ? "pink" : isFurniture ? "sky" : isBlog ? "violet" : "blue",
+        colorCode: isEstampas ? "#f43f5e" : isEditais ? "#475569" : isOSSystem ? "#f59e0b" : isTrade || isSurvey ? "#10b981" : isWriters ? "#e11d48" : isFurniture ? "#0ea5e9" : isBlog ? "#8b5cf6" : "#2563eb",
+        bgLight: isEstampas ? "bg-rose-50" : isEditais ? "bg-slate-50" : isOSSystem ? "bg-amber-50" : isTrade || isSurvey ? "bg-emerald-50" : isWriters ? "bg-pink-50" : isFurniture ? "bg-sky-50" : isBlog ? "bg-violet-50" : "bg-blue-50",
+        textPrimary: isEstampas ? "text-rose-600" : isEditais ? "text-slate-600" : isOSSystem ? "text-amber-600" : isTrade || isSurvey ? "text-emerald-600" : isWriters ? "text-pink-600" : isFurniture ? "text-sky-600" : isBlog ? "text-violet-600" : "text-blue-600",
+        textHover: isEstampas ? "hover:text-rose-400" : isEditais ? "hover:text-slate-400" : isOSSystem ? "hover:text-amber-400" : isTrade || isSurvey ? "hover:text-emerald-400" : isWriters ? "hover:text-pink-400" : isFurniture ? "hover:text-sky-400" : isBlog ? "hover:text-violet-400" : "hover:text-blue-400",
+        borderActive: isEstampas ? "bg-rose-600" : isEditais ? "bg-slate-600" : isOSSystem ? "bg-amber-600" : isTrade || isSurvey ? "bg-emerald-600" : isWriters ? "bg-pink-600" : isFurniture ? "bg-sky-600" : isBlog ? "bg-violet-600" : "bg-blue-600",
+        shadow: isEstampas ? "shadow-rose-200" : isEditais ? "shadow-slate-200" : isOSSystem ? "shadow-amber-200" : isTrade || isSurvey ? "shadow-emerald-200" : isWriters ? "shadow-pink-200" : isFurniture ? "shadow-sky-200" : isBlog ? "shadow-violet-200" : "shadow-blue-200",
     };
 
-    const LogoIcon = isEditais ? Gavel : isOSSystem ? Wrench : isTrade ? FaGavel : isWriters ? BookOpen : isFurniture ? ShoppingBag : isBlog ? Sparkles : PieChart;
+    const LogoIcon = isEstampas ? Shapes : isEditais ? Gavel : isOSSystem ? Wrench : isTrade ? FaGavel : isWriters ? BookOpen : isFurniture ? ShoppingBag : isBlog ? Sparkles : PieChart;
 
     const isMentoring = templateId === "template_io_mentoring";
     const isMentee = isMentoring && currentUserRole === "mentee";
@@ -113,6 +114,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
         ...(isBlog ? [{ id: "blog", label: "Blog Engine", icon: Sparkles }] : []),
         ...(isOSSystem ? [{ id: "os_system", label: "OS System", icon: Wrench }] : []),
         ...(isEditais ? [{ id: "io_editais", label: "Editais", icon: Gavel }] : []),
+        ...(isEstampas ? [{ id: "io_estampas", label: "Estampas", icon: Shapes }] : []),
 
         ...(isFurniture ? [
             { id: "store", label: t("admin.navigation.tabs.store"), icon: ShoppingBag },
@@ -136,6 +138,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
                  : isFurniture ? t("admin.navigation.tabs.mentoring_insights") 
                  : isSurvey ? t("admin.navigation.tabs.analysis") 
                  : isEditais ? "Análise"
+                 : isEstampas ? "Editor"
                  : t("admin.navigation.tabs.dashboard"),
             icon: LayoutGrid
         }] : []),

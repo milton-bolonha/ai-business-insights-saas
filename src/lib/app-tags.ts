@@ -1,6 +1,6 @@
 import React from "react";
 
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system" | "io_editais";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system" | "io_editais" | "io_estampas";
 
 export interface AppTag {
   id: AppTagId;
@@ -74,6 +74,12 @@ export const APP_TAGS: AppTag[] = [
     label: "Licitações & Editais",
     labelKey: "appTags.io_editais.label",
     color: "#0284c7", // Sky-600
+  },
+  {
+    id: "io_estampas",
+    label: "I/O Estampas",
+    labelKey: "appTags.io_estampas.label",
+    color: "#f43f5e", // Rose-500
   },
 ];
 
@@ -426,5 +432,23 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
     appTagId: "io_editais",
     placeholder: "Ex: Serviços de TI, Mobiliário...",
     placeholderKey: "attributes.subscription_purpose.placeholder",
+  },
+
+  // I/O Estampas Attributes
+  {
+    id: "estampas_store_name",
+    label: "Nome da Loja",
+    labelKey: "attributes.estampas_store_name.label",
+    appTagId: "io_estampas",
+    placeholder: "Qual o nome da sua loja de estampas?",
+    placeholderKey: "attributes.estampas_store_name.placeholder",
+  },
+  {
+    id: "estampas_niche",
+    label: "Nicho de Estampas",
+    labelKey: "attributes.estampas_niche.label",
+    appTagId: "io_estampas",
+    placeholder: "Ex: Geek, Minimalista, Rock...",
+    placeholderKey: "attributes.estampas_niche.placeholder",
   },
 ];

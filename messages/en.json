@@ -94,9 +94,21 @@
     "io_editais": {
       "label": "Tenders & Bidding",
       "subtitle": "AI-powered analysis and bidding proposals for tenders."
+    },
+    "io_estampas": {
+      "label": "I/O T-Shirts",
+      "subtitle": "Create and manage exclusive designs for your store."
     }
   },
   "attributes": {
+    "estampas_store_name": {
+      "label": "Store Name",
+      "placeholder": "e.g., John's T-Shirts"
+    },
+    "estampas_niche": {
+      "label": "T-Shirt Niche",
+      "placeholder": "e.g., Geek, Rock, Minimalist..."
+    },
     "edital_name": {
       "label": "Tender Name",
       "placeholder": "e.g., Electronic Auction 042/2025"

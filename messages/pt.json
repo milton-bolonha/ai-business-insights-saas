@@ -94,9 +94,21 @@
     "io_editais": {
       "label": "Licitações & Editais",
       "subtitle": "Análise de editais e montagem de propostas com IA."
+    },
+    "io_estampas": {
+      "label": "I/O Estampas",
+      "subtitle": "Crie e gerencie estampas exclusivas para sua loja virtual."
     }
   },
   "attributes": {
+    "estampas_store_name": {
+      "label": "Nome da Loja",
+      "placeholder": "Ex: Loja do João Estampas"
+    },
+    "estampas_niche": {
+      "label": "Nicho de Estampas",
+      "placeholder": "Ex: Geek, Rock, Minimalista..."
+    },
     "edital_name": {
       "label": "Nome do Edital",
       "placeholder": "Ex: Pregão Eletrônico 042/2025"
