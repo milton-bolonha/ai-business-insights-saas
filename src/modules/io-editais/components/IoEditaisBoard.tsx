@@ -40,7 +40,7 @@ if (typeof window !== "undefined") {
 function ChecklistTab({ activeEdital }: { activeEdital: string }) {
   const workspace = useCurrentWorkspace();
   const dashboard = useCurrentDashboard();
-  const actions = useWorkspaceActions();
+  const content = useContent();
   const { push } = useToast();
 
   const ITEMS = [
@@ -62,13 +62,40 @@ function ChecklistTab({ activeEdital }: { activeEdital: string }) {
     { key:"penalidades", label:"Compreendo as penalidades do contrato", grupo:"Riscos", desc:"Multas, suspensões, rescisão contratual" },
   ];
 
-  const grupos = [...new Set(ITEMS.map(i=>i.grupo))];
+  const [dynamicItems, setDynamicItems] = useState<{key:string, label:string, grupo:string, desc:string}[]>([]);
+
+  useEffect(() => {
+    const overviewTile = dashboard?.tiles?.find(
+      t => t.metadata?.fileName === activeEdital && (t.title.includes("Visão Geral") || t.metadata?.source === "io_editais_upload")
+    );
+    if (overviewTile?.content) {
+      const parts = overviewTile.content.split("[CHECKLIST_EXTRA]");
+      if (parts.length > 1) {
+        const extraText = parts[1].split("[")[0];
+        const lines = extraText.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('*'));
+        const items = lines.map((l, i) => {
+          const text = l.replace(/^[-*]+/, '').trim().replace(/\*\*/g, '');
+          const label = text.split(':')[0] || text.substring(0, 60);
+          return {
+            key: `extra_${i}`,
+            label: label,
+            grupo: "Específicos do Edital (IA)",
+            desc: text
+          };
+        });
+        setDynamicItems(items);
+      }
+    }
+  }, [dashboard?.tiles, activeEdital]);
+
+  const allItems = [...ITEMS, ...dynamicItems];
+  const grupos = [...new Set(allItems.map(i=>i.grupo))];
   const [checks, setChecks] = useState<Record<string,boolean>>({});
 
   // Carregar checklist salvo do dashboard.notes
   useEffect(() => {
     if (!dashboard?.notes) return;
-    const note = dashboard.notes.find(n => (n as any).type === "edital_checklist" && n.title === activeEdital);
+    const note = dashboard.notes.find(n => n.category === "edital_checklist" && n.title === activeEdital);
     if (note && note.content) {
       try { setChecks(JSON.parse(note.content)); } catch(e) {}
     }
@@ -76,19 +103,17 @@ function ChecklistTab({ activeEdital }: { activeEdital: string }) {
 
   const saveChecks = (newChecks: Record<string,boolean>) => {
     if (!workspace || !dashboard) return;
-    const note = dashboard.notes?.find(n => (n as any).type === "edital_checklist" && n.title === activeEdital);
+    const note = dashboard.notes?.find(n => n.category === "edital_checklist" && n.title === activeEdital);
     if (note) {
-      actions.updateNoteInDashboard(workspace.id, dashboard.id, note.id, { content: JSON.stringify(newChecks) });
+      content.updateNote(note.id, { content: JSON.stringify(newChecks) });
     } else {
-      actions.addNoteToDashboard(workspace.id, dashboard.id, {
-        id: crypto.randomUUID(),
+      content.createNote(dashboard.id, {
         title: activeEdital,
-        type: "edital_checklist",
-        content: JSON.stringify(newChecks),
-        createdAt: new Date().toISOString()
-      } as any);
+        category: "edital_checklist",
+        content: JSON.stringify(newChecks)
+      });
     }
-    push({ title: "Salvo automaticamente", description: "Progresso atualizado.", variant: "default" });
+    push({ title: "Salvo automaticamente", description: "Progresso atualizado no servidor.", variant: "default" });
   };
 
   const toggle = (k:string) => {
@@ -97,7 +122,7 @@ function ChecklistTab({ activeEdital }: { activeEdital: string }) {
     saveChecks(next);
   };
 
-  const total = ITEMS.length;
+  const total = allItems.length;
   const done = Object.values(checks).filter(Boolean).length;
   const pct = Math.round((done/total)*100) || 0;
 
@@ -105,7 +130,7 @@ function ChecklistTab({ activeEdital }: { activeEdital: string }) {
     <div className="flex flex-col md:flex-row gap-6">
       <div className="flex-1 space-y-6">
         {grupos.map(g => {
-          const its = ITEMS.filter(i => i.grupo === g);
+          const its = allItems.filter(i => i.grupo === g);
           return (
             <div key={g} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h3 className="font-semibold text-blue-800 mb-4 text-sm uppercase tracking-wider">{g}</h3>
@@ -483,7 +508,7 @@ function SmartOverviewCards({ content }: { content: string }) {
 function EditalChatTab({ activeEdital }: { activeEdital: string }) {
   const workspace = useCurrentWorkspace();
   const dashboard = useCurrentDashboard();
-  const actions = useWorkspaceActions();
+  const content = useContent();
   const { push } = useToast();
 
   const [input, setInput] = useState("");
@@ -494,12 +519,23 @@ function EditalChatTab({ activeEdital }: { activeEdital: string }) {
     t => t.metadata?.fileName === activeEdital && t.metadata?.source === "io_editais_chat"
   );
 
-  const history = chatTile?.history || [];
+  const [localHistory, setLocalHistory] = useState<any[]>(chatTile?.history || []);
+
+  useEffect(() => {
+    if (chatTile?.history && !isTyping) {
+      setLocalHistory(chatTile.history);
+    }
+  }, [chatTile?.history, isTyping]);
 
   // Buscar o texto cru do edital (contexto da IA)
   const rawNote = dashboard?.notes?.find(
     n => n.title === activeEdital && (n as any).type === "raw_pdf"
   );
+
+  // Buscar a URL do PDF gerada no upload
+  const pdfUrl = rawNote?.metadata?.pdfUrl || dashboard?.tiles?.find(
+    t => t.metadata?.fileName === activeEdital && t.metadata?.pdfUrl
+  )?.metadata?.pdfUrl;
 
   const processCitations = (text: string) => {
     if (!text) return "";
@@ -510,13 +546,34 @@ function EditalChatTab({ activeEdital }: { activeEdital: string }) {
     code({node, inline, className, children, ...props}: any) {
       const match = /cite:(.*)/.exec(String(children));
       if (match) {
+        const citation = match[1];
+        let hoverContext = "Página não encontrada no extrato.";
+        
+        // Extrair o número da página
+        const pageMatch = citation.match(/Pág\w*\s+(\d+)/i);
+        if (pageMatch && pageMatch[1] && rawNote?.content) {
+          const pageNum = pageMatch[1];
+          const pageMarker = `--- PÁGINA ${pageNum} ---`;
+          const parts = rawNote.content.split(pageMarker);
+          if (parts.length > 1) {
+            const nextPart = parts[1].split('--- PÁGINA')[0];
+            hoverContext = nextPart.substring(0, 300).trim() + "...";
+          }
+        }
+
         return (
-          <span 
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-200 ml-1 cursor-help hover:bg-blue-200 transition-colors" 
-            title={`Fonte da informação original: ${match[1]}`}
-          >
-            <FileText size={10} /> {match[1]}
-          </span>
+          <div className="group relative inline-block ml-1">
+            <span 
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-200 cursor-help hover:bg-blue-200 transition-colors"
+            >
+              <FileText size={10} /> {citation}
+            </span>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 bg-slate-800 text-slate-100 text-xs rounded-xl p-3 shadow-xl z-50 pointer-events-none">
+              <div className="font-bold text-blue-300 mb-1 border-b border-slate-700 pb-1">Trecho da Página {pageMatch?.[1] || "?"}:</div>
+              <div className="leading-relaxed whitespace-pre-wrap">{hoverContext}</div>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+            </div>
+          </div>
         );
       }
       return <code className={className} {...props}>{children}</code>;
@@ -529,29 +586,9 @@ function EditalChatTab({ activeEdital }: { activeEdital: string }) {
     setInput("");
     setIsTyping(true);
 
-    let currentTileId = chatTile?.id;
-    let newHistory = [...history, { role: "user", content: message }];
-
-    // Se não houver tile de chat ainda, cria um
-    if (!currentTileId) {
-      currentTileId = crypto.randomUUID();
-      actions.addTileToDashboard(workspace.id, dashboard.id, {
-        id: currentTileId,
-        title: `Chat - ${activeEdital.substring(0, 30)}`,
-        content: "",
-        prompt: "Chat interativo do edital",
-        model: "gpt-4o",
-        status: "completed" as any,
-        orderIndex: 999,
-        attempts: 0,
-        history: newHistory,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        metadata: { fileName: activeEdital, source: "io_editais_chat" }
-      });
-    } else {
-      actions.updateTileInDashboard(workspace.id, dashboard.id, currentTileId, { history: newHistory } as any, chatTile as any);
-    }
+    let currentTileId = chatTile?.id || crypto.randomUUID();
+    let newHistory = [...localHistory, { role: "user", content: message }];
+    setLocalHistory(newHistory);
 
     // Preparar o contexto para a API
     const contextText = rawNote?.content 
@@ -585,9 +622,8 @@ ${contextText}`;
       let accumulated = "";
       let done = false;
 
-      // Adiciona o placeholder do assistente na UI
-      newHistory = [...newHistory, { role: "assistant", content: "" }];
-      actions.updateTileInDashboard(workspace.id, dashboard.id, currentTileId, { history: newHistory } as any, null as any);
+      // Adiciona o placeholder do assistente na UI local
+      setLocalHistory(prev => [...prev, { role: "assistant", content: "" }]);
 
       while (!done) {
         const { value, done: streamDone } = await reader.read();
@@ -603,10 +639,11 @@ ${contextText}`;
                 const parsed = JSON.parse(dataStr);
                 if (parsed.text) {
                   accumulated += parsed.text;
-                  // Atualiza a última mensagem do histórico
-                  const updatedHistory = [...newHistory];
-                  updatedHistory[updatedHistory.length - 1].content = accumulated;
-                  actions.updateTileInDashboard(workspace.id, dashboard.id, currentTileId, { history: updatedHistory } as any, null as any);
+                  setLocalHistory(prev => {
+                    const next = [...prev];
+                    next[next.length - 1].content = accumulated;
+                    return next;
+                  });
                 }
                 if (parsed.done) done = true;
               } catch {}
@@ -614,6 +651,16 @@ ${contextText}`;
           }
         }
       }
+
+      // Agora sim salvar no MongoDB através da API updateTile
+      const finalHistory = [...newHistory, { role: "assistant", content: accumulated }];
+      content.updateTile(currentTileId, {
+        title: `Chat - ${activeEdital.substring(0, 30)}`,
+        model: "gpt-4o",
+        history: finalHistory,
+        metadata: { fileName: activeEdital, source: "io_editais_chat" }
+      });
+
     } catch(err) {
       console.error("[ChatIA] Erro:", err);
       push({ title: "Erro na IA", description: "Falha ao processar resposta.", variant: "destructive" });
@@ -651,7 +698,7 @@ ${contextText}`;
 
         {/* Área de Mensagens */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
-          {history.length === 0 ? (
+          {localHistory.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto">
               <MessageSquare size={48} className="text-slate-200 mb-4" />
               <h4 className="text-lg font-bold text-slate-700">Como posso ajudar?</h4>
@@ -669,7 +716,7 @@ ${contextText}`;
               </div>
             </div>
           ) : (
-            history.map((msg: any, i: number) => (
+            localHistory.map((msg: any, i: number) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl p-4 ${
                   msg.role === 'user' 
@@ -715,30 +762,30 @@ ${contextText}`;
       </div>
 
       {/* Coluna Direita: PAINEL DE INSIGHTS / REFERÊNCIA */}
-      <div className="w-full lg:w-[350px] shrink-0 space-y-6 hidden lg:block overflow-y-auto">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4 text-sm">
+      <div className="w-full lg:w-[450px] shrink-0 space-y-6 hidden lg:block overflow-y-auto">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm h-full flex flex-col">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4 text-sm shrink-0">
             <FileText size={16} className="text-blue-600" />
             Documento Ativo
           </h3>
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4 shrink-0">
             <p className="text-sm font-semibold text-slate-700 line-clamp-2" title={activeEdital}>{activeEdital}</p>
-            <p className="text-xs text-slate-500 mt-2">
-              A IA tem acesso completo ao texto extraído deste arquivo, permitindo buscas profundas e referenciação de páginas.
+            <p className="text-[11px] text-slate-500 mt-1">
+              A IA já leu este documento e insere as páginas exatas como fontes nas respostas (tags azuis).
             </p>
           </div>
-        </div>
 
-        <div className="bg-amber-50/50 border border-amber-200 rounded-2xl p-6 shadow-sm">
-           <h3 className="font-bold text-amber-800 flex items-center gap-2 mb-2 text-sm">
-            <AlertTriangle size={16} />
-            Dicas de Análise
-          </h3>
-          <ul className="text-xs text-amber-700 space-y-2 mt-4 list-disc pl-4">
-            <li>Sempre verifique as <b>condições de pagamento</b>, que frequentemente causam impacto no fluxo de caixa.</li>
-            <li>Solicite à IA um <b>resumo das amostras</b> exigidas, caso aplicável.</li>
-            <li>Use as respostas como guia, mas valide as fontes apontadas nos <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-blue-100 text-blue-800 text-[9px] font-bold mx-1"><FileText size={8}/> Tags</span>.</li>
-          </ul>
+          {pdfUrl ? (
+            <div className="flex-1 rounded-xl overflow-hidden border border-slate-200 min-h-[400px]">
+              <iframe src={pdfUrl} className="w-full h-full" title="PDF Viewer" />
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-200 border-dashed text-slate-400 p-6 text-center">
+              <AlertTriangle size={32} className="mb-2 opacity-50" />
+              <p className="text-sm font-medium">Visualização não disponível</p>
+              <p className="text-xs mt-1">O PDF original não foi enviado para o Cloudinary (possivelmente enviado antes da atualização).</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -808,7 +855,40 @@ export function IoEditaisBoard() {
 
     try {
       setIsProcessing(true);
-      setProgress(10);
+      setProgress(5);
+      
+      // Upload PDF to Cloudinary
+      console.log(`[IoEditais] Fazendo upload do PDF para o Cloudinary...`);
+      const fileDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const editalFolder = `editais/${new Date().getFullYear()}/${(new Date().getMonth() + 1).toString().padStart(2, '0')}/${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          fileData: fileDataUrl, 
+          folder: `ade/${editalFolder}`, 
+          workspaceId: workspace.id,
+          resourceType: "auto"
+        })
+      });
+
+      let pdfUrl = "";
+      if (uploadRes.ok) {
+        const data = await uploadRes.json();
+        pdfUrl = data.url;
+        console.log(`[IoEditais] Upload concluído! URL: ${pdfUrl}`);
+      } else {
+        console.warn(`[IoEditais] Falha no upload para o Cloudinary. Continuando com extração local apenas.`);
+      }
+
+      setProgress(15);
       
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -832,7 +912,8 @@ export function IoEditaisBoard() {
         title: file.name,
         type: "raw_pdf",
         content: pagesText.join('\n\n'),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        metadata: { pdfUrl }
       });
 
       console.log(`[IoEditais] Nota salva. Disparando geração da Visão Geral (limite de 10 páginas)...`);
@@ -855,6 +936,9 @@ Principais Exigências (Resumo da Qualificação Técnica e Habilitação).
 [RISCOS]
 Riscos Iniciais, Armadilhas e Penalidades em destaque.
 
+[CHECKLIST_EXTRA]
+Liste de 3 a 7 itens específicos e cruciais de habilitação ou exigência técnica peculiares deste edital que não são óbvios (ex: licença ambiental específica, atestado com mínimo X, vistoria obrigatória prévia). Cada item deve ser bem curto.
+
 Importante: Não adicione nenhum texto fora ou antes dessas tags. Formate o texto dentro das tags usando listas (- item) ou negrito (**item**) para melhor leitura.
 
 EXTREMAMENTE IMPORTANTE: Para TODA informação factual, data, prazo, exigência ou valor que você extrair, você DEVE obrigatoriamente incluir a fonte da informação no formato exato: {{Pág X, Art Y}}. 
@@ -875,7 +959,7 @@ ${overviewChunk}`;
         history: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        metadata: { fileName: file.name, chunkIndex: 0, source: "io_editais_upload" }
+        metadata: { fileName: file.name, chunkIndex: 0, source: "io_editais_upload", pdfUrl }
       };
 
       actions.addTileToDashboard(workspace.id, dashboard.id, newTile);

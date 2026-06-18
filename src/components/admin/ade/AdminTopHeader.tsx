@@ -157,7 +157,7 @@ export function AdminTopHeader({
 
                 {/* Center: Workspace Chooser - Hidden on mobile if needed, or adjusted */}
                 {!hideWorkspaceSwitcher && (
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-200 group/ws">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] transition-all duration-200 group/ws">
                         <div className="relative flex items-center gap-1">
                             <button
                                 onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
@@ -184,7 +184,7 @@ export function AdminTopHeader({
                                             initial={{ opacity: 0, y: 5 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: 5 }}
-                                            className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
+                                            className="absolute left-1/2 -translate-x-1/2 top-full z-[100] mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
                                         >
                                             <div className="p-2">
                                                 <div className="mb-2 px-2 text-xs font-semibold text-gray-500 uppercase">

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     try {
         const { userId } = await getAuth();
         const body = await req.json();
-        const { fileData, folder = "ade/products", workspaceId } = body;
+        const { fileData, folder = "ade/products", workspaceId, resourceType = "auto" } = body;
         
         // Enforce credit limit for assets, unless it's a profile avatar upload!
         if (userId && folder !== "ade/avatars") {
@@ -37,11 +37,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "fileData is required" }, { status: 400 });
         }
 
-        console.log(`[POST /api/upload] Uploading image to Cloudinary folder: ${targetFolder}`);
-        const imageUrl = await uploadToCloudinary(fileData, targetFolder);
-        console.log("[POST /api/upload] Cloudinary upload success:", imageUrl);
+        console.log(`[POST /api/upload] Uploading file to Cloudinary folder: ${targetFolder} with type ${resourceType}`);
+        const fileUrl = await uploadToCloudinary(fileData, targetFolder, resourceType as any);
+        console.log("[POST /api/upload] Cloudinary upload success:", fileUrl);
 
-        return NextResponse.json({ url: imageUrl, success: true });
+        return NextResponse.json({ url: fileUrl, success: true });
     } catch (error: unknown) {
         console.error("[POST /api/upload] Error:", error);
         return NextResponse.json(

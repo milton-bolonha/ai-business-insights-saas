@@ -4,11 +4,13 @@ import { v2 as cloudinary } from "cloudinary";
  * Uploads an image from a URL or base64 string to Cloudinary
  * @param fileData URL or base64 string or buffer
  * @param folder Folder name in Cloudinary
- * @returns The secure URL of the uploaded image
+ * @param resourceType Resource type (e.g. 'image', 'auto', 'raw')
+ * @returns The secure URL of the uploaded file
  */
 export async function uploadToCloudinary(
   fileData: string,
-  folder: string = "books/covers"
+  folder: string = "books/covers",
+  resourceType: "image" | "video" | "raw" | "auto" = "auto"
 ): Promise<string> {
   // Configure dynamically at run-time to bypass environment variable load delays
   cloudinary.config({
@@ -21,7 +23,7 @@ export async function uploadToCloudinary(
   try {
     const result = await cloudinary.uploader.upload(fileData, {
       folder,
-      resource_type: "image",
+      resource_type: resourceType,
     });
     return result.secure_url;
   } catch (error) {
