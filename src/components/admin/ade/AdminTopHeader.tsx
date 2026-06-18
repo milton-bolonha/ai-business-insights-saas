@@ -110,8 +110,13 @@ export function AdminTopHeader({
 
     useEffect(() => {
         fetchNotifications();
-        // Setup polling every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000);
+        // Poll every 5 minutes (300s) instead of 30s, and only when tab is visible
+        const POLL_INTERVAL = 5 * 60 * 1000;
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                fetchNotifications();
+            }
+        }, POLL_INTERVAL);
         return () => clearInterval(interval);
     }, [currentWorkspace?.id, user?.id]);
 

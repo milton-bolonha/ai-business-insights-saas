@@ -26,6 +26,7 @@ import {
   Bot
 } from "lucide-react";
 import { useCurrentWorkspace, useCurrentDashboard, useWorkspaceActions } from "@/lib/stores";
+import { useContent } from "@/lib/stores/contentHooks";
 import { useToast } from "@/lib/state/toast-context";
 import * as pdfjsLib from 'pdfjs-dist';
 import ReactMarkdown from 'react-markdown';
@@ -413,7 +414,7 @@ function PropostaTab({ activeEdital }: { activeEdital: string }) {
 }
 
 // ─── Componente de Visão Geral Smart (Cards) ────────────────────────────────────────────────
-function SmartOverviewCards({ content }: { content: string }) {
+function SmartOverviewCards({ content, rawNoteContent }: { content: string; rawNoteContent?: string }) {
   const extract = (tag: string, nextTags: string[]) => {
     const start = content.indexOf(`[${tag}]`);
     if (start === -1) return "";
@@ -441,12 +442,32 @@ function SmartOverviewCards({ content }: { content: string }) {
     code({node, inline, className, children, ...props}: any) {
       const match = /cite:(.*)/.exec(String(children));
       if (match) {
+        const citation = match[1];
+        let hoverContext = "Página não encontrada no extrato.";
+        
+        const pageMatch = citation.match(/Pág\w*\s+(\d+)/i);
+        if (pageMatch && pageMatch[1] && rawNoteContent) {
+          const pageNum = pageMatch[1];
+          const pageMarker = `--- PÁGINA ${pageNum} ---`;
+          const parts = rawNoteContent.split(pageMarker);
+          if (parts.length > 1) {
+            const nextPart = parts[1].split('--- PÁGINA')[0];
+            hoverContext = nextPart.substring(0, 300).trim() + "...";
+          }
+        }
+
         return (
-          <span 
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200/50 text-slate-600 text-[10px] font-bold border border-slate-300/50 ml-1 cursor-help hover:bg-blue-100 hover:text-blue-800 hover:border-blue-300 transition-colors" 
-            title={`Fonte da informação original: ${match[1]}`}
-          >
-            <FileText size={10} /> {match[1]}
+          <span className="group/cite relative inline-block ml-1">
+            <span 
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200/50 text-slate-600 text-[10px] font-bold border border-slate-300/50 cursor-help hover:bg-blue-100 hover:text-blue-800 hover:border-blue-300 transition-colors"
+            >
+              <FileText size={10} /> {citation}
+            </span>
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/cite:block w-64 bg-slate-800 text-slate-100 text-xs rounded-xl p-3 shadow-xl z-50 pointer-events-none">
+              <span className="block font-bold text-blue-300 mb-1 border-b border-slate-700 pb-1">Trecho da Página {pageMatch?.[1] || "?"}:</span>
+              <span className="block leading-relaxed whitespace-pre-wrap">{hoverContext}</span>
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></span>
+            </span>
           </span>
         );
       }
@@ -562,18 +583,18 @@ function EditalChatTab({ activeEdital }: { activeEdital: string }) {
         }
 
         return (
-          <div className="group relative inline-block ml-1">
+          <span className="group relative inline-block ml-1">
             <span 
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-200 cursor-help hover:bg-blue-200 transition-colors"
             >
               <FileText size={10} /> {citation}
             </span>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 bg-slate-800 text-slate-100 text-xs rounded-xl p-3 shadow-xl z-50 pointer-events-none">
-              <div className="font-bold text-blue-300 mb-1 border-b border-slate-700 pb-1">Trecho da Página {pageMatch?.[1] || "?"}:</div>
-              <div className="leading-relaxed whitespace-pre-wrap">{hoverContext}</div>
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
-            </div>
-          </div>
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 bg-slate-800 text-slate-100 text-xs rounded-xl p-3 shadow-xl z-50 pointer-events-none">
+              <span className="block font-bold text-blue-300 mb-1 border-b border-slate-700 pb-1">Trecho da Página {pageMatch?.[1] || "?"}:</span>
+              <span className="block leading-relaxed whitespace-pre-wrap">{hoverContext}</span>
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></span>
+            </span>
+          </span>
         );
       }
       return <code className={className} {...props}>{children}</code>;
@@ -583,9 +604,16 @@ function EditalChatTab({ activeEdital }: { activeEdital: string }) {
   const handleSend = async (message: string) => {
     if (!message.trim() || !workspace || !dashboard || isTyping) return;
     
+    console.log(`[ChatIA] === SEND START ===`);
+    console.log(`[ChatIA] Mensagem: "${message.substring(0, 60)}..."`);
+    console.log(`[ChatIA] Edital ativo: ${activeEdital}`);
+    console.log(`[ChatIA] rawNote encontrada: ${!!rawNote} (${rawNote?.content?.length || 0} chars)`);
+    console.log(`[ChatIA] chatTile existente: ${!!chatTile} (id: ${chatTile?.id || 'NENHUM'})`);
+
     setInput("");
     setIsTyping(true);
 
+    const isNewChat = !chatTile;
     let currentTileId = chatTile?.id || crypto.randomUUID();
     let newHistory = [...localHistory, { role: "user", content: message }];
     setLocalHistory(newHistory);
@@ -595,6 +623,10 @@ function EditalChatTab({ activeEdital }: { activeEdital: string }) {
       ? `CONTEXTO DO EDITAL:\n${rawNote.content.substring(0, 30000)}` 
       : "Aviso: Texto do edital não encontrado na memória.";
 
+    if (!rawNote?.content) {
+      console.warn(`[ChatIA] ⚠️ rawNote NÃO encontrada! A IA vai responder sem contexto do edital.`);
+    }
+
     const systemPrompt = `Você é um Especialista de Licitações Sênior ajudando o usuário a entender este edital.
 Responda sempre em Markdown claro e objetivo.
 EXTREMAMENTE IMPORTANTE: Para TODA informação factual, data, prazo, exigência ou valor que você extrair do contexto, você DEVE obrigatoriamente incluir a fonte no formato exato: {{Pág X, Art Y}}.
@@ -603,6 +635,7 @@ Exemplo: "A garantia é de 5% {{Pág 12, Item 4.2}}".
 ${contextText}`;
 
     try {
+      console.log(`[ChatIA] Enviando para /api/generate/tile-stream (model: gpt-4o)...`);
       const response = await fetch("/api/generate/tile-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -614,7 +647,12 @@ ${contextText}`;
         }),
       });
 
-      if (!response.ok) throw new Error("API stream error");
+      console.log(`[ChatIA] Response status: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[ChatIA] ❌ API Error body:`, errorText);
+        throw new Error(`API stream error: ${response.status} - ${errorText}`);
+      }
       if (!response.body) throw new Error("No response body");
 
       const reader = response.body.getReader();
@@ -652,18 +690,42 @@ ${contextText}`;
         }
       }
 
-      // Agora sim salvar no MongoDB através da API updateTile
+      console.log(`[ChatIA] ✅ Stream completo. ${accumulated.length} chars recebidos.`);
+
+      // Salvar no MongoDB
       const finalHistory = [...newHistory, { role: "assistant", content: accumulated }];
-      content.updateTile(currentTileId, {
-        title: `Chat - ${activeEdital.substring(0, 30)}`,
-        model: "gpt-4o",
-        history: finalHistory,
-        metadata: { fileName: activeEdital, source: "io_editais_chat" }
-      });
+      
+      if (isNewChat) {
+        // Tile de chat não existia — criar via actions (garante que vai pro banco)
+        console.log(`[ChatIA] Criando novo chat tile (id: ${currentTileId})...`);
+        const { useWorkspaceStore } = await import("@/lib/stores/workspaceStore");
+        useWorkspaceStore.getState().addTileToDashboard(workspace.id, dashboard.id, {
+          id: currentTileId,
+          title: `Chat - ${activeEdital.substring(0, 30)}`,
+          content: "",
+          prompt: "Chat interativo do edital",
+          model: "gpt-4o",
+          status: "completed",
+          orderIndex: 999,
+          attempts: 0,
+          history: finalHistory,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          metadata: { fileName: activeEdital, source: "io_editais_chat" }
+        });
+      } else {
+        // Tile já existe, só atualizar
+        console.log(`[ChatIA] Atualizando chat tile existente (id: ${currentTileId})...`);
+        content.updateTile(currentTileId, {
+          history: finalHistory,
+          metadata: { fileName: activeEdital, source: "io_editais_chat" }
+        });
+      }
+      console.log(`[ChatIA] === SEND DONE ===`);
 
     } catch(err) {
-      console.error("[ChatIA] Erro:", err);
-      push({ title: "Erro na IA", description: "Falha ao processar resposta.", variant: "destructive" });
+      console.error("[ChatIA] ❌ Erro:", err);
+      push({ title: "Erro na IA", description: `Falha ao processar: ${(err as Error).message}`, variant: "destructive" });
     } finally {
       setIsTyping(false);
     }
@@ -798,6 +860,7 @@ export function IoEditaisBoard() {
   const workspace = useCurrentWorkspace();
   const dashboard = useCurrentDashboard();
   const actions = useWorkspaceActions();
+  const content = useContent();
   const { push } = useToast();
 
   const [activeEdital, setActiveEdital] = useState<string | null>(null);
@@ -849,6 +912,25 @@ export function IoEditaisBoard() {
     if (file.type !== "application/pdf") {
       push({ title: "Erro", description: "Envie um arquivo PDF válido.", variant: "destructive" });
       return;
+    }
+
+    // Verificar se este edital já foi processado
+    const existingTiles = dashboard.tiles?.filter(t => t.metadata?.fileName === file.name) || [];
+    if (existingTiles.length > 0) {
+      const confirmed = window.confirm(
+        `O edital "${file.name}" já foi analisado e possui ${existingTiles.length} card(s) no banco de dados.\n\nDeseja abrir o existente?\n\n(Clique "OK" para abrir, ou "Cancelar" para re-importar do zero)`
+      );
+      if (confirmed) {
+        setActiveEdital(file.name);
+        setActiveTab("resumo");
+        if (e.target) e.target.value = '';
+        return;
+      }
+      // Se cancelou, vai deletar os antigos antes de re-importar
+      console.log(`[IoEditais] Usuário optou por re-importar. Deletando ${existingTiles.length} tiles antigos...`);
+      existingTiles.forEach(t => actions.removeTileFromDashboard(workspace.id, dashboard.id, t.id));
+      const existingNotes = dashboard.notes?.filter(n => n.title === file.name) || [];
+      existingNotes.forEach(n => actions.removeNoteFromDashboard(workspace.id, dashboard.id, n.id));
     }
 
     console.log(`[IoEditais] Iniciando upload do arquivo: ${file.name} (${Math.round(file.size / 1024)}KB)`);
@@ -904,19 +986,34 @@ export function IoEditaisBoard() {
         setProgress(10 + Math.floor((i / pdf.numPages) * 40));
       }
 
-      console.log(`[IoEditais] Texto extraído. Salvando nota de raw_pdf no banco de dados para ${file.name}...`);
+      console.log(`[IoEditais] Texto extraído (${pagesText.length} páginas). Salvando nota raw_pdf...`);
 
+      const rawTextContent = pagesText.join('\n\n');
       const rawTextId = crypto.randomUUID();
+      
+      // Salva localmente para uso imediato
       actions.addNoteToDashboard(workspace.id, dashboard.id, {
         id: rawTextId,
         title: file.name,
         type: "raw_pdf",
-        content: pagesText.join('\n\n'),
+        content: rawTextContent,
         createdAt: new Date().toISOString(),
         metadata: { pdfUrl }
       });
 
-      console.log(`[IoEditais] Nota salva. Disparando geração da Visão Geral (limite de 10 páginas)...`);
+      // Persistir no MongoDB via API
+      try {
+        await content.createNote(dashboard.id, {
+          title: file.name,
+          category: "raw_pdf",
+          content: rawTextContent,
+        });
+        console.log(`[IoEditais] ✅ Nota raw_pdf persistida no MongoDB.`);
+      } catch (noteErr) {
+        console.error("[IoEditais] ⚠️ Falha ao persistir nota no MongoDB:", noteErr);
+      }
+
+      console.log(`[IoEditais] Disparando geração da Visão Geral (limite de 10 páginas)...`);
 
       const MAX_PAGES_OVERVIEW = Math.min(10, pagesText.length);
       const overviewChunk = pagesText.slice(0, MAX_PAGES_OVERVIEW).join('\n\n');
@@ -1013,6 +1110,20 @@ ${overviewChunk}`;
         }
         
         actions.updateTileInDashboard(workspace.id, dashboard.id, newTileId, { content: accumulated, status: "completed" }, newTile);
+        
+        // Persistir no MongoDB via API (o actions.addTile só salva localmente)
+        console.log(`[IoEditais] ✅ Streaming completo (${accumulated.length} chars). Persistindo no MongoDB...`);
+        try {
+          content.updateTile(newTileId, {
+            ...newTile,
+            content: accumulated,
+            status: "completed",
+          });
+          console.log(`[IoEditais] ✅ Tile persistido no MongoDB.`);
+        } catch (dbErr) {
+          console.error("[IoEditais] ⚠️ Falha ao persistir tile no MongoDB:", dbErr);
+        }
+
         push({ title: "Análise Concluída", description: "A Visão Geral do edital foi finalizada com sucesso.", variant: "success" });
 
       } catch(err) {

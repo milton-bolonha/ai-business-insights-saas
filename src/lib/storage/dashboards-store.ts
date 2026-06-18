@@ -46,17 +46,45 @@ export function loadWorkspacesWithDashboards(): WorkspaceWithDashboards[] {
 }
 
 /**
- * Save workspaces with dashboards
+ * Save workspaces with dashboards.
+ * IMPORTANT: Strip heavy payloads before saving to localStorage to prevent quota errors.
+ * The full data is persisted in MongoDB and loaded via refreshWorkspaces().
  */
 export function saveWorkspacesWithDashboards(
   workspaces: WorkspaceWithDashboards[]
 ) {
   if (isBrowser()) {
     try {
-      console.log("[DEBUG] saveWorkspacesWithDashboards: saving to localStorage", { count: workspaces.length });
-      localStorage.setItem(WORKSPACES_STORAGE_KEY, JSON.stringify(workspaces));
+      // Create a lightweight copy that won't blow up localStorage quota
+      const lightweight = workspaces.map(ws => ({
+        ...ws,
+        dashboards: ws.dashboards?.map(d => ({
+          ...d,
+          // Strip raw_pdf notes (they can be 100KB+ each) — they exist in MongoDB
+          notes: d.notes?.map(n => {
+            if ((n as any).type === "raw_pdf") {
+              return { ...n, content: "[stored in DB]" };
+            }
+            return n;
+          }),
+          // Strip large tile content and history from localStorage
+          tiles: d.tiles?.map(t => {
+            const lightTile = { ...t };
+            // Keep content under 500 chars for localStorage preview
+            if (lightTile.content && lightTile.content.length > 500) {
+              lightTile.content = lightTile.content.substring(0, 500) + "…[truncated]";
+            }
+            // Strip chat history (can be huge)
+            if (lightTile.history && lightTile.history.length > 0) {
+              lightTile.history = [];
+            }
+            return lightTile;
+          }),
+        })),
+      }));
+      localStorage.setItem(WORKSPACES_STORAGE_KEY, JSON.stringify(lightweight));
     } catch (e) {
-      console.error("[DEBUG] saveWorkspacesWithDashboards: failed to save", e);
+      console.error("[Storage] ⚠️ Failed to save to localStorage (quota?):", e);
     }
     return;
   }

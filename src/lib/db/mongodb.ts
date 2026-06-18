@@ -70,6 +70,13 @@ function getClient(): MongoClient {
     return cached.client;
   }
 
+  // Close old client if TTL expired (prevent connection leak)
+  if (cached?.client) {
+    cached.client.close().catch((err) => {
+      console.warn("[MongoDB] ⚠️ Error closing expired client:", err);
+    });
+  }
+
   // Create new client
   const client = new MongoClient(uri, options);
   globalStore.__MONGODB_CLIENT__ = {
@@ -77,7 +84,7 @@ function getClient(): MongoClient {
     createdAt: now,
   };
 
-  console.log("[MongoDB] 🆕 New client created");
+  console.log("[MongoDB] 🆕 New client created (TTL rotation)");
   return client;
 }
 
@@ -90,7 +97,7 @@ export async function connect(): Promise<MongoClient> {
 
   try {
     await client.connect();
-    console.log("[MongoDB] ✅ Connected successfully");
+    // Only log on TTL rotation (noisy otherwise — every API call triggers this)
     return client;
   } catch (error) {
     console.error("[MongoDB] ❌ Connection failed:", error);
