@@ -79,7 +79,7 @@ INSTRUÇÃO CRÍTICA 3: Mantenha as tags delimitadoras (===TIPO===, ===GERAL===,
         if (annotations && annotations.length > 0) {
           for (let i = 0; i < annotations.length; i++) {
             const annotation = annotations[i];
-            if (annotation.file_citation) {
+            if (annotation.type === 'file_citation') {
               const quote = annotation.file_citation.quote || "Edital em Análise";
               // Substitui a anotação padrão (ex: 【4:0†source】) por um link markdown preparado
               // Usamos um JSON stringify escapado para garantir que as aspas do quote não quebrem o markdown
