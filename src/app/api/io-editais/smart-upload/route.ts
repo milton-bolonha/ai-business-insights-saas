@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     let vsFile = await openai.vectorStores.files.create(vectorStore.id, { file_id: openaiFile.id });
 
     // Poll until file is fully processed (searchable by the Assistant)
-    while (vsFile.status === "in_progress" || vsFile.status === "queued" || (vsFile.status as any) === "parsing") {
+    while (["in_progress", "queued", "parsing"].includes(vsFile.status as string)) {
       await new Promise(resolve => setTimeout(resolve, 2000));
       vsFile = await openai.vectorStores.files.retrieve(openaiFile.id, { vector_store_id: vectorStore.id });
     }
