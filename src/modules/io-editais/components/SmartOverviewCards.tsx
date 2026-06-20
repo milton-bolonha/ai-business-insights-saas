@@ -17,28 +17,26 @@ export function cleanAndParseCitations(content: string) {
 
 export const smartMarkdownComponents: any = {
   h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4" {...props} />,
-  h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-slate-800 mt-8 mb-4 flex items-center gap-2" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-slate-800 mt-8 mb-4" {...props} />,
   h3: ({node, ...props}: any) => <h3 className="text-lg font-bold text-slate-700 mt-6 mb-3" {...props} />,
-  p: ({node, ...props}: any) => <p className="text-slate-600 mb-5 leading-relaxed" {...props} />,
-  ul: ({node, ...props}: any) => <ul className="space-y-3 mb-6" {...props} />,
-  table: ({node, ...props}: any) => <div className="overflow-x-auto mb-6"><table className="min-w-full divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden" {...props} /></div>,
+  table: ({node, ...props}: any) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden" {...props} /></div>,
   thead: ({node, ...props}: any) => <thead className="bg-slate-50" {...props} />,
   th: ({node, ...props}: any) => <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider" {...props} />,
   tbody: ({node, ...props}: any) => <tbody className="bg-white divide-y divide-slate-100" {...props} />,
   td: ({node, ...props}: any) => <td className="px-4 py-3 text-sm text-slate-600 whitespace-pre-wrap" {...props} />,
-  // Removendo marcações de lista dupla e corrigindo strict mode
-  li: ({node, ...props}: any) => (
-    <li className="flex items-start gap-2.5 text-slate-700 leading-relaxed mb-2" {...props}>
-      <span className="shrink-0 mt-2 w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm"></span>
-      <span className="flex-1">{props.children}</span>
-    </li>
-  ),
   strong: ({node, ...props}: any) => <strong className="font-semibold text-slate-800 bg-blue-50 px-1 rounded" {...props} />,
   a: ({node, ...props}: any) => {
     if (props.href === '#citation') {
-      const quoteText = props.title || "Trecho não disponível na API.";
+      let quoteText = props.title || "Trecho não disponível na API.";
+      
+      // Se quoteText for composto apenas por dígitos, dois pontos ou adagas (ex: "4:3" ou "12†"), 
+      // significa que foi pego pelo regex de fallback do frontend (alucinação de citação que a API ocultou).
+      if (/^[\d:†]+$/.test(quoteText)) {
+        quoteText = "A IA inferiu esta informação com base no arquivo, mas não forneceu a citação do parágrafo exato.";
+      }
+
       let docName = props.children;
-      if (docName === "source" || docName === "arquivo.pdf") {
+      if (docName === "source" || docName === "arquivo.pdf" || !docName) {
         docName = "Edital em Análise";
       }
 

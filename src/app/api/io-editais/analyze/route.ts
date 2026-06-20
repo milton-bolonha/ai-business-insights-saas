@@ -51,7 +51,7 @@ Resumo contendo as seções: Documentação de Habilitação, Qualificação Té
 Resumo contendo as seções: Critério de Julgamento, Preço de Referência, Garantias, Validade da Proposta, Condições de Pagamento, Inteligência Comercial e Simulação Financeira. Formato Markdown extenso e rico.
 
 INSTRUÇÃO CRÍTICA 1: Use a ferramenta file_search exaustivamente para cobrir todas as páginas e não perder nada importante.
-INSTRUÇÃO CRÍTICA 2: SEMPRE que afirmar algo, julgar um risco ou listar uma exigência, cite a fonte obrigatoriamente usando as anotações automáticas da ferramenta (ex: 【4:1†arquivo.pdf】). O usuário PRECISA das citações para validar suas conclusões.
+INSTRUÇÃO CRÍTICA 2: SEMPRE que afirmar algo, julgar um risco ou listar uma exigência, você DEVE OBRIGATORIAMENTE escrever o número da página de onde tirou a informação, seguido imediatamente pela citação da ferramenta. Exemplo: "(Pág. 12) 【4:1†arquivo.pdf】". O usuário PRECISA do número da página e da citação exata para validar suas conclusões.
 INSTRUÇÃO CRÍTICA 3: Mantenha as tags delimitadoras (===TIPO===, ===GERAL===, ===CHECKLIST===, ===PROPOSTA===) exatamente como mostradas.`;
 
     const thread = await openai.beta.threads.create({
@@ -80,11 +80,11 @@ INSTRUÇÃO CRÍTICA 3: Mantenha as tags delimitadoras (===TIPO===, ===GERAL===,
           for (let i = 0; i < annotations.length; i++) {
             const annotation = annotations[i];
             if (annotation.type === 'file_citation') {
-              const quote = (annotation.file_citation as any).quote || "Edital em Análise";
-              // Substitui a anotação padrão (ex: 【4:0†source】) por um link markdown preparado
-              // Usamos um JSON stringify escapado para garantir que as aspas do quote não quebrem o markdown
+              const quote = (annotation.file_citation as any).quote || "Trecho não disponibilizado pela API.";
               const safeQuote = quote.replace(/"/g, '&quot;');
-              text = text.replace(annotation.text, `[Trecho Extraído](#citation "${safeQuote}")`);
+              
+              // Substitui TODAS as ocorrências da anotação no texto usando um texto simples e amigável
+              text = text.split(annotation.text).join(`[🔎 Ver Trecho](#citation "${safeQuote}")`);
             }
           }
         }
