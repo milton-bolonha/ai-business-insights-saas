@@ -1,4 +1,44 @@
 {
+  "ioEditais": {
+    "checklist": {
+      "title": "Checklist de Viabilidade e Habilitação",
+      "subtitle": "A IA extraiu os itens específicos deste edital abaixo. Arraste ou marque o que você já providenciou para acompanhar se vale a pena participar.",
+      "progress": "Progresso Pessoal",
+      "itemsVerified": "{done} de {total} itens verificados",
+      "goldenRule": "Regra de Ouro",
+      "goldenRuleText": "O objetivo da análise não é descobrir como participar — é descobrir se vale a pena participar.",
+      "complete": "Checklist Completo",
+      "completeText": "Edital totalmente analisado. Você pode enviar a proposta com segurança.",
+      "views": {
+        "list": "Lista",
+        "kanban": "Kanban"
+      },
+      "columns": {
+        "todo": "A Fazer",
+        "doing": "Fazendo",
+        "done": "Feito"
+      },
+      "groups": {
+        "preliminar": "Fase Preliminar",
+        "preparacao": "Preparação",
+        "execucao": "Execução"
+      },
+      "items": {
+        "leitura": "Leitura e Análise do Termo de Referência",
+        "viabilidade": "Análise de Viabilidade Financeira",
+        "documentacao": "Levantamento de Habilitação",
+        "proposta": "Elaboração da Proposta Comercial",
+        "sessao": "Cadastro no Portal e Disputa"
+      },
+      "desc": {
+        "leitura": "Avaliar escopo, obrigações, prazos e penalidades.",
+        "viabilidade": "Calcular custos operacionais, impostos, margem e fluxo de caixa.",
+        "documentacao": "Garantir regularidade fiscal, trabalhista e atestados.",
+        "proposta": "Formatar planilhas, cotações e documentação técnica exigida.",
+        "sessao": "Registrar proposta na plataforma e participar da sessão pública."
+      }
+    }
+  },
   "common": {
     "logoText": "WebApp",
     "login": "Entrar",

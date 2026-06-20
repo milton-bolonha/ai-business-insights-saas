@@ -62,14 +62,17 @@ export async function PATCH(
 
     if (userId) {
       // 🟢 MEMBER: Update in MongoDB
+      const setOnInsert: any = {};
+      if (updates.createdAt === undefined) {
+        setOnInsert.createdAt = new Date();
+      }
+
       const success = await db.updateOne(
         "tiles",
         { id: tileId, userId, workspaceId, dashboardId },
         { 
           $set: updates,
-          $setOnInsert: {
-            createdAt: new Date()
-          }
+          $setOnInsert: setOnInsert
         },
         { upsert: true }
       );

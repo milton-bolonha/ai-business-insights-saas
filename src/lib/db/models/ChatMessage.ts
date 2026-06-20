@@ -10,6 +10,8 @@ export interface ChatMessageDocument extends Document {
   userId: string; // The owner of the message
   workspaceId: string;
   dashboardId?: string;
+  chatId?: string;
+  openaiMessageId?: string;
   role: "user" | "assistant" | "system";
   content: string;
   metadata?: any;

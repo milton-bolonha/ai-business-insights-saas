@@ -57,7 +57,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
               "connect-src 'self' data: https://*.clerk.accounts.dev https://*.stripe.com https://api.openai.com https://unpkg.com https://*.cloudflare.com https://clerk-telemetry.com https://fonts.gstatic.com https://cdn.jsdelivr.net https://api.cloudinary.com https://auth.mercadolibre.com.br https://vercel.live https://*.vercel.live",
               "worker-src 'self' blob:",
-              "frame-src 'self' https://*.stripe.com https://*.clerk.accounts.dev https://identity.netlify.com https://challenges.cloudflare.com https://vercel.live https://*.vercel.live blob:",
+              "frame-src 'self' https://*.stripe.com https://*.clerk.accounts.dev https://identity.netlify.com https://challenges.cloudflare.com https://vercel.live https://*.vercel.live https://res.cloudinary.com blob:",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

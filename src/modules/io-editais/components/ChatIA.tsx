@@ -1,84 +1,190 @@
-import { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { smartMarkdownComponents, cleanAndParseCitations } from "./SmartOverviewCards";
 
-const CHAT_INICIAL = [
-  { role: "bot", text: "Analisei o Pregão 042/2025 da Prefeitura de Campinas. Encontrei 6 seções, 2 pontos fora do padrão críticos e 4 itens do checklist pendentes. Por onde quer começar?" }
-];
-
-export function ChatIA({ edital }: { edital: any }) {
-  const [msgs, setMsgs] = useState(CHAT_INICIAL);
+export function ChatIA({ workspaceId, preselectedKbId, hideKbSelector }: { workspaceId: string, preselectedKbId?: string, hideKbSelector?: boolean }) {
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [agentId, setAgentId] = useState<string | null>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const respostas: Record<string, string> = {
-    "falta": "No checklist do Pregão 042/2025 faltam: habilitação verificada, documentos específicos, viabilidade financeira e penalidades analisadas. São 4 itens críticos — especialmente habilitação, que é eliminatório.",
-    "prazo": "A sessão pública é em 28/01/2025 às 10h na plataforma Comprasnet. O prazo para envio da proposta é 25/01/2025. Você tem 3 dias para finalizar.",
-    "habilitação": "Para este edital você precisa de: certidão negativa federal, estadual e municipal; FGTS regular; CNDT (trabalhista); contrato social atualizado; balanço patrimonial; e atestado de capacidade técnica (mín. 30% do objeto).",
-    "habilitacao": "Para este edital você precisa de: certidão negativa federal, estadual e municipal; FGTS regular; CNDT (trabalhista); contrato social atualizado; balanço patrimonial; e atestado de capacidade técnica (mín. 30% do objeto).",
-    "atestado": "O edital aceita somatório de atestados para atingir 30% da quantidade licitada. Separe notas fiscais ou ordens de compra que comprovem entregas anteriores para diligência.",
-    "amostra": "Este edital não exige amostras físicas — apenas fichas técnicas e catálogos do fabricante que comprovem atendimento às especificações.",
-    "garantia": "A garantia contratual é de 5% do valor do contrato, a ser apresentada em até 5 dias após a assinatura. Pode ser seguro-garantia ou fiança bancária. Inclua esse custo na sua precificação.",
-    "penalidade": "Multa por atraso: 0,5% ao dia. Multa por inexecução total: 10%. Atenção: 0,5% ao dia é acima da média — 20 dias de atraso já representam 10% de multa. Só aceite se tiver estoque confirmado.",
-    "plataforma": "Este pregão é realizado no Comprasnet (comprasnet.gov.br). Verifique se sua empresa tem cadastro no SICAF ativo — sem SICAF regularizado não é possível participar.",
+  // Buscar Agente vinculado ao Edital (KB)
+  useEffect(() => {
+    if (!preselectedKbId) return;
+    fetch(`/api/openai/agents?workspaceId=${workspaceId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const agent = data.agents.find((a: any) => a.knowledgeBaseId === preselectedKbId);
+          if (agent) setAgentId(agent._id);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [preselectedKbId, workspaceId]);
+
+  // Buscar conversas antigas (opcional)
+  useEffect(() => {
+    if (agentId) {
+      fetch(`/api/openai/chats?workspaceId=${workspaceId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const existingChat = data.chats.find((c: any) => c.agentId === agentId);
+            if (existingChat) {
+              setChatId(existingChat._id);
+              fetch(`/api/openai/chats/${existingChat._id}/messages`)
+                .then(r => r.json())
+                .then(d => {
+                  if (d.success) setMessages(d.messages);
+                });
+            }
+          }
+        });
+    }
+  }, [agentId, workspaceId]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const responder = (q: string) => {
-    const lower = q.toLowerCase();
-    const chave = Object.keys(respostas).find(k => lower.includes(k));
-    return chave ? respostas[chave] : `Sobre "${q}" no ${edital?.nome || "edital"}: recomendo verificar a seção correspondente. Posso ajudar com prazo, habilitação, atestados, amostras, garantia, penalidades ou plataforma.`;
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
 
-  const enviar = () => {
-    if (!input.trim()) return;
-    const p = input.trim();
+  const enviar = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isTyping || !agentId) return;
+
+    const userMsg = input.trim();
     setInput("");
-    setMsgs(m => [...m, { role: "user", text: p }]);
-    setTimeout(() => setMsgs(m => [...m, { role: "bot", text: responder(p) }]), 700);
+    setMessages(prev => [...prev, { role: "user", content: userMsg }]);
+    setIsTyping(true);
+
+    try {
+      const res = await fetch("/api/openai/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, message: userMsg, threadId, chatId, workspaceId })
+      });
+
+      if (!res.ok) throw new Error("Erro na API de chat");
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) return;
+
+      // Oculta indicador de digitação assim que o stream começa
+      setIsTyping(false);
+      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+      let assistantMessage = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") {
+              // Finalizado
+              fetch(`/api/openai/chats?workspaceId=${workspaceId}`).then(r => r.json()).then(d => {
+                if (d.success) {
+                  const existingChat = d.chats.find((c: any) => c.agentId === agentId);
+                  if (existingChat) setChatId(existingChat._id);
+                }
+              });
+              return;
+            }
+
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.type === 'thread_id') {
+                setThreadId(data.threadId);
+                setChatId(data.chatId);
+              } else if (data.type === 'text' && data.text) {
+                assistantMessage += data.text;
+                setMessages(prev => {
+                  const newM = [...prev];
+                  newM[newM.length - 1].content = assistantMessage;
+                  return newM;
+                });
+              }
+            } catch (e) {}
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: "system", content: "Erro de comunicação." }]);
+      setIsTyping(false);
+    }
   };
+
+  if (loading) return <div className="p-12 text-center text-slate-500">Inicializando Chat...</div>;
+  if (!agentId) return <div className="p-12 text-center text-red-500">Especialista não encontrado para este edital.</div>;
 
   return (
-    <div className="bg-white border border-black/10 rounded-xl p-4">
-      <div className="text-[13px] font-medium mb-3">Perguntar à IA sobre o edital</div>
-      
-      <div className="flex flex-col gap-2 mb-3 max-h-[220px] overflow-y-auto pr-1">
-        {msgs.map((m, i) => (
+    <div className="flex flex-col h-full bg-white relative">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {messages.length === 0 && (
+          <div className="text-center py-12 text-slate-500 text-sm">
+            Tire suas dúvidas técnicas sobre o edital. A inteligência artificial irá pesquisar diretamente no documento.
+          </div>
+        )}
+        {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`text-xs leading-relaxed px-3 py-2 rounded-xl max-w-[90%] ${
-              m.role === "bot" ? "bg-blue-50 text-blue-900" : "bg-[#F1EFE8] text-primary-text"
+            <div className={`text-sm leading-relaxed px-4 py-3 rounded-2xl max-w-[85%] ${
+              m.role === "user" 
+                ? "bg-blue-600 text-white rounded-tr-none" 
+                : "bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none shadow-sm prose prose-sm prose-slate max-w-none"
             }`}>
-              {m.text}
+              {m.role === "user" ? m.content : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={smartMarkdownComponents}>
+                  {cleanAndParseCitations(m.content)}
+                </ReactMarkdown>
+              )}
             </div>
           </div>
         ))}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-slate-100 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1 items-center">
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
       
-      <div className="flex gap-1.5 mb-2.5">
-        <input 
-          value={input} 
-          onChange={e => setInput(e.target.value)} 
-          onKeyDown={e => e.key === "Enter" && enviar()} 
-          placeholder="Pergunte sobre o edital..." 
-          className="flex-1 px-3 py-2 rounded-lg border border-black/20 text-xs outline-none focus:border-blue-500"
-        />
-        <button 
-          onClick={enviar} 
-          className="bg-blue-600 text-white border-none rounded-lg px-3.5 py-2 flex items-center justify-center hover:bg-blue-700 transition-colors"
-        >
-          →
-        </button>
-      </div>
-      
-      <div className="flex flex-wrap gap-1.5">
-        {[
-          "O que falta?", "Prazo e sessão", "Habilitação", 
-          "Atestado técnico", "Garantia contratual", "Penalidades", "Plataforma"
-        ].map(q => (
-          <span 
-            key={q} 
-            onClick={() => setInput(q)}
-            className="inline-flex items-center text-[11px] px-2.5 py-1 rounded-full font-medium cursor-pointer bg-blue-50 text-blue-800 hover:bg-blue-100 transition-colors"
+      <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+        <form onSubmit={enviar} className="relative flex items-center">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Pergunte sobre qualificações, prazos, exigências..."
+            className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm"
+          />
+          <button 
+            type="submit"
+            disabled={!input.trim() || isTyping}
+            className="absolute right-2 p-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:bg-slate-300 transition-colors"
           >
-            {q}
-          </span>
-        ))}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </form>
       </div>
     </div>
   );

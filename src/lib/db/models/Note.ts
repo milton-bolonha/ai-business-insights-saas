@@ -13,6 +13,8 @@ export interface NoteDocument extends Document {
   title: string;
   content: string;
   category?: string;
+  type?: string;
+  metadata?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +35,8 @@ export function noteToDocument(
     title: note.title,
     content: note.content,
     category: note.category,
+    type: note.type,
+    metadata: note.metadata,
   };
 }
 
@@ -47,6 +51,8 @@ export function noteDocumentToNote(
     title: doc.title,
     content: doc.content,
     category: doc.category,
+    type: doc.type,
+    metadata: doc.metadata,
     createdAt: doc.createdAt instanceof Date 
       ? doc.createdAt.toISOString() 
       : typeof doc.createdAt === 'string' 

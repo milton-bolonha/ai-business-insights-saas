@@ -1,4 +1,44 @@
 {
+  "ioEditais": {
+    "checklist": {
+      "title": "Viability & Qualification Checklist",
+      "subtitle": "The AI extracted the specific items from this bid below. Drag or check off what you have already provided to monitor if it is worth participating.",
+      "progress": "Personal Progress",
+      "itemsVerified": "{done} of {total} items verified",
+      "goldenRule": "Golden Rule",
+      "goldenRuleText": "The goal of the analysis is not to discover how to participate — it is to discover if it is worth participating.",
+      "complete": "Checklist Complete",
+      "completeText": "Bid fully analyzed. You can submit the proposal securely.",
+      "views": {
+        "list": "List",
+        "kanban": "Kanban"
+      },
+      "columns": {
+        "todo": "To Do",
+        "doing": "Doing",
+        "done": "Done"
+      },
+      "groups": {
+        "preliminar": "Preliminary Phase",
+        "preparacao": "Preparation",
+        "execucao": "Execution"
+      },
+      "items": {
+        "leitura": "Read and Analyze the Terms of Reference",
+        "viabilidade": "Financial Viability Analysis",
+        "documentacao": "Gather Qualification Documents",
+        "proposta": "Prepare Commercial Proposal",
+        "sessao": "Register on Portal and Dispute"
+      },
+      "desc": {
+        "leitura": "Evaluate scope, obligations, deadlines, and penalties.",
+        "viabilidade": "Calculate operational costs, taxes, margin, and cash flow.",
+        "documentacao": "Ensure fiscal and labor regularity and attestations.",
+        "proposta": "Format spreadsheets, quotes, and required technical documentation.",
+        "sessao": "Register proposal on the platform and participate in the public session."
+      }
+    }
+  },
   "common": {
     "logoText": "WebApp",
     "login": "Log in",
