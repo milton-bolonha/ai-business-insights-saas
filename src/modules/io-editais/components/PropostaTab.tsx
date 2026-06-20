@@ -39,7 +39,8 @@ export function PropostaTab({ activeEdital }: { activeEdital: any }) {
         title: activeEdital._id,
         type: "edital_proposta",
         content,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
     }
   };

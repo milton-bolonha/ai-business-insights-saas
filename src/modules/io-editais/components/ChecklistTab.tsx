@@ -130,7 +130,8 @@ export function ChecklistTab({ activeEdital }: { activeEdital: any }) {
         title: activeEdital._id,
         type: "edital_checklist",
         content: contentStr,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
     }
   };
