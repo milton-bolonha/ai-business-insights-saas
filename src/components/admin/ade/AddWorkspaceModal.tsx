@@ -193,6 +193,7 @@ export function AddWorkspaceModal({
                     <option value="template_trade_ranking">Trader Ranking & VMR</option>
                     <option value="template_furniture_logistics">Furniture: Logistics & Assembly</option>
                     <option value="template_furniture_layout">Furniture: Store Layout Map</option>
+                    <option value="template_app_builder">App Builder</option>
                   </select>
                 </div>
               </>

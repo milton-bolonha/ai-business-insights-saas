@@ -63,6 +63,8 @@ export function AdminOnboardingHandler() {
                     await handleIoEditaisCreation(data);
                 } else if (type === "io_estampas") {
                     await handleIoEstampasCreation(data);
+                } else if (type === "template_app_builder") {
+                    await handleAppBuilderCreation(data);
                 }
 
                 push({
@@ -85,6 +87,63 @@ export function AdminOnboardingHandler() {
 
         processOnboarding();
     }, []);
+
+    const handleAppBuilderCreation = async (data: ClassicHeroFormSubmission) => {
+        const targetUrl = "/api/generate";
+        const workspaceName = data.app_name || "App Builder";
+
+        const payload = {
+            salesRepCompany: "App Builder Studio",
+            salesRepWebsite: "https://io.appbuilder",
+            solution: "Construção de Aplicativo",
+            targetCompany: workspaceName,
+            targetWebsite: "https://io.appbuilder",
+            templateId: "template_app_builder",
+            model: "gpt-4o-mini",
+            promptAgent: "ade_research_analyst",
+            responseLength: "long",
+            promptVariables: [
+                `app_name:${workspaceName}`,
+                `app_description:${data.app_description || ''}`,
+                `businessRules:${data.businessRules || ''}`,
+                `designGuidelines:${data.designGuidelines || ''}`
+            ],
+            bulkPrompts: [],
+        };
+
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to generate AppBuilder workspace");
+        }
+
+        const resData = await response.json();
+        if (resData.workspace) {
+            // Inicializa no Contexto Global
+            const ws = await useWorkspaceStore.getState().initializeWorkspaceFromHome(resData.workspace);
+            useWorkspaceStore.getState().setCurrentWorkspace(ws);
+            
+            // Grava silenciosamente o projeto da IA
+            fetch("/api/app-builder/projects", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    workspaceId: ws.id, 
+                    name: workspaceName,
+                    description: data.app_description || "",
+                    businessRules: data.businessRules || "",
+                    designGuidelines: data.designGuidelines || ""
+                })
+            }).catch(e => console.warn("Erro ao instanciar projeto app builder", e));
+
+            router.replace(`/admin?workspaceId=${ws.id}`);
+        }
+    };
 
     const handleBusinessInsightsCreation = async (data: ClassicHeroFormSubmission) => {
         // Replicate logic from HomeContainer but calling API as authenticated user

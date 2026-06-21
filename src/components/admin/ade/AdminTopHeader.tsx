@@ -110,14 +110,37 @@ export function AdminTopHeader({
 
     useEffect(() => {
         fetchNotifications();
-        // Poll every 5 minutes (300s) instead of 30s, and only when tab is visible
-        const POLL_INTERVAL = 5 * 60 * 1000;
-        const interval = setInterval(() => {
-            if (!document.hidden) {
-                fetchNotifications();
-            }
-        }, POLL_INTERVAL);
-        return () => clearInterval(interval);
+        
+        const syncUsage = () => {
+            if (!user?.id) return;
+            fetch("/api/user/sync-usage", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.id, email: (user as any).email || (user as any).primaryEmailAddress?.emailAddress })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.usage) useAuthStore.getState().setUsage(data.usage);
+            })
+            .catch(err => console.error("Error syncing usage:", err));
+        };
+
+        syncUsage();
+
+        // Poll notifications every 5 minutes (only if visible)
+        const notifInterval = setInterval(() => {
+            if (!document.hidden) fetchNotifications();
+        }, 5 * 60 * 1000);
+
+        // Poll usage (credits) every 30 seconds (only if visible)
+        const usageInterval = setInterval(() => {
+            if (!document.hidden) syncUsage();
+        }, 30 * 1000);
+
+        return () => {
+            clearInterval(notifInterval);
+            clearInterval(usageInterval);
+        };
     }, [currentWorkspace?.id, user?.id]);
 
     // Determine context based on workspace template

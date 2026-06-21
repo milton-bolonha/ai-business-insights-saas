@@ -90,6 +90,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
     const isOSSystem = templateId === "template_os_system";
     const isEditais = templateId === "template_io_editais";
     const isEstampas = templateId === "template_io_estampas";
+    const isAppBuilder = templateId === "template_app_builder";
 
     // Theme Colors
     const theme = {
@@ -115,6 +116,7 @@ export function AdminNavigation({ activeTab, onTabChange, templateId = "template
         ...(isOSSystem ? [{ id: "os_system", label: "OS System", icon: Wrench }] : []),
         ...(isEditais ? [{ id: "io_editais", label: "Editais", icon: Gavel }] : []),
         ...(isEstampas ? [{ id: "io_estampas", label: "Estampas", icon: Shapes }] : []),
+        ...(isAppBuilder ? [{ id: "app_builder", label: "App Builder", icon: LayoutGrid }] : []),
 
         ...(isFurniture ? [
             { id: "store", label: t("admin.navigation.tabs.store"), icon: ShoppingBag },

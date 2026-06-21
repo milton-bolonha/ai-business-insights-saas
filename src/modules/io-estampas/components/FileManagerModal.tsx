@@ -138,8 +138,8 @@ export function FileManagerModal({ isOpen, onClose, title, setTitle, onLoadArtwo
 
               <div className="grid grid-cols-4 gap-4">
                 {displayedFiles.length === 0 && <p className="text-sm text-slate-400 col-span-4 p-4">Nenhuma estampa encontrada neste mês.</p>}
-                {displayedFiles.map(file => (
-                  <div key={file.id} 
+                {displayedFiles.map((file, index) => (
+                  <div key={`${file.id}-${index}`} 
                     onClick={() => { if (!deletingId) onLoadArtwork(file); }}
                     className="border border-slate-200 rounded-xl p-4 flex flex-col gap-3 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group bg-slate-50/50 relative overflow-hidden"
                   >

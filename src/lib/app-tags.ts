@@ -1,6 +1,6 @@
 import React from "react";
 
-export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system" | "io_editais" | "io_estampas";
+export type AppTagId = "home" | "business_insights" | "love_writers" | "trade_ranking" | "furniture_logistics" | "furniture_layout" | "furniture_store" | "io_mentoring" | "smart_survey" | "ai_blog" | "os_system" | "io_editais" | "io_estampas" | "template_app_builder";
 
 export interface AppTag {
   id: AppTagId;
@@ -80,6 +80,12 @@ export const APP_TAGS: AppTag[] = [
     label: "I/O Estampas",
     labelKey: "appTags.io_estampas.label",
     color: "#f43f5e", // Rose-500
+  },
+  {
+    id: "template_app_builder",
+    label: "App Builder",
+    labelKey: "appTags.template_app_builder.label",
+    color: "#3b82f6", // Blue-500
   },
 ];
 
@@ -445,10 +451,44 @@ export const APP_ATTRIBUTES: AppAttribute[] = [
   },
   {
     id: "estampas_niche",
-    label: "Nicho de Estampas",
+    label: "Niche",
     labelKey: "attributes.estampas_niche.label",
     appTagId: "io_estampas",
-    placeholder: "Ex: Geek, Minimalista, Rock...",
+    placeholder: "What's the store's niche (geek, gym, pets)?",
     placeholderKey: "attributes.estampas_niche.placeholder",
   },
+
+  // App Builder Attributes
+  {
+    id: "app_name",
+    label: "App Name",
+    labelKey: "attributes.app_name.label",
+    appTagId: "template_app_builder",
+    placeholder: "What is the name of your app?",
+    placeholderKey: "attributes.app_name.placeholder",
+  },
+  {
+    id: "app_description",
+    label: "App Goal",
+    labelKey: "attributes.app_description.label",
+    appTagId: "template_app_builder",
+    placeholder: "What is the main goal of the app?",
+    placeholderKey: "attributes.app_description.placeholder",
+  },
+  {
+    id: "businessRules",
+    label: "Business Rules",
+    labelKey: "attributes.businessRules.label",
+    appTagId: "template_app_builder",
+    placeholder: "Any specific business rules?",
+    placeholderKey: "attributes.businessRules.placeholder",
+  },
+  {
+    id: "designGuidelines",
+    label: "Design Guidelines",
+    labelKey: "attributes.designGuidelines.label",
+    appTagId: "template_app_builder",
+    placeholder: "What colors or styles should it have?",
+    placeholderKey: "attributes.designGuidelines.placeholder",
+  }
 ];

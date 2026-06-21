@@ -126,6 +126,11 @@ const IoEstampasBoard = dynamic(
   { ssr: false, loading: () => <BoardSkeleton /> }
 );
 
+const AppBuilderBoard = dynamic(
+  () => import("@/modules/app-builder/components/AppBuilderBoard").then(m => ({ default: m.AppBuilderBoard })),
+  { ssr: false, loading: () => <BoardSkeleton /> }
+);
+
 
 // Zustand stores
 import {
@@ -278,6 +283,8 @@ export function AdminContainer() {
         setActiveTab("io_editais" as any);
       } else if (templateId === "template_io_estampas") {
         setActiveTab("io_estampas" as any);
+      } else if (templateId === "template_app_builder") {
+        setActiveTab("app_builder" as any);
       } else {
         setActiveTab("arcs");
       }
@@ -410,6 +417,7 @@ export function AdminContainer() {
           if (tid === "template_os_system") return "os_system" as any;
           if (tid === "template_io_editais") return "io_editais" as any;
           if (tid === "template_io_estampas") return "io_estampas" as any;
+          if (tid === "template_app_builder") return "app_builder" as any;
           return "arcs";
       };
 
@@ -431,6 +439,7 @@ export function AdminContainer() {
       if (templateId === "template_os_system" && activeTab === "arcs") setActiveTab("os_system" as any);
       if (templateId === "template_io_editais" && activeTab === "arcs") setActiveTab("io_editais" as any);
       if (templateId === "template_io_estampas" && activeTab === "arcs") setActiveTab("io_estampas" as any);
+      if (templateId === "template_app_builder" && activeTab === "arcs") setActiveTab("app_builder" as any);
 
   }, [currentWorkspace?.id, hydrated]);
 
@@ -968,7 +977,7 @@ export function AdminContainer() {
         });
       }}
       onSetSpecificColor={handleSetBackground}
-      fullScreenContent={activeTab === "io_estampas"}
+      fullScreenContent={activeTab === "io_estampas" || activeTab === "app_builder"}
     >
       {!hasWorkspace ? (
         <EmptyStateAde
@@ -1325,6 +1334,12 @@ export function AdminContainer() {
               {(activeTab as any) === "io_estampas" && currentWorkspace && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1 flex flex-col min-h-0 w-full">
                   <IoEstampasBoard storeName={currentWorkspace.name} isInsideAdmin={true} onExit={() => {}} />
+                </div>
+              )}
+
+              {(activeTab as any) === "app_builder" && currentWorkspace && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1 flex flex-col min-h-0 w-full">
+                  <AppBuilderBoard workspaceId={currentWorkspace.id} />
                 </div>
               )}
 

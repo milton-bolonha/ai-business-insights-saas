@@ -123,6 +123,11 @@ function getRateLimitConfig(pathname: string): RateLimitConfig {
     return DEFAULT_LIMITS.critical;
   }
 
+  // App Builder polling endpoint - authenticated users, high frequency needed
+  if (pathname.startsWith('/api/app-builder')) {
+    return DEFAULT_LIMITS.authenticated;
+  }
+
   // NOTE: Rate Limiting in Middleware treats everyone as "public" 
   // to avoid Clerk auth() context crashes.
   return DEFAULT_LIMITS.public;

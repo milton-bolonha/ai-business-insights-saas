@@ -138,6 +138,10 @@
     "io_estampas": {
       "label": "I/O T-Shirts",
       "subtitle": "Create and manage exclusive designs for your store."
+    },
+    "template_app_builder": {
+      "label": "App Builder",
+      "subtitle": "Create and edit your application with AI."
     }
   },
   "attributes": {
@@ -148,6 +152,22 @@
     "estampas_niche": {
       "label": "T-Shirt Niche",
       "placeholder": "e.g., Geek, Rock, Minimalist..."
+    },
+    "app_name": {
+      "label": "App Name",
+      "placeholder": "e.g., My New App"
+    },
+    "app_description": {
+      "label": "App Goal",
+      "placeholder": "What will this application do?"
+    },
+    "businessRules": {
+      "label": "Business Rules",
+      "placeholder": "Any specific business rules?"
+    },
+    "designGuidelines": {
+      "label": "Design Guidelines",
+      "placeholder": "What colors or visual style to use?"
     },
     "edital_name": {
       "label": "Tender Name",
@@ -311,6 +331,17 @@
     }
   },
   "admin": {
+    "appBuilder": {
+      "settings": {
+        "title": "App Knowledge Base",
+        "subtitle": "Define the context so the AI can build code accurately.",
+        "nameLabel": "App Name",
+        "descriptionLabel": "Main Goal (Briefing)",
+        "businessRulesLabel": "Business Rules & Features",
+        "designLabel": "Visual Identity & UI"
+      },
+      "loadingEnv": "Preparing your development environment..."
+    },
     "mentoringProfileBoard": {
       "myProfile": "My Mentoring Profile",
       "specialty": "Specialty",

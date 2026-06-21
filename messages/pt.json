@@ -138,6 +138,10 @@
     "io_estampas": {
       "label": "I/O Estampas",
       "subtitle": "Crie e gerencie estampas exclusivas para sua loja virtual."
+    },
+    "template_app_builder": {
+      "label": "App Builder",
+      "subtitle": "Crie e edite seu aplicativo com ajuda de IA."
     }
   },
   "attributes": {
@@ -148,6 +152,22 @@
     "estampas_niche": {
       "label": "Nicho de Estampas",
       "placeholder": "Ex: Geek, Rock, Minimalista..."
+    },
+    "app_name": {
+      "label": "Nome do Aplicativo",
+      "placeholder": "Ex: Meu Novo App"
+    },
+    "app_description": {
+      "label": "Objetivo do App",
+      "placeholder": "O que este aplicativo fará?"
+    },
+    "businessRules": {
+      "label": "Regras de Negócio",
+      "placeholder": "Tem alguma regra de negócio específica?"
+    },
+    "designGuidelines": {
+      "label": "Diretrizes de Design",
+      "placeholder": "Quais cores ou estilo visual quer usar?"
     },
     "edital_name": {
       "label": "Nome do Edital",
@@ -311,6 +331,17 @@
     }
   },
   "admin": {
+    "appBuilder": {
+      "settings": {
+        "title": "Base de Conhecimento do App",
+        "subtitle": "Defina o contexto para a IA criar o código com precisão.",
+        "nameLabel": "Nome do Aplicativo",
+        "descriptionLabel": "Objetivo Principal (Briefing)",
+        "businessRulesLabel": "Regras de Negócio & Features",
+        "designLabel": "Identidade Visual & UI"
+      },
+      "loadingEnv": "Preparando seu ambiente de desenvolvimento..."
+    },
     "mentoringProfileBoard": {
       "myProfile": "Meu Perfil de Mentoria",
       "specialty": "Especialidade",
