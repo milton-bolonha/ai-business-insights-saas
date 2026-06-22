@@ -128,10 +128,16 @@ export function AppBuilderBoard({ workspaceId }: AppBuilderBoardProps) {
       </div>
 
       <ProjectSettingsModal 
-        project={project}
+        projectId={project._id}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onUpdate={(p) => setProject(p)}
+        initialData={{
+          name: project.name,
+          description: project.description,
+          businessRules: project.businessRules,
+          designGuidelines: project.designGuidelines
+        }}
+        onSave={(data) => setProject({ ...project, ...data })}
       />
     </div>
   );

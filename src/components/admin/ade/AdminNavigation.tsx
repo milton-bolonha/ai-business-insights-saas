@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { useTranslation } from "@/lib/hooks/useTranslation";
 
-export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey" | "blog" | "os_system" | "io_editais" | "io_estampas";
+export type NavTab = "library" | "ranking" | "arcs" | "characters" | "notes" | "files" | "logistics" | "layout" | "store" | "clients" | "staff" | "chat_history" | "global_users" | "mentoring_insights" | "mentoring_tasks" | "mentoring_schedule" | "mentoring_profile" | "survey" | "blog" | "os_system" | "io_editais" | "io_estampas" | "app_builder";
 
 interface AdminNavigationProps {
     activeTab: NavTab;

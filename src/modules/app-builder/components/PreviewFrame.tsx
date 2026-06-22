@@ -114,7 +114,7 @@ export function PreviewFrame({ projectId }: PreviewFrameProps) {
             <Terminal className="w-4 h-4" />
           </button>
           <button 
-            onClick={fetchPreviewUrl}
+            onClick={() => fetchPreviewUrl()}
             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
             title="Atualizar prévia"
           >
@@ -176,7 +176,7 @@ export function PreviewFrame({ projectId }: PreviewFrameProps) {
             <h3 className="text-sm font-bold text-red-800 mb-2">Erro ao carregar a prévia</h3>
             <p className="text-xs text-red-600 mb-4">{error}</p>
             <button
-              onClick={fetchPreviewUrl}
+              onClick={() => fetchPreviewUrl()}
               className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-red-700 transition-colors"
             >
               Tentar Novamente
